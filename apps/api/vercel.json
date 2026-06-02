@@ -2,12 +2,9 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "cd ../.. && npm install",
   "buildCommand": "cd ../.. && npm run build:api",
-  "outputFileTracingIncludes": {
-    "src/index.ts": [
-      "../../node_modules/.prisma/**",
-      "../../node_modules/@prisma/client/**",
-      "../../node_modules/@prisma/engines/**",
-      "../../packages/**/dist/**"
-    ]
+  "functions": {
+    "src/index.ts": {
+      "includeFiles": "../../node_modules/.prisma/**"
+    }
   }
 }
