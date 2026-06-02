@@ -1,6 +1,13 @@
 import type { FastifyInstance } from "fastify";
 
 export async function registerHealthRoutes(app: FastifyInstance): Promise<void> {
+  app.get("/", async () => ({
+    service: "@memory-middleware/api",
+    status: "running",
+    health: "/health",
+    workspaces: "/workspaces",
+  }));
+
   app.get("/health", async (request) => {
     let database: "connected" | "disconnected" = "disconnected";
 
