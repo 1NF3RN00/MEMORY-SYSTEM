@@ -5,8 +5,14 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
   API_HOST: z.string().default("0.0.0.0"),
-  API_PORT: z.coerce.number().int().positive().default(3000),
+  API_PORT: z.coerce
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .default(Number(process.env.PORT ?? 3000)),
   DATABASE_URL: z.string().url(),
+  DIRECT_URL: z.string().url().optional(),
   TRACE_HEADER: z.string().default("x-trace-id"),
   OPENAI_API_KEY: z.string().optional(),
   WORKER_POLL_INTERVAL_MS: z.coerce.number().int().positive().default(2000),

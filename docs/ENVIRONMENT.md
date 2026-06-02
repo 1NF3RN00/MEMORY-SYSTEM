@@ -159,8 +159,8 @@ Set these in the host’s environment UI (not in git):
 
 | Variable | Value |
 |----------|--------|
-| `DATABASE_URL` | Supabase **pooler** URI |
-| `DIRECT_URL` | Supabase **direct** URI (needed for build/migrate if you run migrations in CI) |
+| `DATABASE_URL` | Supabase **pooler** URI (required at runtime) |
+| `DIRECT_URL` | Supabase **direct** URI (required by Prisma schema; use the same value as `DATABASE_URL` if you only have one URI) |
 | `NODE_ENV` | `production` |
 | `LOG_LEVEL` | `info` |
 | `OPENAI_API_KEY` | Your key (if using embeddings) |
@@ -207,6 +207,7 @@ Copy the returned `id` into `VITE_WORKSPACE_ID` in `apps/dashboard/.env`.
 | `extension "vector" does not exist` | Enable **vector** under Supabase **Database** → **Extensions** |
 | Dashboard cannot reach API | Set `VITE_API_URL` to the live API; enable CORS is already `*` on the API |
 | Build can’t find `@memory-middleware/*` | Use monorepo build: `npm run build:api` from repo root (see root `vercel.json`) |
+| `FUNCTION_INVOCATION_FAILED` on Vercel | Set `DATABASE_URL` (and `DIRECT_URL`); do **not** set `outputDirectory` on the API project; redeploy after `npm run build:api` so workspace `packages/*/dist` exists |
 
 ---
 

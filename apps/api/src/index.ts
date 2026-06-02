@@ -1,33 +1,17 @@
-import { loadEnv } from "./config/env.js";
-import { buildApp } from "./app.js";
-import { connectDatabase, disconnectDatabase } from "./lib/database.js";
-import { createPrismaEventSink } from "./lib/event-sink.js";
-import {
-  createLogger,
-  createLoggingEventEmitter,
-} from "@memory-middleware/observability";
+import { createApiRuntime, resolveListenPort } from "./bootstrap.js";
+import { disconnectDatabase } from "./lib/database.js";
 
 async function main(): Promise<void> {
-  const env = loadEnv();
-  const logger = createLogger({
-    level: env.LOG_LEVEL,
-    service: "api",
-    baseContext: { environment: env.NODE_ENV },
-  });
+  const { env, logger, prisma, events, app } = await createApiRuntime();
 
   logger.info(
     {
       host: env.API_HOST,
-      port: env.API_PORT,
+      port: resolveListenPort(env),
+      vercel: process.env.VERCEL === "1",
     },
     "api.startup",
   );
-
-  const prisma = await connectDatabase(logger);
-  const events = createLoggingEventEmitter({
-    logger,
-    sink: createPrismaEventSink(prisma),
-  });
 
   await events.emit({
     event_type: "system.startup",
@@ -35,22 +19,15 @@ async function main(): Promise<void> {
     metadata: { service: "api" },
   });
 
-  const app = await buildApp({
-    logger,
-    prisma,
-    events,
-    traceHeader: env.TRACE_HEADER,
-  });
-
   await app.listen({
     host: env.API_HOST,
-    port: env.API_PORT,
+    port: resolveListenPort(env),
   });
 
   logger.info(
     {
       host: env.API_HOST,
-      port: env.API_PORT,
+      port: resolveListenPort(env),
     },
     "api.listening",
   );
@@ -67,6 +44,6 @@ async function main(): Promise<void> {
 }
 
 main().catch((error: unknown) => {
-  console.error(error);
+  console.error("api.startup_failed", error);
   process.exit(1);
 });
