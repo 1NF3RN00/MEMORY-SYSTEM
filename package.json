@@ -1,0 +1,28 @@
+{
+  "name": "semantic-core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Deterministic contextual memory middleware — Sprint 0 foundations",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @memory-middleware/shared-types && npm run build -w @memory-middleware/observability && npm run build -w @memory-middleware/normalization && npm run build -w @memory-middleware/structural && npm run build -w @memory-middleware/scoring && npm run build -w @memory-middleware/ingestion && npm run build -w @memory-middleware/relationship && npm run build -w @memory-middleware/retrieval && npm run build -w @memory-middleware/planning && npm run build -w @memory-middleware/compression && npm run build -w @memory-middleware/context-delivery && npm run build -w @memory-middleware/historian && npm run build -w @memory-middleware/retrieval-diagnostics && npm run db:generate && npm run build -w @memory-middleware/api && npm run build -w @memory-middleware/dashboard",
+    "dev:api": "npm run dev -w @memory-middleware/api",
+    "dev:dashboard": "npm run dev -w @memory-middleware/dashboard",
+    "dev:worker": "npm run dev:worker -w @memory-middleware/api",
+    "docker:up": "docker compose -f infrastructure/docker-compose.yml up -d",
+    "docker:down": "docker compose -f infrastructure/docker-compose.yml down",
+    "setup:db": "npm run docker:up && npm run db:migrate:deploy",
+    "db:generate": "npm run db:generate -w @memory-middleware/api",
+    "db:migrate": "npm run db:migrate -w @memory-middleware/api",
+    "db:migrate:deploy": "npm run db:migrate:deploy -w @memory-middleware/api",
+    "db:seed": "npm run db:seed -w @memory-middleware/api",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "ISC"
+}

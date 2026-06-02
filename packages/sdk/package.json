@@ -1,0 +1,14 @@
+{
+  "name": "@memory-middleware/sdk",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Reserved for Sprint 1 — middleware client SDK",
+  "main": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  }
+}

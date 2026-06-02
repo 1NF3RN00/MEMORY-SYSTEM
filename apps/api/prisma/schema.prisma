@@ -1,0 +1,680 @@
+generator client {
+
+  provider        = "prisma-client-js"
+
+  previewFeatures = ["postgresqlExtensions"]
+
+}
+
+
+
+datasource db {
+
+  provider   = "postgresql"
+
+  url        = env("DATABASE_URL")
+
+  extensions = [pgvector(map: "vector"), pgcrypto]
+
+}
+
+
+
+/// Tenant workspace — configuration and isolation boundary (UUID).
+
+model Workspace {
+
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  name      String
+
+  slug      String   @unique
+
+  config    Json     @default("{}")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+
+
+  memories             Memory[]
+
+  retrievalOperations  RetrievalOperation[]
+
+  compressionOperations CompressionOperation[]
+
+  contextRenderOperations ContextRenderOperation[]
+
+  memoryRelationships  MemoryRelationship[]
+
+  compressionArtifacts CompressionArtifact[]
+
+  snapshots            Snapshot[]
+
+  replaySnapshots      ReplaySnapshot[]
+
+  retrievalPlans       RetrievalPlan[]
+
+  eventLogs            EventLog[]
+
+  ingestionJobs        IngestionJob[]
+
+  ingestionTraces      IngestionTrace[]
+
+  sourceTruths         SourceTruth[]
+
+
+
+  @@map("workspaces")
+
+}
+
+
+
+/// Append-only memory record. IDs are ULIDs (application-assigned).
+
+model Memory {
+
+  id                   String    @id
+
+  workspaceId          String    @map("workspace_id") @db.Uuid
+
+  lineageId            String    @map("lineage_id")
+
+  version              Int       @default(1)
+
+  parentMemoryId       String?   @map("parent_memory_id")
+
+  memoryType           String    @default("semantic") @map("memory_type")
+
+  persistenceMode      String    @default("persistent") @map("persistence_mode")
+
+  sourceType           String    @map("source_type")
+
+  title                String    @default("")
+
+  content              String
+
+  normalizedContent    String    @map("normalized_content")
+
+  summary              String?
+
+  ingestionStatus      String    @default("pending") @map("ingestion_status")
+
+  ingestionTraceId     String    @map("ingestion_trace_id")
+
+  normalizationTraceId String    @map("normalization_trace_id")
+
+  embeddingVersion     String    @default("openai-text-embedding-3-small-v1") @map("embedding_version")
+
+  normalizationVersion String    @default("deterministic-v1") @map("normalization_version")
+
+  metadata             Json      @default("{}")
+
+  scoring              Json      @default("{}")
+
+  lineage              Json      @default("{}")
+
+  observability        Json      @default("{}")
+
+  archived             Boolean   @default(false)
+
+  retrievalEligible    Boolean   @default(true) @map("retrieval_eligible")
+
+  expiresAt            DateTime? @map("expires_at")
+
+  archivedAt           DateTime? @map("archived_at")
+
+  createdAt            DateTime  @default(now()) @map("created_at")
+
+  updatedAt            DateTime  @updatedAt @map("updated_at")
+
+
+
+  workspace Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  chunks    MemoryChunk[]
+
+  relationshipsAsSource MemoryRelationship[] @relation("RelationshipSource")
+
+  relationshipsAsTarget MemoryRelationship[] @relation("RelationshipTarget")
+
+
+
+  @@unique([lineageId, version])
+
+  @@index([workspaceId])
+
+  @@index([lineageId])
+
+  @@index([ingestionTraceId])
+
+  @@map("memories")
+
+}
+
+
+
+/// Chunks belong to a Memory — IDs are ULIDs.
+
+model MemoryChunk {
+
+  id              String                       @id
+
+  memoryId        String                       @map("memory_id")
+
+  sequence        Int
+
+  content         String
+
+  tokenCount      Int                          @default(0) @map("token_count")
+
+  embeddingStatus String                       @default("pending") @map("embedding_status")
+
+  metadata        Json                         @default("{}")
+
+  observability   Json                         @default("{}")
+
+  embedding       Unsupported("vector(1536)")?
+
+  createdAt       DateTime                     @default(now()) @map("created_at")
+
+
+
+  memory Memory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+
+
+
+  @@unique([memoryId, sequence])
+
+  @@index([memoryId])
+
+  @@map("memory_chunks")
+
+}
+
+
+
+/// Async ingestion job queue — IDs are ULIDs.
+
+model IngestionJob {
+
+  id                String    @id
+
+  workspaceId       String    @map("workspace_id") @db.Uuid
+
+  traceId           String    @map("trace_id")
+
+  status            String    @default("pending")
+
+  sourceType        String    @map("source_type")
+
+  persistenceMode   String    @default("persistent") @map("persistence_mode")
+
+  memoryType        String    @default("semantic") @map("memory_type")
+
+  inputPayload      Json      @map("input_payload")
+
+  memoryId          String?   @map("memory_id")
+
+  lineageId         String?   @map("lineage_id")
+
+  attemptCount      Int       @default(0) @map("attempt_count")
+
+  maxAttempts       Int       @default(3) @map("max_attempts")
+
+  lastError         String?   @map("last_error")
+
+  useLlmStructuring Boolean   @default(false) @map("use_llm_structuring")
+
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  startedAt         DateTime? @map("started_at")
+
+  completedAt       DateTime? @map("completed_at")
+
+
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+
+
+  @@index([status])
+
+  @@index([traceId])
+
+  @@index([workspaceId])
+
+  @@map("ingestion_jobs")
+
+}
+
+
+
+/// Replayable ingestion trace — traceId is the primary observability ULID.
+
+model IngestionTrace {
+
+  id                 String   @id
+
+  workspaceId        String   @map("workspace_id") @db.Uuid
+
+  traceId            String   @unique @map("trace_id")
+
+  status             String   @default("pending")
+
+  sourceType         String   @map("source_type")
+
+  persistenceMode    String   @map("persistence_mode")
+
+  memoryId           String?  @map("memory_id")
+
+  stages             Json     @default("[]")
+
+  normalizationTrace Json?    @map("normalization_trace")
+
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+
+
+  @@index([workspaceId])
+
+  @@index([memoryId])
+
+  @@map("ingestion_traces")
+
+}
+
+
+
+/// Source truth layer — IDs are ULIDs.
+
+model SourceTruth {
+
+  id                           String   @id
+
+  workspaceId                  String   @map("workspace_id") @db.Uuid
+
+  traceId                      String   @map("trace_id")
+
+  memoryId                     String?  @map("memory_id")
+
+  rawSource                    String   @map("raw_source")
+
+  crawlerOutput                Json?    @map("crawler_output")
+
+  normalizationTransformations Json     @default("[]") @map("normalization_transformations")
+
+  createdAt                    DateTime @default(now()) @map("created_at")
+
+
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+
+
+  @@index([traceId])
+
+  @@index([memoryId])
+
+  @@map("source_truths")
+
+}
+
+
+
+/// Observability record for retrieval operations — scaffolding only.
+
+model RetrievalOperation {
+
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  workspaceId String    @map("workspace_id") @db.Uuid
+
+  traceId     String    @map("trace_id")
+
+  query       String
+
+  status      String    @default("pending")
+
+  result      Json?
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  completedAt DateTime? @map("completed_at")
+
+
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+
+
+  @@index([workspaceId])
+
+  @@index([traceId])
+
+  @@map("retrieval_operations")
+
+}
+
+
+
+/// Sprint 6 retrieval planning artifacts — deterministic preprocessing plans.
+
+model RetrievalPlan {
+
+  id            String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  planId        String   @unique @map("plan_id")
+
+  workspaceId   String   @map("workspace_id") @db.Uuid
+
+  query         String
+
+  retrievalMode String   @map("retrieval_mode")
+
+  status        String   @default("completed")
+
+  plan          Json
+
+  replayInput   Json     @map("replay_input")
+
+  stages        Json     @default("[]")
+
+  createdAt     DateTime @default(now()) @map("created_at")
+
+
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+
+
+  @@index([workspaceId])
+
+  @@index([planId])
+
+  @@map("retrieval_plans")
+
+}
+
+
+
+/// Observability record for compression operations — Sprint 3.
+
+model CompressionOperation {
+
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  workspaceId String    @map("workspace_id") @db.Uuid
+
+  traceId     String    @map("trace_id")
+
+  retrievalTraceId String @map("retrieval_trace_id")
+
+  status      String    @default("pending")
+
+  result      Json?
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  completedAt DateTime? @map("completed_at")
+
+
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+
+
+  @@index([workspaceId])
+
+  @@index([traceId])
+
+  @@index([retrievalTraceId])
+
+  @@map("compression_operations")
+
+}
+
+
+
+/// Context delivery + rendering operations — transforms middleware state into LLM inference context.
+
+model ContextRenderOperation {
+
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  workspaceId        String    @map("workspace_id") @db.Uuid
+
+  deliveryId         String    @map("delivery_id")
+
+  retrievalTraceId   String    @map("retrieval_trace_id")
+
+  compressionTraceId String?   @map("compression_trace_id")
+
+  status             String    @default("pending")
+
+  result             Json?
+
+  createdAt          DateTime  @default(now()) @map("created_at")
+
+  completedAt        DateTime? @map("completed_at")
+
+
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+
+
+  @@index([workspaceId])
+
+  @@index([deliveryId])
+
+  @@index([retrievalTraceId])
+
+  @@index([compressionTraceId])
+
+  @@map("context_render_operations")
+
+}
+
+
+
+/// Lightweight memory relationship storage — adjacency and co-retrieval hints.
+
+model MemoryRelationship {
+
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  workspaceId      String   @map("workspace_id") @db.Uuid
+
+  sourceMemoryId   String   @map("source_memory_id")
+
+  targetMemoryId   String   @map("target_memory_id")
+
+  relationshipType String   @map("relationship_type")
+
+  weight           Float    @default(0.5)
+
+  metadata         Json     @default("{}")
+
+  compressionTraceId String? @map("compression_trace_id")
+
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+
+
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  sourceMemory Memory    @relation("RelationshipSource", fields: [sourceMemoryId], references: [id], onDelete: Cascade)
+
+  targetMemory Memory    @relation("RelationshipTarget", fields: [targetMemoryId], references: [id], onDelete: Cascade)
+
+
+
+  @@unique([workspaceId, sourceMemoryId, targetMemoryId, relationshipType])
+
+  @@index([workspaceId])
+
+  @@index([sourceMemoryId])
+
+  @@index([targetMemoryId])
+
+  @@index([compressionTraceId])
+
+  @@map("memory_relationships")
+
+}
+
+
+
+/// Stored compression output — artifact record only in Sprint 0.
+
+model CompressionArtifact {
+
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  workspaceId String   @map("workspace_id") @db.Uuid
+
+  sourceType  String   @map("source_type")
+
+  sourceId    String   @map("source_id")
+
+  content     String
+
+  metadata    Json     @default("{}")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+
+
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+
+
+  @@index([workspaceId])
+
+  @@index([sourceType, sourceId])
+
+  @@map("compression_artifacts")
+
+}
+
+
+
+/// Full replay snapshots for deterministic historian replay — Sprint 5.
+
+model ReplaySnapshot {
+
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  replayId         String   @unique @map("replay_id")
+
+  retrievalTraceId String   @map("retrieval_trace_id")
+
+  workspaceId      String   @map("workspace_id") @db.Uuid
+
+  integrityHash    String   @map("integrity_hash")
+
+  payload          Json
+
+  retentionMode    String   @default("operational") @map("retention_mode")
+
+  archivedAt       DateTime? @map("archived_at")
+
+  createdAt        DateTime @default(now()) @map("created_at")
+
+
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+
+
+  @@index([workspaceId])
+
+  @@index([retrievalTraceId])
+
+  @@index([retentionMode])
+
+  @@index([createdAt])
+
+  @@map("replay_snapshots")
+
+}
+
+
+
+/// Point-in-time snapshots for replay and observability.
+
+model Snapshot {
+
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  workspaceId  String   @map("workspace_id") @db.Uuid
+
+  snapshotType String   @map("snapshot_type")
+
+  payload      Json
+
+  createdAt    DateTime @default(now()) @map("created_at")
+
+
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+
+
+  @@index([workspaceId])
+
+  @@index([snapshotType])
+
+  @@map("snapshots")
+
+}
+
+
+
+/// Append-only structured event log.
+
+model EventLog {
+
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+
+  workspaceId String?  @map("workspace_id") @db.Uuid
+
+  eventType   String   @map("event_type")
+
+  traceId     String   @map("trace_id")
+
+  severity    String   @default("info")
+
+  payload     Json
+
+  timestamp   DateTime @default(now())
+
+
+
+  workspace Workspace? @relation(fields: [workspaceId], references: [id], onDelete: SetNull)
+
+
+
+  @@index([traceId])
+
+  @@index([eventType])
+
+  @@index([timestamp])
+
+  @@map("event_logs")
+
+}
+

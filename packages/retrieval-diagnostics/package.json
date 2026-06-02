@@ -1,0 +1,27 @@
+{
+  "name": "@memory-middleware/retrieval-diagnostics",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Retrieval quality diagnostics and system calibration framework",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@memory-middleware/historian": "*",
+    "@memory-middleware/observability": "*",
+    "@memory-middleware/shared-types": "*"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  }
+}

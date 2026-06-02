@@ -1,0 +1,29 @@
+{
+  "name": "@memory-middleware/retrieval",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Sprint 2 deterministic contextual retrieval engine",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@memory-middleware/ingestion": "*",
+    "@memory-middleware/observability": "*",
+    "@memory-middleware/relationship": "*",
+    "@memory-middleware/shared-types": "*",
+    "@memory-middleware/structural": "*"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  }
+}

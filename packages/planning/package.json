@@ -1,0 +1,28 @@
+{
+  "name": "@memory-middleware/planning",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Sprint 6 deterministic preprocessing and retrieval planning",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@memory-middleware/ingestion": "*",
+    "@memory-middleware/observability": "*",
+    "@memory-middleware/retrieval": "*",
+    "@memory-middleware/shared-types": "*"
+  },
+  "devDependencies": {
+    "typescript": "^6.0.3"
+  }
+}
