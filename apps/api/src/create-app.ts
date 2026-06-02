@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import Fastify, { type FastifyInstance } from "fastify";
 import type { PrismaClient } from "@prisma/client";
 import type { EventEmitter, Logger } from "@memory-middleware/observability";
 import { registerRoutes } from "./routes/index.js";
@@ -11,8 +11,6 @@ export interface ApiDependencies {
 }
 
 export async function buildApp(deps: ApiDependencies): Promise<FastifyInstance> {
-  const Fastify = (await import("fastify")).default;
-
   const app = Fastify({
     logger: false,
     disableRequestLogging: true,
