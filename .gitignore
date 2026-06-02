@@ -11,3 +11,7 @@ apps/api/src/**/*.js
 apps/api/src/**/*.js.map
 apps/api/src/**/*.d.ts
 apps/api/src/**/*.d.ts.map
+apps/api/api/**/*.js
+apps/api/api/**/*.js.map
+apps/api/api/**/*.d.ts
+apps/api/api/**/*.d.ts.map
