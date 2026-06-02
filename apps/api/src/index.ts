@@ -1,8 +1,26 @@
+import type { IncomingMessage, ServerResponse } from "node:http";
 import { createApiRuntime, resolveListenPort } from "./bootstrap.js";
 import { disconnectDatabase } from "./lib/database.js";
 
-async function main(): Promise<void> {
-  const { env, logger, prisma, events, app } = await createApiRuntime();
+let runtimePromise: ReturnType<typeof createApiRuntime> | undefined;
+
+async function getRuntime(): Promise<Awaited<ReturnType<typeof createApiRuntime>>> {
+  runtimePromise ??= createApiRuntime();
+  return runtimePromise;
+}
+
+/** Vercel serverless + compatible local `vercel dev` */
+export default async function handler(
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<void> {
+  const { app } = await getRuntime();
+  await app.ready();
+  app.server.emit("request", req, res);
+}
+
+async function startLocalServer(): Promise<void> {
+  const { env, logger, events, app } = await getRuntime();
 
   logger.info(
     {
@@ -42,7 +60,9 @@ async function main(): Promise<void> {
   process.on("SIGTERM", () => void shutdown("SIGTERM"));
 }
 
-main().catch((error: unknown) => {
-  console.error("api.startup_failed", error);
-  process.exit(1);
-});
+if (!process.env.VERCEL) {
+  startLocalServer().catch((error: unknown) => {
+    console.error("api.startup_failed", error);
+    process.exit(1);
+  });
+}
