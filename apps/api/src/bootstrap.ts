@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import type { AppEnv } from "./config/env.js";
 import { loadEnv } from "./config/env.js";
-import { buildApp } from "./app.js";
+import { buildApp } from "./create-app.js";
 import { connectDatabase } from "./lib/database.js";
 import { createPrismaEventSink } from "./lib/event-sink.js";
 import {

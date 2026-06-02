@@ -208,7 +208,7 @@ Copy the returned `id` into `VITE_WORKSPACE_ID` in `apps/dashboard/.env`.
 | Dashboard cannot reach API | Set `VITE_API_URL` to the live API; enable CORS is already `*` on the API |
 | Build can’t find `@memory-middleware/*` | Use monorepo build: `npm run build:api` from repo root (see root `vercel.json`) |
 | `FUNCTION_INVOCATION_FAILED` on Vercel | Set `DATABASE_URL` (and `DIRECT_URL`); do **not** set `outputDirectory` on the API project; redeploy after `npm run build:api` so workspace `packages/*/dist` exists |
-| `functions` pattern must match `api/` | This API uses Fastify entry `src/index.ts`; do not add `functions` entries for `src/**` in `vercel.json` (use `api/*.ts` only if you add classic Vercel handlers) |
+| `functions` pattern must match `api/` | Production traffic goes to `api/index.ts` (default export handler); local dev uses `src/local-dev.ts`. Do not commit compiled `apps/api/src/**/*.js` — Vercel treats `src/app.js` as an entrypoint and crashes |
 
 ---
 

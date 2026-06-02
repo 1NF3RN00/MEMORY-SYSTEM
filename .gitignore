@@ -7,3 +7,7 @@ dist/
 .DS_Store
 coverage/
 apps/api/prisma/migrations/**/migration.sql.bak
+apps/api/src/**/*.js
+apps/api/src/**/*.js.map
+apps/api/src/**/*.d.ts
+apps/api/src/**/*.d.ts.map

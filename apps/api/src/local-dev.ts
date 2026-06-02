@@ -8,7 +8,6 @@ async function main(): Promise<void> {
     {
       host: env.API_HOST,
       port: resolveListenPort(env),
-      vercel: process.env.VERCEL === "1",
     },
     "api.startup",
   );

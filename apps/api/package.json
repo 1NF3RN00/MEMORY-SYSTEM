@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "build": "tsc -b --force",
-    "dev": "tsx watch src/index.ts",
+    "dev": "tsx watch src/local-dev.ts",
     "dev:worker": "tsx watch src/worker-main.ts",
-    "start": "node dist/index.js",
+    "start": "node dist/local-dev.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "db:generate": "node scripts/with-env.mjs generate",
     "db:migrate": "node scripts/with-env.mjs migrate dev",
