@@ -40,14 +40,8 @@ export function parseContextRenderBody(body: unknown): ParsedContextRenderBody |
     return { error: "workspaceId is required" };
   }
 
-  const mode = record.mode;
-  if (
-    mode !== undefined &&
-    mode !== "concise" &&
-    mode !== "balanced" &&
-    mode !== "detailed" &&
-    mode !== "operational"
-  ) {
+  const modeRaw = record.mode;
+  if (modeRaw !== undefined && !isDeliveryMode(modeRaw)) {
     return { error: "mode must be concise, balanced, detailed, or operational" };
   }
 
@@ -59,8 +53,17 @@ export function parseContextRenderBody(body: unknown): ParsedContextRenderBody |
     ...(typeof record.compressionTraceId === "string"
       ? { compressionTraceId: record.compressionTraceId }
       : {}),
-    ...(mode ? { mode } : {}),
+    ...(modeRaw !== undefined ? { mode: modeRaw } : {}),
   };
+}
+
+function isDeliveryMode(value: unknown): value is DeliveryMode {
+  return (
+    value === "concise" ||
+    value === "balanced" ||
+    value === "detailed" ||
+    value === "operational"
+  );
 }
 
 export async function createContextRenderOperation(
