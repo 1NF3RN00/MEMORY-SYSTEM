@@ -48,11 +48,12 @@ export function parseContextRenderBody(body: unknown): ParsedContextRenderBody |
   if (typeof record.compressionTraceId === "string") {
     parsed.compressionTraceId = record.compressionTraceId;
   }
-  if (record.mode !== undefined) {
-    if (!isDeliveryMode(record.mode)) {
+  const modeValue = record.mode;
+  if (modeValue !== undefined) {
+    if (!isDeliveryMode(modeValue)) {
       return { error: "mode must be concise, balanced, detailed, or operational" };
     }
-    parsed.mode = record.mode;
+    parsed.mode = modeValue;
   }
 
   return parsed;

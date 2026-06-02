@@ -9,6 +9,13 @@ const repoRoot = resolve(scriptDir, "../../..");
 loadEnv({ path: resolve(repoRoot, ".env") });
 loadEnv({ path: resolve(scriptDir, "../.env") });
 
+if (!process.env.DATABASE_URL && process.env.DIRECT_URL) {
+  process.env.DATABASE_URL = process.env.DIRECT_URL;
+}
+if (!process.env.DIRECT_URL && process.env.DATABASE_URL) {
+  process.env.DIRECT_URL = process.env.DATABASE_URL;
+}
+
 const command = process.argv[2];
 const needsDatabaseUrl = command !== "generate";
 

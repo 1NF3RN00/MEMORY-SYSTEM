@@ -9,7 +9,7 @@
     "dev:worker": "tsx watch src/worker-main.ts",
     "start": "node dist/index.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "db:generate": "node scripts/with-env.mjs generate",
+    "db:generate": "prisma generate",
     "db:migrate": "node scripts/with-env.mjs migrate dev",
     "db:migrate:deploy": "node scripts/with-env.mjs migrate deploy",
     "db:seed": "node scripts/with-env.mjs db seed"
