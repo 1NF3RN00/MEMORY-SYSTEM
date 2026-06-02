@@ -8,7 +8,9 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build -w @memory-middleware/shared-types && npm run build -w @memory-middleware/observability && npm run build -w @memory-middleware/normalization && npm run build -w @memory-middleware/structural && npm run build -w @memory-middleware/scoring && npm run build -w @memory-middleware/ingestion && npm run build -w @memory-middleware/relationship && npm run build -w @memory-middleware/retrieval && npm run build -w @memory-middleware/planning && npm run build -w @memory-middleware/compression && npm run build -w @memory-middleware/context-delivery && npm run build -w @memory-middleware/historian && npm run build -w @memory-middleware/retrieval-diagnostics && npm run db:generate && npm run build -w @memory-middleware/api && npm run build -w @memory-middleware/dashboard",
+    "build:packages": "npm run build -w @memory-middleware/shared-types && npm run build -w @memory-middleware/observability && npm run build -w @memory-middleware/normalization && npm run build -w @memory-middleware/structural && npm run build -w @memory-middleware/scoring && npm run build -w @memory-middleware/ingestion && npm run build -w @memory-middleware/relationship && npm run build -w @memory-middleware/retrieval && npm run build -w @memory-middleware/planning && npm run build -w @memory-middleware/compression && npm run build -w @memory-middleware/context-delivery && npm run build -w @memory-middleware/historian && npm run build -w @memory-middleware/retrieval-diagnostics",
+    "build:api": "npm run build:packages && npm run db:generate -w @memory-middleware/api && npm run build -w @memory-middleware/api",
+    "build": "npm run build:api && npm run build -w @memory-middleware/dashboard",
     "dev:api": "npm run dev -w @memory-middleware/api",
     "dev:dashboard": "npm run dev -w @memory-middleware/dashboard",
     "dev:worker": "npm run dev:worker -w @memory-middleware/api",

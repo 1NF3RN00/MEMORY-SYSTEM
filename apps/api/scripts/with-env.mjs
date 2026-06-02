@@ -9,7 +9,10 @@ const repoRoot = resolve(scriptDir, "../../..");
 loadEnv({ path: resolve(repoRoot, ".env") });
 loadEnv({ path: resolve(scriptDir, "../.env") });
 
-if (!process.env.DATABASE_URL) {
+const command = process.argv[2];
+const needsDatabaseUrl = command !== "generate";
+
+if (!process.env.DATABASE_URL && needsDatabaseUrl) {
   console.error(
     "DATABASE_URL is not set. Copy .env.example to the repo root:\n  copy .env.example .env",
   );
