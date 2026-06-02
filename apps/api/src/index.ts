@@ -16,11 +16,21 @@ async function main(): Promise<void> {
     "api.startup",
   );
 
-  await events.emit({
-    event_type: "system.startup",
-    trace_id: "system",
-    metadata: { service: "api" },
-  });
+  try {
+    await events.emit({
+      event_type: "system.startup",
+      trace_id: "system",
+      metadata: { service: "api" },
+    });
+  } catch (error) {
+    logger.warn(
+      {
+        err: error,
+        hint: "Run npm run db:migrate:deploy against this database (see docs/ENVIRONMENT.md)",
+      },
+      "api.startup_event_skipped",
+    );
+  }
 
   await app.listen({
     host: env.API_HOST,
