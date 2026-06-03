@@ -34,7 +34,7 @@ interface AuthState {
   workspace: AuthWorkspace | null;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
+  refreshProfile: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -61,7 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [workspace, setWorkspace] = useState<AuthWorkspace | null>(null);
 
-  const refreshProfile = useCallback(async () => {
+  const refreshProfile = useCallback(async (): Promise<boolean> => {
     if (!session?.access_token) {
       if (!isSupabaseConfigured) {
         const fallback = await apiGet<{
@@ -89,14 +89,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: "dev@local",
           isPlatformAdmin: true,
         });
+        return true;
       }
-      return;
+      setUser(null);
+      setWorkspace(null);
+      return false;
     }
     const profile = await fetchProfile(session.access_token);
     if (profile) {
       setUser(profile.user);
       setWorkspace(profile.workspace);
+      return true;
     }
+    setUser(null);
+    setWorkspace(null);
+    return false;
   }, [session]);
 
   useEffect(() => {

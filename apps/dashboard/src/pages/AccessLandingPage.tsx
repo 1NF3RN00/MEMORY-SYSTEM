@@ -24,11 +24,20 @@ function clearAuthHash(): void {
 }
 
 export function AccessLandingPage() {
-  const { signIn, loading, workspace, session } = useAuth();
+  const { signIn, loading, workspace, session, refreshProfile } = useAuth();
   const [recoveryMode, setRecoveryMode] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [hashError, setHashError] = useState<string | null>(() => parseAuthHashError());
+  const [panel, setPanel] = useState<Panel>("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [company, setCompany] = useState("");
+  const [useCase, setUseCase] = useState("");
+  const [note, setNote] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (hashError) clearAuthHash();
@@ -45,20 +54,18 @@ export function AccessLandingPage() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  const readyToEnter = !loading && (workspace || session) && !recoveryMode;
+  useEffect(() => {
+    if (loading || workspace || recoveryMode || !session) return;
+    setError(
+      "Signed in, but the API did not return a workspace. Restart the API (auth fix) and try again, or run platform:bootstrap for your email.",
+    );
+  }, [loading, workspace, session, recoveryMode]);
+
+  const readyToEnter = !loading && Boolean(workspace) && !recoveryMode;
 
   if (readyToEnter) {
     return <Navigate to="/" replace />;
   }
-  const [panel, setPanel] = useState<Panel>("login");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [company, setCompany] = useState("");
-  const [useCase, setUseCase] = useState("");
-  const [note, setNote] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   async function handleSetPassword(e: React.FormEvent) {
     e.preventDefault();
@@ -102,6 +109,12 @@ export function AccessLandingPage() {
         return;
       }
       await signIn(email.trim(), password);
+      const profileLoaded = await refreshProfile();
+      if (!profileLoaded) {
+        setError(
+          "Signed in, but workspace profile failed to load. Ensure the API is running and redeployed with the latest /auth/me fix.",
+        );
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Authentication failed");
     } finally {
