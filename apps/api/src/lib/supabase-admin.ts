@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
 
 let adminClient: SupabaseClient | null = null;
 
@@ -42,11 +42,11 @@ async function findAuthUserByEmail(email: string): Promise<string | null> {
     if (response.error) {
       throw new Error(response.error.message);
     }
-    const match = response.data.users.find(
-      (u) => u.email?.toLowerCase() === normalized,
-    );
+    // listUsers() is a discriminated union; TS 6 does not narrow users after error check.
+    const users: User[] = response.data.users;
+    const match = users.find((u) => u.email?.toLowerCase() === normalized);
     if (match) return match.id;
-    if (response.data.users.length < perPage) break;
+    if (users.length < perPage) break;
     page += 1;
   }
   return null;
