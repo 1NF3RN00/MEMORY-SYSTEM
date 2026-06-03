@@ -173,18 +173,24 @@ Run migrations separately (local CLI or CI) with `DIRECT_URL` / direct connectio
 npm run db:migrate:deploy
 ```
 
+**Deploy from CLI:** `npm run deploy:api` (requires `vercel login` and `vercel link` in `apps/api`).
+
 ### Dashboard project
 
 | Variable | Value |
 |----------|--------|
-| `VITE_API_URL` | Public API origin, e.g. `https://your-api.vercel.app` |
-| `VITE_WORKSPACE_ID` | Optional default workspace UUID |
+| `VITE_API_URL` | Public API origin, e.g. `https://memory-system-api.vercel.app` (required in production) |
+| `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` | Supabase Auth (see `apps/dashboard/.env.example`) |
+
+Do **not** set `VITE_WORKSPACE_ID` on Vercel for multi-user production: workspace scope comes from the authenticated session via `/auth/me` (see `docs/API_AUTHENTICATION_ARCHITECTURE.md`). `VITE_WORKSPACE_ID` is only for local/dev shortcuts.
 
 Redeploy the dashboard after changing `VITE_*` variables (they are baked in at build time).
 
+**Deploy from CLI:** `npm run deploy:dashboard` (requires `vercel login` and `vercel link` in `apps/dashboard`).
+
 ---
 
-## Creating a workspace ID for the dashboard
+## Creating a workspace ID for the dashboard (local dev only)
 
 After the API is up:
 
