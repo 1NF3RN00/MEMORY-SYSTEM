@@ -301,3 +301,19 @@ export {
   DEFAULT_THRESHOLD_MODE_TOP_K,
   RETRIEVAL_DIAGNOSTICS_EVENT_TYPES,
 } from "./retrieval-diagnostics-contracts.js";
+export type {
+  AccessRequest,
+  AccessRequestStatus,
+  ApiKeyPermission,
+  ApiKeyRecord,
+  PlatformEventType,
+  WorkspaceBootstrapStatus,
+  WorkspaceMembership,
+  WorkspacePlan,
+  WorkspaceRecord,
+  WorkspaceRole,
+} from "./platform-auth.js";
+export {
+  DEFAULT_API_KEY_PERMISSIONS,
+  PLATFORM_EVENT_TYPES,
+} from "./platform-auth.js";

@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 import { Layout } from "./components/Layout.js";
+import { ProtectedRoute } from "./components/auth/ProtectedRoute.js";
 import { ContextDeliveryPage } from "./pages/ContextDeliveryPage.js";
 import { CompressionTracesPage } from "./pages/CompressionTracesPage.js";
 import { HistorianPage } from "./pages/HistorianPage.js";
@@ -13,8 +14,12 @@ import { RetrievalDiagnosticsPage } from "./pages/RetrievalDiagnosticsPage.js";
 import { RetrievalTracesPage } from "./pages/RetrievalTracesPage.js";
 import { RelationshipMapPage } from "./pages/RelationshipMapPage.js";
 import { HowItWorksPage } from "./pages/HowItWorksPage.js";
+import { AccessLandingPage } from "./pages/AccessLandingPage.js";
+import { PlatformAdminPage } from "./pages/PlatformAdminPage.js";
+import { PlatformApiKeysPage } from "./pages/PlatformApiKeysPage.js";
+import { PlatformSecurityPage } from "./pages/PlatformSecurityPage.js";
 
-export function App() {
+function OperationalRoutes() {
   const location = useLocation();
   const showMetrics =
     !location.pathname.startsWith("/relationship-map") &&
@@ -44,8 +49,27 @@ export function App() {
         <Route path="/context-delivery/:deliveryId" element={<ContextDeliveryPage />} />
         <Route path="/historian" element={<HistorianPage />} />
         <Route path="/historian/:traceId" element={<HistorianPage />} />
+        <Route path="/admin/provisioning" element={<PlatformAdminPage />} />
+        <Route path="/admin/api-keys" element={<PlatformApiKeysPage />} />
+        <Route path="/admin/security" element={<PlatformSecurityPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>
+  );
+}
+
+export function App() {
+  return (
+    <Routes>
+      <Route path="/access" element={<AccessLandingPage />} />
+      <Route
+        path="/*"
+        element={
+          <ProtectedRoute>
+            <OperationalRoutes />
+          </ProtectedRoute>
+        }
+      />
+    </Routes>
   );
 }

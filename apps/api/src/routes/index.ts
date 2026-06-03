@@ -12,9 +12,15 @@ import { registerContextRoutes } from "./context.js";
 import { registerDiagnosticsRoutes } from "./diagnostics.js";
 import { registerSearchRoutes } from "./search.js";
 import { registerWorkspaceRoutes } from "./workspaces.js";
+import { registerAccessRoutes } from "./access.js";
+import { registerAuthRoutes } from "./auth.js";
+import { registerPlatformRoutes } from "./platform.js";
 
 export async function registerRoutes(app: FastifyInstance): Promise<void> {
   await registerHealthRoutes(app);
+  await registerAccessRoutes(app);
+  await registerAuthRoutes(app);
+  await registerPlatformRoutes(app);
   await registerWorkspaceRoutes(app);
   await registerSearchRoutes(app);
   await registerIngestRoutes(app);

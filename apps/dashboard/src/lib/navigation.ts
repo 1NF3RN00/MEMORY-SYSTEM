@@ -53,6 +53,14 @@ export const navGroups: NavGroup[] = [
       { to: "/observability", label: "System Metrics", keywords: ["metrics", "ops"] },
     ],
   },
+  {
+    label: "Platform",
+    items: [
+      { to: "/admin/provisioning", label: "Provisioning", keywords: ["access", "approve", "onboard"] },
+      { to: "/admin/api-keys", label: "API Keys", keywords: ["credentials", "middleware"] },
+      { to: "/admin/security", label: "Security Events", keywords: ["audit", "auth"] },
+    ],
+  },
 ];
 
 export const flatNavItems: NavItem[] = navGroups.flatMap((group) => group.items);

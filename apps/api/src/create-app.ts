@@ -18,8 +18,11 @@ export async function buildApp(deps: ApiDependencies): Promise<FastifyInstance> 
 
   app.addHook("onRequest", async (request, reply) => {
     reply.header("Access-Control-Allow-Origin", "*");
-    reply.header("Access-Control-Allow-Methods", "GET,POST,DELETE,OPTIONS");
-    reply.header("Access-Control-Allow-Headers", "Content-Type, x-trace-id");
+    reply.header("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS");
+    reply.header(
+      "Access-Control-Allow-Headers",
+      "Content-Type, x-trace-id, Authorization, x-api-key",
+    );
     if (request.method === "OPTIONS") {
       return reply.status(204).send();
     }
@@ -35,6 +38,9 @@ export async function buildApp(deps: ApiDependencies): Promise<FastifyInstance> 
   app.decorate("events", deps.events);
   app.decorate("appLogger", deps.logger);
   app.decorate("traceHeader", deps.traceHeader);
+
+  const { registerAuthMiddleware } = await import("./middleware/auth.js");
+  await registerAuthMiddleware(app);
 
   await registerRoutes(app);
 

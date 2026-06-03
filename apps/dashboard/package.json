@@ -10,6 +10,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
+    "@memory-middleware/shared-types": "*",
+    "@supabase/supabase-js": "^2.49.8",
     "@memory-middleware/ingestion": "*",
     "d3-force": "^3.0.0",
     "framer-motion": "^12.40.0",

@@ -24,23 +24,33 @@ datasource db {
 
 
 
-/// Tenant workspace — configuration and isolation boundary (UUID).
+/// Tenant workspace — configuration and isolation boundary (ULID).
 
 model Workspace {
 
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id          String   @id
 
-  name      String
+  name        String
 
-  slug      String   @unique
+  slug        String   @unique
 
-  config    Json     @default("{}")
+  ownerUserId String?  @map("owner_user_id")
 
-  createdAt DateTime @default(now()) @map("created_at")
+  plan        String   @default("alpha")
 
-  updatedAt DateTime @updatedAt @map("updated_at")
+  archived    Boolean  @default(false)
+
+  config      Json     @default("{}")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
 
+
+  memberships          WorkspaceMembership[]
+
+  apiKeys              ApiKey[]
 
   memories             Memory[]
 
@@ -82,7 +92,7 @@ model Memory {
 
   id                   String    @id
 
-  workspaceId          String    @map("workspace_id") @db.Uuid
+  workspaceId          String    @map("workspace_id")
 
   lineageId            String    @map("lineage_id")
 
@@ -206,7 +216,7 @@ model IngestionJob {
 
   id                String    @id
 
-  workspaceId       String    @map("workspace_id") @db.Uuid
+  workspaceId       String    @map("workspace_id")
 
   traceId           String    @map("trace_id")
 
@@ -264,7 +274,7 @@ model IngestionTrace {
 
   id                 String   @id
 
-  workspaceId        String   @map("workspace_id") @db.Uuid
+  workspaceId        String   @map("workspace_id")
 
   traceId            String   @unique @map("trace_id")
 
@@ -306,7 +316,7 @@ model SourceTruth {
 
   id                           String   @id
 
-  workspaceId                  String   @map("workspace_id") @db.Uuid
+  workspaceId                  String   @map("workspace_id")
 
   traceId                      String   @map("trace_id")
 
@@ -342,7 +352,7 @@ model RetrievalOperation {
 
   id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
 
-  workspaceId String    @map("workspace_id") @db.Uuid
+  workspaceId String    @map("workspace_id")
 
   traceId     String    @map("trace_id")
 
@@ -380,7 +390,7 @@ model RetrievalPlan {
 
   planId        String   @unique @map("plan_id")
 
-  workspaceId   String   @map("workspace_id") @db.Uuid
+  workspaceId   String   @map("workspace_id")
 
   query         String
 
@@ -418,7 +428,7 @@ model CompressionOperation {
 
   id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
 
-  workspaceId String    @map("workspace_id") @db.Uuid
+  workspaceId String    @map("workspace_id")
 
   traceId     String    @map("trace_id")
 
@@ -456,7 +466,7 @@ model ContextRenderOperation {
 
   id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
 
-  workspaceId        String    @map("workspace_id") @db.Uuid
+  workspaceId        String    @map("workspace_id")
 
   deliveryId         String    @map("delivery_id")
 
@@ -498,7 +508,7 @@ model MemoryRelationship {
 
   id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
 
-  workspaceId      String   @map("workspace_id") @db.Uuid
+  workspaceId      String   @map("workspace_id")
 
   sourceMemoryId   String   @map("source_memory_id")
 
@@ -548,7 +558,7 @@ model CompressionArtifact {
 
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
 
-  workspaceId String   @map("workspace_id") @db.Uuid
+  workspaceId String   @map("workspace_id")
 
   sourceType  String   @map("source_type")
 
@@ -586,7 +596,7 @@ model ReplaySnapshot {
 
   retrievalTraceId String   @map("retrieval_trace_id")
 
-  workspaceId      String   @map("workspace_id") @db.Uuid
+  workspaceId      String   @map("workspace_id")
 
   integrityHash    String   @map("integrity_hash")
 
@@ -624,7 +634,7 @@ model Snapshot {
 
   id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
 
-  workspaceId  String   @map("workspace_id") @db.Uuid
+  workspaceId  String   @map("workspace_id")
 
   snapshotType String   @map("snapshot_type")
 
@@ -654,7 +664,7 @@ model EventLog {
 
   id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
 
-  workspaceId String?  @map("workspace_id") @db.Uuid
+  workspaceId String?  @map("workspace_id")
 
   eventType   String   @map("event_type")
 
@@ -679,6 +689,170 @@ model EventLog {
   @@index([timestamp])
 
   @@map("event_logs")
+
+}
+
+
+
+/// Infrastructure access request — invite-only onboarding queue.
+
+model AccessRequest {
+
+  id         String    @id @map("request_id")
+
+  email      String
+
+  company    String?
+
+  useCase    String?   @map("use_case")
+
+  note       String?
+
+  status     String    @default("pending")
+
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  reviewedAt DateTime? @map("reviewed_at")
+
+  reviewedBy String?   @map("reviewed_by")
+
+  provisionedWorkspaceId String? @map("provisioned_workspace_id")
+
+
+
+  @@index([email])
+
+  @@index([status])
+
+  @@map("access_requests")
+
+}
+
+
+
+/// Platform user linked to Supabase Auth.
+
+model PlatformUser {
+
+  id             String   @id
+
+  supabaseUserId String   @unique @map("supabase_user_id")
+
+  email          String   @unique
+
+  isPlatformAdmin Boolean @default(false) @map("is_platform_admin")
+
+  createdAt      DateTime @default(now()) @map("created_at")
+
+
+
+  memberships WorkspaceMembership[]
+
+
+
+  @@map("platform_users")
+
+}
+
+
+
+/// Workspace membership — role-based operational access.
+
+model WorkspaceMembership {
+
+  id          String   @id
+
+  workspaceId String   @map("workspace_id")
+
+  userId      String   @map("user_id")
+
+  role        String
+
+  createdAt   DateTime @default(now()) @map("created_at")
+
+
+
+  workspace Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  user      PlatformUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+
+
+  @@unique([workspaceId, userId])
+
+  @@index([userId])
+
+  @@map("workspace_memberships")
+
+}
+
+
+
+/// Middleware API key — hashed at rest, never stored raw.
+
+model ApiKey {
+
+  id          String    @id
+
+  workspaceId String    @map("workspace_id")
+
+  hashedKey   String    @map("hashed_key")
+
+  keyPrefix   String    @map("key_prefix")
+
+  name        String
+
+  permissions Json      @default("[]")
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  lastUsedAt  DateTime? @map("last_used_at")
+
+  revoked     Boolean   @default(false)
+
+
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+
+
+  @@index([workspaceId])
+
+  @@index([keyPrefix])
+
+  @@map("api_keys")
+
+}
+
+
+
+/// Security audit events — auth failures, permission denials, revoked key usage.
+
+model SecurityEvent {
+
+  id          String   @id
+
+  workspaceId String?  @map("workspace_id")
+
+  eventType   String   @map("event_type")
+
+  severity    String   @default("warn")
+
+  actorUserId String?  @map("actor_user_id")
+
+  metadata    Json     @default("{}")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+
+
+
+  @@index([workspaceId])
+
+  @@index([eventType])
+
+  @@index([createdAt])
+
+  @@map("security_events")
 
 }
 

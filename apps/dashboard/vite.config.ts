@@ -26,6 +26,9 @@ export default defineConfig({
       "/calibration": "http://localhost:3000",
       "/augmentation": "http://localhost:3000",
       "/clusters": "http://localhost:3000",
+      "/access": "http://localhost:3000",
+      "/auth": "http://localhost:3000",
+      "/platform": "http://localhost:3000",
     },
   },
 });

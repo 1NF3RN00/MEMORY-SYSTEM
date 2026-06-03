@@ -17,6 +17,11 @@ const envSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
   WORKER_POLL_INTERVAL_MS: z.coerce.number().int().positive().default(2000),
   TEMPORARY_MEMORY_TTL_MS: z.coerce.number().int().positive().default(3600000),
+  SUPABASE_URL: z.string().url().optional(),
+  SUPABASE_SERVICE_ROLE_KEY: z.string().min(1).optional(),
+  SUPABASE_JWT_SECRET: z.string().min(1).optional(),
+  PASSWORD_SETUP_REDIRECT_URL: z.string().url().optional(),
+  PLATFORM_ADMIN_EMAILS: z.string().optional(),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

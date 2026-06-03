@@ -5,7 +5,22 @@ import {
 } from "../lib/workspace-clear.js";
 
 export async function registerWorkspaceRoutes(app: FastifyInstance): Promise<void> {
-  app.get("/workspaces/default", async (_request, reply) => {
+  app.get("/workspaces/default", async (request, reply) => {
+    if (request.auth?.workspaceId) {
+      const workspace = await app.prisma.workspace.findUnique({
+        where: { id: request.auth.workspaceId },
+      });
+      if (!workspace) {
+        return reply.status(404).send({ error: "Workspace not found" });
+      }
+      return {
+        id: workspace.id,
+        workspaceId: workspace.id,
+        name: workspace.name,
+        slug: workspace.slug,
+      };
+    }
+
     const workspace = await app.prisma.workspace.findUnique({
       where: { slug: "default" },
     });
@@ -18,6 +33,7 @@ export async function registerWorkspaceRoutes(app: FastifyInstance): Promise<voi
 
     return {
       id: workspace.id,
+      workspaceId: workspace.id,
       name: workspace.name,
       slug: workspace.slug,
     };
