@@ -15,7 +15,11 @@ import { PrismaClient } from "@prisma/client";
 import { createLogger, createLoggingEventEmitter } from "@memory-middleware/observability";
 import { newUlid } from "@memory-middleware/shared-types";
 import { createPrismaEventSink } from "../src/lib/event-sink.js";
-import { isSupabaseConfigured } from "../src/lib/supabase-admin.js";
+import {
+  isSupabaseConfigured,
+  passwordSetupRedirectUrl,
+  sendPasswordSetupEmail,
+} from "../src/lib/supabase-admin.js";
 import { provisionWorkspaceForUser } from "../src/lib/workspace-provision.js";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
@@ -75,6 +79,13 @@ async function main(): Promise<void> {
     } else {
       console.log("  Warning: no workspace membership — run bootstrap with a fresh email or approve via UI.");
     }
+    await sendPasswordSetupEmail(email);
+    console.log("  Password-setup email sent (check inbox and spam).");
+    if (!passwordSetupRedirectUrl()) {
+      console.log(
+        "  Warning: PASSWORD_SETUP_REDIRECT_URL is not set — email may redirect to the wrong URL.",
+      );
+    }
     await prisma.$disconnect();
     return;
   }
@@ -109,9 +120,10 @@ async function main(): Promise<void> {
   console.log(`  API key (once): ${result.rawApiKey}`);
   console.log("\nNext steps:");
   console.log("  1. Check your inbox for Supabase password-setup email (also spam)");
+  console.log("     Or if rate-limited: npm run platform:set-password -- your@email.com 'YourPassword'");
   console.log("  2. Set password, then log in at /access");
   console.log("  3. Open /admin/provisioning to approve other access requests");
-  if (!process.env.PASSWORD_SETUP_REDIRECT_URL) {
+  if (!passwordSetupRedirectUrl()) {
     console.log("\n  Warning: PASSWORD_SETUP_REDIRECT_URL is not set — password email may not redirect correctly.");
   }
 

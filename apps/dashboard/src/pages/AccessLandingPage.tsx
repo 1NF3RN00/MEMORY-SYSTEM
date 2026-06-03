@@ -4,20 +4,50 @@ import { motion, AnimatePresence } from "framer-motion";
 import { OperationalBackdrop } from "../components/auth/OperationalBackdrop.js";
 import { useAuth } from "../context/AuthContext.js";
 import { apiPost } from "../lib/api.js";
-import { isSupabaseConfigured } from "../lib/supabase.js";
+import { isSupabaseConfigured, supabase } from "../lib/supabase.js";
 
 type Panel = "login" | "request";
 
+function parseAuthHashError(): string | null {
+  const hash = window.location.hash.replace(/^#/, "");
+  if (!hash) return null;
+  const params = new URLSearchParams(hash);
+  if (!params.get("error") && !params.get("error_code")) return null;
+  return (
+    params.get("error_description")?.replace(/\+/g, " ") ??
+    "Email link is invalid or has expired."
+  );
+}
+
+function clearAuthHash(): void {
+  window.history.replaceState(null, "", window.location.pathname + window.location.search);
+}
+
 export function AccessLandingPage() {
   const { signIn, loading, workspace, session } = useAuth();
+  const [recoveryMode, setRecoveryMode] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [hashError, setHashError] = useState<string | null>(() => parseAuthHashError());
 
   useEffect(() => {
-    if (!loading && (workspace || session)) {
-      // authenticated — parent route will redirect via Navigate below
-    }
-  }, [loading, workspace, session]);
+    if (hashError) clearAuthHash();
+  }, [hashError]);
 
-  if (!loading && (workspace || session)) {
+  useEffect(() => {
+    if (!supabase) return;
+    if (window.location.hash.includes("type=recovery")) {
+      setRecoveryMode(true);
+    }
+    const { data: listener } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "PASSWORD_RECOVERY") setRecoveryMode(true);
+    });
+    return () => listener.subscription.unsubscribe();
+  }, []);
+
+  const readyToEnter = !loading && (workspace || session) && !recoveryMode;
+
+  if (readyToEnter) {
     return <Navigate to="/" replace />;
   }
   const [panel, setPanel] = useState<Panel>("login");
@@ -29,6 +59,38 @@ export function AccessLandingPage() {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  async function handleSetPassword(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      if (!supabase) {
+        setError("Supabase auth is not configured.");
+        return;
+      }
+      if (newPassword.length < 8) {
+        setError("Password must be at least 8 characters.");
+        return;
+      }
+      if (newPassword !== confirmPassword) {
+        setError("Passwords do not match.");
+        return;
+      }
+      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+      if (updateError) throw updateError;
+      setRecoveryMode(false);
+      setNewPassword("");
+      setConfirmPassword("");
+      clearAuthHash();
+      setMessage("Password saved. Sign in with your email and new password.");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to set password");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -110,12 +172,74 @@ export function AccessLandingPage() {
           ))}
         </div>
 
+        {hashError && (
+          <p className="mb-6 rounded-md border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-4 py-3 text-sm text-[var(--color-danger)]">
+            {hashError} Request a new setup email:{" "}
+            <code className="text-[var(--color-accent)]">
+              npm run platform:bootstrap -- your@email.com
+            </code>{" "}
+            (with dashboard running at the URL in PASSWORD_SETUP_REDIRECT_URL).
+          </p>
+        )}
+
         <motion.div
           layout
           className="overflow-hidden rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-0)]/90 shadow-[var(--shadow-elevated)] backdrop-blur-md"
         >
           <AnimatePresence mode="wait">
-            {panel === "login" ? (
+            {recoveryMode ? (
+              <motion.form
+                key="recovery"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                onSubmit={handleSetPassword}
+                className="p-8 md:p-10"
+              >
+                <h2 className="text-lg font-medium">Set Your Password</h2>
+                <p className="mt-2 max-w-xl text-sm text-[var(--color-text-secondary)]">
+                  Complete setup from your invite email. Choose a password, then sign in on the login
+                  tab.
+                </p>
+                <div className="mt-6 space-y-4 max-w-md">
+                  <label className="block">
+                    <span className="font-mono text-[0.625rem] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
+                      New Password
+                    </span>
+                    <input
+                      type="password"
+                      required
+                      minLength={8}
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="mt-1.5 w-full rounded-md border border-[var(--color-border-default)] bg-[var(--color-surface-1)] px-3 py-2.5 text-sm outline-none focus:border-[var(--color-accent)]/60"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="font-mono text-[0.625rem] uppercase tracking-[0.1em] text-[var(--color-text-tertiary)]">
+                      Confirm Password
+                    </span>
+                    <input
+                      type="password"
+                      required
+                      minLength={8}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="mt-1.5 w-full rounded-md border border-[var(--color-border-default)] bg-[var(--color-surface-1)] px-3 py-2.5 text-sm outline-none focus:border-[var(--color-accent)]/60"
+                    />
+                  </label>
+                </div>
+                {error && <p className="mt-4 text-sm text-[var(--color-danger)]">{error}</p>}
+                {message && <p className="mt-4 text-sm text-[var(--color-success)]">{message}</p>}
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="mt-6 rounded-md border border-[var(--color-accent)]/40 bg-[var(--color-accent-soft)] px-6 py-2.5 font-mono text-xs uppercase tracking-[0.12em] text-[var(--color-accent)] transition hover:bg-[var(--color-accent)]/20 disabled:opacity-50"
+                >
+                  {busy ? "Saving…" : "Save Password"}
+                </button>
+              </motion.form>
+            ) : panel === "login" ? (
               <motion.form
                 key="login"
                 initial={{ opacity: 0, y: 8 }}

@@ -26,7 +26,6 @@ declare module "fastify" {
 const PUBLIC_PREFIXES = [
   "/health",
   "/access/request",
-  "/auth/",
 ];
 
 const SESSION_ONLY_PREFIXES = [
@@ -185,9 +184,14 @@ export async function registerAuthMiddleware(app: import("fastify").FastifyInsta
     }
 
     if (!auth) {
+      const reason = token
+        ? isSupabaseConfigured()
+          ? "invalid_token_or_no_platform_membership"
+          : "supabase_not_configured"
+        : "missing_credentials";
       await recordSecurityEvent(app.prisma, {
         eventType: "auth_failure",
-        metadata: { path, reason: "missing_or_invalid_credentials" },
+        metadata: { path, reason },
       });
       await emitPlatformEvent(app.events, {
         eventType: PLATFORM_EVENT_TYPES.AUTH_FAILURE,

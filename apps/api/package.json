@@ -13,7 +13,8 @@
     "db:migrate": "node scripts/with-env.mjs migrate dev",
     "db:migrate:deploy": "node scripts/with-env.mjs migrate deploy",
     "db:seed": "node scripts/with-env.mjs db seed",
-    "platform:bootstrap": "tsx scripts/bootstrap-platform-admin.ts"
+    "platform:bootstrap": "tsx scripts/bootstrap-platform-admin.ts",
+    "platform:set-password": "tsx scripts/set-operator-password.ts"
   },
   "dependencies": {
     "@memory-middleware/compression": "*",

@@ -1,10 +1,9 @@
 import { Navigate, useLocation } from "react-router-dom";
 import type { ReactNode } from "react";
 import { useAuth } from "../../context/AuthContext.js";
-import { isSupabaseConfigured } from "../../lib/supabase.js";
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
-  const { loading, session, workspace } = useAuth();
+  const { loading, workspace } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -15,7 +14,8 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
     );
   }
 
-  const authenticated = Boolean(workspace) || (isSupabaseConfigured && Boolean(session));
+  // Session alone is not enough — API must resolve platform user + workspace via /auth/me.
+  const authenticated = Boolean(workspace);
 
   if (!authenticated) {
     return <Navigate to="/access" state={{ from: location.pathname }} replace />;

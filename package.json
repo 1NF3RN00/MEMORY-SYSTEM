@@ -22,6 +22,7 @@
     "db:migrate:deploy": "npm run db:migrate:deploy -w @memory-middleware/api",
     "db:seed": "npm run db:seed -w @memory-middleware/api",
     "platform:bootstrap": "npm run platform:bootstrap -w @memory-middleware/api",
+    "platform:set-password": "npm run platform:set-password -w @memory-middleware/api",
     "bootstrap": "npm run platform:bootstrap -w @memory-middleware/api",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "deploy:dashboard": "vercel deploy --prod --yes --cwd apps/dashboard",

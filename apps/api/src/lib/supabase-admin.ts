@@ -20,9 +20,17 @@ export function isSupabaseConfigured(): boolean {
   return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
-async function sendPasswordSetupEmail(email: string): Promise<void> {
+export function passwordSetupRedirectUrl(): string | undefined {
+  return (
+    process.env.PASSWORD_SETUP_REDIRECT_URL ??
+    process.env.SUPABASE_SETUP_REDIRECT_URL
+  );
+}
+
+/** Sends Supabase recovery email so the user can set their password (idempotent). */
+export async function sendPasswordSetupEmail(email: string): Promise<void> {
   const supabase = getSupabaseAdmin();
-  const redirectTo = process.env.PASSWORD_SETUP_REDIRECT_URL;
+  const redirectTo = passwordSetupRedirectUrl();
   const { error: resetError } = await supabase.auth.resetPasswordForEmail(
     email,
     redirectTo ? { redirectTo } : {},
@@ -50,6 +58,18 @@ async function findAuthUserByEmail(email: string): Promise<string | null> {
     page += 1;
   }
   return null;
+}
+
+/** Sets password directly (no email). Requires service role. */
+export async function setAuthUserPassword(email: string, password: string): Promise<string> {
+  const userId = await findAuthUserByEmail(email);
+  if (!userId) {
+    throw new Error(`No Supabase auth user found for ${email}`);
+  }
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase.auth.admin.updateUserById(userId, { password });
+  if (error) throw new Error(error.message);
+  return userId;
 }
 
 /** Creates Supabase auth user if needed, then sends password-setup email. */

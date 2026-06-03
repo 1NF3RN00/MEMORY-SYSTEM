@@ -49,7 +49,8 @@ async function fetchProfile(accessToken: string): Promise<{
       workspace: AuthWorkspace;
     }>("/auth/me", accessToken);
     return data;
-  } catch {
+  } catch (err) {
+    console.error("[auth] /auth/me failed:", err instanceof Error ? err.message : err);
     return null;
   }
 }
