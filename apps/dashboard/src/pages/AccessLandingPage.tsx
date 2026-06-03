@@ -257,6 +257,11 @@ export function AccessLandingPage() {
 
       <footer className="relative z-10 border-t border-[var(--color-border-subtle)] px-8 py-4 font-mono text-[0.625rem] text-[var(--color-text-muted)]">
         WORKSPACE ISOLATION ENFORCED · API KEYS HASHED AT REST · NO ANONYMOUS MIDDLEWARE ACCESS
+        <span className="mt-2 block text-[var(--color-text-tertiary)]">
+          First operator? Run{" "}
+          <code className="text-[var(--color-accent)]">npm run platform:bootstrap -- your@email.com</code>{" "}
+          from the repo (see .env.example), then use the password email to log in.
+        </span>
       </footer>
     </div>
   );

@@ -34,14 +34,6 @@ export function PlatformAdminPage() {
     void loadQueue();
   }, [loadQueue]);
 
-  if (!user?.isPlatformAdmin) {
-    return (
-      <div className="p-8 text-sm text-[var(--color-danger)]">
-        Platform administrator access required.
-      </div>
-    );
-  }
-
   async function approve(requestId: string) {
     setError(null);
     try {
@@ -69,8 +61,14 @@ export function PlatformAdminPage() {
     <div className="flex flex-col gap-6 p-6">
       <PageHeader
         title="Operational Provisioning"
-        lede="Access request queue and controlled workspace initialization"
+        lede="Access request queue and controlled workspace initialization. Set PLATFORM_ADMIN_EMAILS on the API after the first approval."
       />
+
+      {!user?.isPlatformAdmin && !loading && !error && requests.length > 0 && (
+        <p className="text-sm text-[var(--color-warning)]">
+          Bootstrap mode: no platform admin exists yet — you can approve pending requests.
+        </p>
+      )}
 
       {workspace && (
         <Panel title="Bootstrap Status">

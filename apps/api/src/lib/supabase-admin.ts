@@ -20,7 +20,42 @@ export function isSupabaseConfigured(): boolean {
   return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
+async function sendPasswordSetupEmail(email: string): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  const redirectTo = process.env.PASSWORD_SETUP_REDIRECT_URL;
+  const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+    email,
+    redirectTo ? { redirectTo } : {},
+  );
+  if (resetError) {
+    throw new Error(resetError.message);
+  }
+}
+
+async function findAuthUserByEmail(email: string): Promise<string | null> {
+  const supabase = getSupabaseAdmin();
+  const normalized = email.toLowerCase();
+  let page = 1;
+  const perPage = 200;
+  while (page <= 20) {
+    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
+    if (error) throw new Error(error.message);
+    const match = data.users.find((u) => u.email?.toLowerCase() === normalized);
+    if (match) return match.id;
+    if (data.users.length < perPage) break;
+    page += 1;
+  }
+  return null;
+}
+
+/** Creates Supabase auth user if needed, then sends password-setup email. */
 export async function createAuthUserAndInvite(email: string): Promise<{ supabaseUserId: string }> {
+  const existingId = await findAuthUserByEmail(email);
+  if (existingId) {
+    await sendPasswordSetupEmail(email);
+    return { supabaseUserId: existingId };
+  }
+
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase.auth.admin.createUser({
     email,
@@ -30,15 +65,7 @@ export async function createAuthUserAndInvite(email: string): Promise<{ supabase
     throw new Error(error?.message ?? "Failed to create Supabase auth user");
   }
 
-  const redirectTo = process.env.PASSWORD_SETUP_REDIRECT_URL;
-  const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-    email,
-    redirectTo ? { redirectTo } : {},
-  );
-  if (resetError) {
-    throw new Error(resetError.message);
-  }
-
+  await sendPasswordSetupEmail(email);
   return { supabaseUserId: data.user.id };
 }
 

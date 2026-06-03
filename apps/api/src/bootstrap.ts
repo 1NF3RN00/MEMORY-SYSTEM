@@ -2,6 +2,7 @@ import type { FastifyInstance } from "fastify";
 import type { AppEnv } from "./config/env.js";
 import { loadEnv } from "./config/env.js";
 import { buildApp } from "./create-app.js";
+import { maybeAutoBootstrapPlatformAdmin } from "./lib/auto-bootstrap-platform.js";
 import { connectDatabase } from "./lib/database.js";
 import { createPrismaEventSink } from "./lib/event-sink.js";
 import {
@@ -33,6 +34,8 @@ export async function createApiRuntime(): Promise<ApiRuntime> {
     logger,
     sink: createPrismaEventSink(prisma),
   });
+
+  await maybeAutoBootstrapPlatformAdmin(prisma, events, logger);
 
   const app = await buildApp({
     logger,

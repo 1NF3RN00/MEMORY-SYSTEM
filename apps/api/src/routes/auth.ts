@@ -23,6 +23,12 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(404).send({ error: "No workspace membership found" });
     }
 
+    const adminCount = await app.prisma.platformUser.count({
+      where: { isPlatformAdmin: true },
+    });
+    const isPlatformAdmin =
+      (request.auth.isPlatformAdmin ?? false) || adminCount === 0;
+
     await emitPlatformEvent(app.events, {
       eventType: PLATFORM_EVENT_TYPES.AUTH_SUCCESS,
       traceId: request.traceId,
@@ -34,7 +40,7 @@ export async function registerAuthRoutes(app: FastifyInstance): Promise<void> {
       user: {
         userId: request.auth.userId,
         email: request.auth.email,
-        isPlatformAdmin: request.auth.isPlatformAdmin ?? false,
+        isPlatformAdmin,
       },
       workspace: {
         workspaceId: primary.workspace.id,
