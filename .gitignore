@@ -15,3 +15,8 @@ apps/api/api/**/*.js
 apps/api/api/**/*.js.map
 apps/api/api/**/*.d.ts
 apps/api/api/**/*.d.ts.map
+.vercel
+.env*
+
+# Sentry Config File
+.env.sentry-build-plugin
