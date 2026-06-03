@@ -1,3 +1,4 @@
+import type { IncomingMessage, ServerResponse } from "node:http";
 import Fastify from "fastify";
 import { createApiRuntime, resolveListenPort } from "./bootstrap.js";
 import { disconnectDatabase } from "./lib/database.js";
@@ -5,25 +6,27 @@ import { disconnectDatabase } from "./lib/database.js";
 // Referenced so the entry file statically imports Fastify (required by Vercel).
 void Fastify;
 
-async function main(): Promise<void> {
-  const { env, logger, events, app } = await createApiRuntime();
+type ApiRuntime = Awaited<ReturnType<typeof createApiRuntime>>;
 
-  logger.info(
-    {
-      host: env.API_HOST,
-      port: resolveListenPort(env),
-    },
-    "api.startup",
-  );
+let runtimePromise: Promise<ApiRuntime> | null = null;
+let startupEventEmitted = false;
 
+function loadRuntime(): Promise<ApiRuntime> {
+  runtimePromise ??= createApiRuntime();
+  return runtimePromise;
+}
+
+async function emitStartupOnce(runtime: ApiRuntime): Promise<void> {
+  if (startupEventEmitted) return;
+  startupEventEmitted = true;
   try {
-    await events.emit({
+    await runtime.events.emit({
       event_type: "system.startup",
       trace_id: "system",
       metadata: { service: "api" },
     });
   } catch (error) {
-    logger.warn(
+    runtime.logger.warn(
       {
         err: error,
         hint: "Run npm run db:migrate:deploy against this database (see docs/ENVIRONMENT.md)",
@@ -31,24 +34,53 @@ async function main(): Promise<void> {
       "api.startup_event_skipped",
     );
   }
+}
 
-  await app.listen({
-    host: env.API_HOST,
-    port: resolveListenPort(env),
+/** Vercel / serverless entry — routes must be registered before ready(). */
+export default async function handler(
+  req: IncomingMessage,
+  res: ServerResponse,
+): Promise<void> {
+  const runtime = await loadRuntime();
+  await emitStartupOnce(runtime);
+  await runtime.app.ready();
+  runtime.app.server.emit("request", req, res);
+}
+
+function isLocalServer(): boolean {
+  return !process.env.VERCEL && !process.env.AWS_LAMBDA_FUNCTION_NAME;
+}
+
+async function main(): Promise<void> {
+  const runtime = await loadRuntime();
+
+  runtime.logger.info(
+    {
+      host: runtime.env.API_HOST,
+      port: resolveListenPort(runtime.env),
+    },
+    "api.startup",
+  );
+
+  await emitStartupOnce(runtime);
+
+  await runtime.app.listen({
+    host: runtime.env.API_HOST,
+    port: resolveListenPort(runtime.env),
   });
 
-  logger.info(
+  runtime.logger.info(
     {
-      host: env.API_HOST,
-      port: resolveListenPort(env),
+      host: runtime.env.API_HOST,
+      port: resolveListenPort(runtime.env),
     },
     "api.listening",
   );
 
   const shutdown = async (signal: string) => {
-    logger.info({ signal }, "api.shutdown");
-    await app.close();
-    await disconnectDatabase(logger);
+    runtime.logger.info({ signal }, "api.shutdown");
+    await runtime.app.close();
+    await disconnectDatabase(runtime.logger);
     process.exit(0);
   };
 
@@ -56,7 +88,9 @@ async function main(): Promise<void> {
   process.on("SIGTERM", () => void shutdown("SIGTERM"));
 }
 
-main().catch((error: unknown) => {
-  console.error("api.startup_failed", error);
-  process.exit(1);
-});
+if (isLocalServer()) {
+  main().catch((error: unknown) => {
+    console.error("api.startup_failed", error);
+    process.exit(1);
+  });
+}

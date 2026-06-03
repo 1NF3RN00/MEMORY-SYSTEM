@@ -38,11 +38,15 @@ async function findAuthUserByEmail(email: string): Promise<string | null> {
   let page = 1;
   const perPage = 200;
   while (page <= 20) {
-    const { data, error } = await supabase.auth.admin.listUsers({ page, perPage });
-    if (error) throw new Error(error.message);
-    const match = data.users.find((u) => u.email?.toLowerCase() === normalized);
+    const response = await supabase.auth.admin.listUsers({ page, perPage });
+    if (response.error) {
+      throw new Error(response.error.message);
+    }
+    const match = response.data.users.find(
+      (u) => u.email?.toLowerCase() === normalized,
+    );
     if (match) return match.id;
-    if (data.users.length < perPage) break;
+    if (response.data.users.length < perPage) break;
     page += 1;
   }
   return null;
