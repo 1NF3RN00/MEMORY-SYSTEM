@@ -3,29 +3,53 @@
  * Set API_PROXY_TARGET on the dashboard Vercel project (your API origin, no trailing slash).
  * Optionally set VITE_API_URL to the same value so the client can call the API directly.
  */
-const API_PREFIXES = [
+/** Static matcher paths — Vercel requires a literal array (no .flatMap()). */
+const API_MATCHER = [
+  "/access/:path*",
   "/access",
+  "/auth/:path*",
   "/auth",
+  "/platform/:path*",
   "/platform",
+  "/workspaces/:path*",
   "/workspaces",
+  "/health/:path*",
   "/health",
+  "/ingest/:path*",
   "/ingest",
+  "/ingestion/:path*",
   "/ingestion",
+  "/memory/:path*",
   "/memory",
+  "/retrieve/:path*",
   "/retrieve",
+  "/retrieval/:path*",
   "/retrieval",
+  "/compress/:path*",
   "/compress",
+  "/compression/:path*",
   "/compression",
+  "/context/:path*",
   "/context",
+  "/relationships/:path*",
   "/relationships",
+  "/history/:path*",
   "/history",
+  "/replay/:path*",
   "/replay",
+  "/historian/:path*",
   "/historian",
+  "/diagnostics/:path*",
   "/diagnostics",
+  "/calibration/:path*",
   "/calibration",
+  "/augmentation/:path*",
   "/augmentation",
+  "/clusters/:path*",
   "/clusters",
+  "/events/:path*",
   "/events",
+  "/search/:path*",
   "/search",
 ];
 
@@ -67,5 +91,5 @@ export default async function middleware(request: Request): Promise<Response> {
 }
 
 export const config = {
-  matcher: API_PREFIXES.flatMap((p) => [`${p}/:path*`, p]),
+  matcher: API_MATCHER,
 };
