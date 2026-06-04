@@ -20,12 +20,9 @@ export function isSupabaseConfigured(): boolean {
   return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
-export function passwordSetupRedirectUrl(): string | undefined {
-  return (
-    process.env.PASSWORD_SETUP_REDIRECT_URL ??
-    process.env.SUPABASE_SETUP_REDIRECT_URL
-  );
-}
+import { passwordSetupRedirectUrl } from "./platform-admin-env.js";
+
+export { passwordSetupRedirectUrl };
 
 /** Sends Supabase recovery email so the user can set their password (idempotent). */
 export async function sendPasswordSetupEmail(email: string): Promise<void> {

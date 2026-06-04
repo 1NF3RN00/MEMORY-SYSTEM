@@ -1,16 +1,9 @@
 import type { PrismaClient } from "@prisma/client";
 import type { EventEmitter, Logger } from "@memory-middleware/observability";
 import { newUlid } from "@memory-middleware/shared-types";
+import { primaryPlatformAdminEmail } from "./platform-admin-env.js";
 import { isSupabaseConfigured } from "./supabase-admin.js";
 import { provisionWorkspaceForUser } from "./workspace-provision.js";
-
-function primaryAdminEmail(): string | null {
-  const email = (process.env.PLATFORM_ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .find(Boolean);
-  return email ?? null;
-}
 
 /**
  * When PLATFORM_ADMIN_EMAILS is set and no platform admin exists yet,
@@ -24,7 +17,7 @@ export async function maybeAutoBootstrapPlatformAdmin(
 ): Promise<void> {
   if (process.env.AUTO_BOOTSTRAP_PLATFORM_ADMIN === "false") return;
 
-  const email = primaryAdminEmail();
+  const email = primaryPlatformAdminEmail();
   if (!email) return;
   if (!isSupabaseConfigured()) {
     logger.warn(

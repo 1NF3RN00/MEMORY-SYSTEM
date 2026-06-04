@@ -24,7 +24,7 @@ function clearAuthHash(): void {
 }
 
 export function AccessLandingPage() {
-  const { signIn, loading, workspace, session, refreshProfile } = useAuth();
+  const { signIn, loading, workspace, session, refreshProfile, profileError } = useAuth();
   const [recoveryMode, setRecoveryMode] = useState(false);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -57,9 +57,10 @@ export function AccessLandingPage() {
   useEffect(() => {
     if (loading || workspace || recoveryMode || !session) return;
     setError(
-      "Signed in, but the API did not return a workspace. Restart the API (auth fix) and try again, or run platform:bootstrap for your email.",
+      profileError ??
+        "Signed in, but the API did not return a workspace. Run npm run db:migrate:deploy on the API database, redeploy the API, or run platform:bootstrap for your email.",
     );
-  }, [loading, workspace, session, recoveryMode]);
+  }, [loading, workspace, session, recoveryMode, profileError]);
 
   const readyToEnter = !loading && Boolean(workspace) && !recoveryMode;
 
@@ -109,10 +110,11 @@ export function AccessLandingPage() {
         return;
       }
       await signIn(email.trim(), password);
-      const profileLoaded = await refreshProfile();
-      if (!profileLoaded) {
+      const profile = await refreshProfile();
+      if (!profile.ok) {
         setError(
-          "Signed in, but workspace profile failed to load. Ensure the API is running and redeployed with the latest /auth/me fix.",
+          profile.error ??
+            "Signed in, but workspace profile failed to load. Ensure the API is running, migrations are applied (db:migrate:deploy), and VITE_API_URL points to the API in production.",
         );
       }
     } catch (err) {

@@ -8,6 +8,7 @@ import {
 import { PLATFORM_EVENT_TYPES } from "@memory-middleware/shared-types";
 import { parsePermissions, verifyApiKey } from "../lib/api-keys.js";
 import { emitPlatformEvent, recordSecurityEvent } from "../lib/platform-events.js";
+import { platformAdminEmails } from "../lib/platform-admin-env.js";
 import { verifySupabaseJwt, isSupabaseConfigured } from "../lib/supabase-admin.js";
 
 export interface AuthContext {
@@ -110,15 +111,33 @@ async function resolveSessionAuth(
   const claims = await verifySupabaseJwt(token);
   if (!claims) return null;
 
+  const membershipInclude = {
+    memberships: { orderBy: { createdAt: "asc" as const }, take: 1 },
+  };
+
   let platformUser = await request.server.prisma.platformUser.findUnique({
     where: { supabaseUserId: claims.sub },
-    include: {
-      memberships: { orderBy: { createdAt: "asc" }, take: 1 },
-    },
+    include: membershipInclude,
   });
+
+  const claimEmail = claims.email?.toLowerCase();
+  if (!platformUser && claimEmail) {
+    const byEmail = await request.server.prisma.platformUser.findUnique({
+      where: { email: claimEmail },
+      include: membershipInclude,
+    });
+    if (byEmail) {
+      platformUser = await request.server.prisma.platformUser.update({
+        where: { id: byEmail.id },
+        data: { supabaseUserId: claims.sub },
+        include: membershipInclude,
+      });
+    }
+  }
+
   if (!platformUser || platformUser.memberships.length === 0) return null;
 
-  const adminEmails = syncPlatformAdminEmails(platformUser.email);
+  const adminEmails = platformAdminEmails();
   if (adminEmails.includes(platformUser.email.toLowerCase()) && !platformUser.isPlatformAdmin) {
     platformUser = await request.server.prisma.platformUser.update({
       where: { id: platformUser.id },
@@ -180,13 +199,6 @@ async function attachDevelopmentBypass(
     operationalRole: "middleware_admin",
   };
   return true;
-}
-
-function syncPlatformAdminEmails(email: string): string[] {
-  return (process.env.PLATFORM_ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
 }
 
 export async function registerAuthMiddleware(app: import("fastify").FastifyInstance): Promise<void> {
