@@ -1,5 +1,10 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import type { ApiKeyPermission } from "@memory-middleware/shared-types";
+import type { ApiKeyPermission, OperationalRole } from "@memory-middleware/shared-types";
+import {
+  domainEngineWriteRequiresSession,
+  resolveOperationalRoleForApiKey,
+  resolveOperationalRoleFromMembership,
+} from "./operational-rbac.js";
 import { PLATFORM_EVENT_TYPES } from "@memory-middleware/shared-types";
 import { parsePermissions, verifyApiKey } from "../lib/api-keys.js";
 import { emitPlatformEvent, recordSecurityEvent } from "../lib/platform-events.js";
@@ -16,6 +21,9 @@ export interface AuthContext {
   apiKeyId?: string;
   isPlatformAdmin?: boolean;
   isMiddlewareAdmin?: boolean;
+  operationalRole: OperationalRole;
+  agencyId?: string;
+  platformId?: string;
 }
 
 declare module "fastify" {
@@ -82,11 +90,13 @@ async function resolveApiKeyAuth(
       where: { id: candidate.id },
       data: { lastUsedAt: new Date() },
     });
+    const permissions = parsePermissions(candidate.permissions);
     return {
       kind: "api_key",
       workspaceId: candidate.workspaceId,
-      permissions: parsePermissions(candidate.permissions),
+      permissions,
       apiKeyId: candidate.id,
+      operationalRole: resolveOperationalRoleForApiKey(permissions),
     };
   }
   return null;
@@ -120,6 +130,14 @@ async function resolveSessionAuth(
   }
 
   const membership = platformUser.memberships[0]!;
+  const operationalRole = resolveOperationalRoleFromMembership({
+    isMiddlewareAdmin: platformUser.isMiddlewareAdmin || platformUser.isPlatformAdmin,
+    isPlatformAdmin: platformUser.isPlatformAdmin,
+    agencyId: platformUser.agencyId,
+    platformId: platformUser.platformId,
+    membershipRole: membership.role,
+    membershipOperationalRole: membership.operationalRole,
+  });
   const ctx: AuthContext = {
     kind: "session",
     userId: platformUser.id,
@@ -129,6 +147,9 @@ async function resolveSessionAuth(
     permissions: ["ingest", "retrieve", "replay", "diagnostics", "relationships", "admin"],
     isPlatformAdmin: platformUser.isPlatformAdmin,
     isMiddlewareAdmin: platformUser.isMiddlewareAdmin || platformUser.isPlatformAdmin,
+    operationalRole,
+    ...(platformUser.agencyId ? { agencyId: platformUser.agencyId } : {}),
+    ...(platformUser.platformId ? { platformId: platformUser.platformId } : {}),
   };
   if (membership.role === "owner" || membership.role === "admin" || membership.role === "member") {
     ctx.role = membership.role;
@@ -155,6 +176,8 @@ async function attachDevelopmentBypass(
     workspaceId: workspace.id,
     permissions: ["ingest", "retrieve", "replay", "diagnostics", "relationships", "admin"],
     isPlatformAdmin: true,
+    isMiddlewareAdmin: true,
+    operationalRole: "middleware_admin",
   };
   return true;
 }
@@ -206,6 +229,12 @@ export async function registerAuthMiddleware(app: import("fastify").FastifyInsta
 
     if (requiresSessionOnly(path) && auth.kind !== "session") {
       return reply.status(403).send({ error: "Session authentication required" });
+    }
+
+    if (domainEngineWriteRequiresSession(request.method, path) && auth.kind !== "session") {
+      return reply.status(403).send({
+        error: "Session authentication required for domain engine write operations",
+      });
     }
 
     const requestedWorkspace = queryWorkspaceId(request);

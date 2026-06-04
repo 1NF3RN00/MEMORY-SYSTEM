@@ -12,45 +12,11 @@ import type { PackageManifest } from "@memory-middleware/shared-types";
 import { newUlid } from "@memory-middleware/shared-types";
 import { createPrismaDomainEngineStore } from "../lib/domain-engine/index.js";
 import { sendDomainEngineError } from "../lib/domain-engine-route-errors.js";
-import { enforceWorkspaceScope, hasPermission, type AuthContext } from "../middleware/auth.js";
-
-function requireWorkspaceAdmin(auth: AuthContext | undefined, reply: import("fastify").FastifyReply): auth is AuthContext {
-  if (!auth) {
-    reply.status(401).send({ error: "Authentication required" });
-    return false;
-  }
-  if (!hasPermission(auth, "admin")) {
-    reply.status(403).send({ error: "Workspace admin permission required" });
-    return false;
-  }
-  return true;
-}
-
-function requireMiddlewareAdmin(
-  auth: AuthContext | undefined,
-  reply: import("fastify").FastifyReply,
-): auth is AuthContext {
-  if (!auth) {
-    reply.status(401).send({ error: "Authentication required" });
-    return false;
-  }
-  if (!auth.isMiddlewareAdmin) {
-    reply.status(403).send({ error: "Middleware admin required" });
-    return false;
-  }
-  return true;
-}
-
-function requireClonePermission(
-  auth: AuthContext,
-  targetWorkspaceId: string,
-  reply: import("fastify").FastifyReply,
-): boolean {
-  if (auth.isMiddlewareAdmin || auth.isPlatformAdmin) return true;
-  if (auth.workspaceId === targetWorkspaceId && hasPermission(auth, "admin")) return true;
-  reply.status(403).send({ error: "Platform admin required to clone across workspaces" });
-  return false;
-}
+import { enforceWorkspaceScope } from "../middleware/auth.js";
+import {
+  enforceOperationalPermission,
+  workspaceWithinOperationalScope,
+} from "../middleware/operational-rbac.js";
 
 function packageDeps(app: FastifyInstance, traceId: string) {
   return {
@@ -84,10 +50,12 @@ export async function registerPackageRoutes(app: FastifyInstance): Promise<void>
   app.get<{ Querystring: { workspaceId: string; includeArchived?: string } }>(
     "/packages/installed",
     async (request, reply) => {
-      if (!requireWorkspaceAdmin(request.auth, reply)) return;
       const workspaceId = request.query.workspaceId;
       if (!workspaceId) {
         return reply.status(400).send({ error: "workspaceId query parameter required" });
+      }
+      if (!(await enforceOperationalPermission(request, reply, "package_workspace", { workspaceId }))) {
+        return;
       }
       if (!enforceWorkspaceScope(request, reply, workspaceId)) return;
 
@@ -99,11 +67,13 @@ export async function registerPackageRoutes(app: FastifyInstance): Promise<void>
   );
 
   app.post("/packages/install", async (request, reply) => {
-    if (!requireWorkspaceAdmin(request.auth, reply)) return;
     const body = request.body as Record<string, unknown> | null;
     const workspaceId = body?.workspaceId;
     if (typeof workspaceId !== "string" || !workspaceId) {
       return reply.status(400).send({ error: "workspaceId is required" });
+    }
+    if (!(await enforceOperationalPermission(request, reply, "package_workspace", { workspaceId }))) {
+      return;
     }
     if (!enforceWorkspaceScope(request, reply, workspaceId)) return;
 
@@ -138,7 +108,6 @@ export async function registerPackageRoutes(app: FastifyInstance): Promise<void>
   });
 
   app.post("/packages/export", async (request, reply) => {
-    if (!requireWorkspaceAdmin(request.auth, reply)) return;
     const body = request.body as Record<string, unknown> | null;
     const workspaceId = body?.workspaceId;
     const installedPackageId = body?.installedPackageId;
@@ -147,6 +116,9 @@ export async function registerPackageRoutes(app: FastifyInstance): Promise<void>
     }
     if (typeof installedPackageId !== "string" || !installedPackageId) {
       return reply.status(400).send({ error: "installedPackageId is required" });
+    }
+    if (!(await enforceOperationalPermission(request, reply, "package_workspace", { workspaceId }))) {
+      return;
     }
     if (!enforceWorkspaceScope(request, reply, workspaceId)) return;
 
@@ -169,7 +141,6 @@ export async function registerPackageRoutes(app: FastifyInstance): Promise<void>
   });
 
   app.post("/packages/compare", async (request, reply) => {
-    if (!requireWorkspaceAdmin(request.auth, reply)) return;
     const body = request.body as Record<string, unknown> | null;
     const workspaceId = body?.workspaceId;
     const installedPackageId = body?.installedPackageId;
@@ -181,6 +152,9 @@ export async function registerPackageRoutes(app: FastifyInstance): Promise<void>
     }
     const parsed = parseManifest(body?.candidateManifest);
     if ("error" in parsed) return reply.status(400).send({ error: parsed.error });
+    if (!(await enforceOperationalPermission(request, reply, "package_workspace", { workspaceId }))) {
+      return;
+    }
     if (!enforceWorkspaceScope(request, reply, workspaceId)) return;
 
     const store = createPrismaDomainEngineStore(app.prisma);
@@ -202,7 +176,6 @@ export async function registerPackageRoutes(app: FastifyInstance): Promise<void>
   });
 
   app.post("/packages/rollback", async (request, reply) => {
-    if (!requireWorkspaceAdmin(request.auth, reply)) return;
     const body = request.body as Record<string, unknown> | null;
     const workspaceId = body?.workspaceId;
     const installedPackageId = body?.installedPackageId;
@@ -215,6 +188,9 @@ export async function registerPackageRoutes(app: FastifyInstance): Promise<void>
     }
     if (typeof snapshotVersion !== "string" || !snapshotVersion) {
       return reply.status(400).send({ error: "snapshotVersion is required" });
+    }
+    if (!(await enforceOperationalPermission(request, reply, "package_workspace", { workspaceId }))) {
+      return;
     }
     if (!enforceWorkspaceScope(request, reply, workspaceId)) return;
 
@@ -238,7 +214,6 @@ export async function registerPackageRoutes(app: FastifyInstance): Promise<void>
   });
 
   app.post("/packages/update", async (request, reply) => {
-    if (!requireWorkspaceAdmin(request.auth, reply)) return;
     const body = request.body as Record<string, unknown> | null;
     const workspaceId = body?.workspaceId;
     const installedPackageId = body?.installedPackageId;
@@ -250,6 +225,9 @@ export async function registerPackageRoutes(app: FastifyInstance): Promise<void>
     }
     const parsed = parseManifest(body?.manifest);
     if ("error" in parsed) return reply.status(400).send({ error: parsed.error });
+    if (!(await enforceOperationalPermission(request, reply, "package_workspace", { workspaceId }))) {
+      return;
+    }
     if (!enforceWorkspaceScope(request, reply, workspaceId)) return;
 
     const failOnConflict = body?.failOnConflict !== false;
@@ -283,22 +261,21 @@ export async function registerPackageRoutes(app: FastifyInstance): Promise<void>
     if (typeof targetWorkspaceId !== "string" || !targetWorkspaceId) {
       return reply.status(400).send({ error: "targetWorkspaceId is required" });
     }
-    if (!request.auth) {
-      return reply.status(401).send({ error: "Authentication required" });
+    if (!(await enforceOperationalPermission(request, reply, "package_clone", { workspaceId: targetWorkspaceId }))) {
+      return;
     }
-    if (!requireClonePermission(request.auth, targetWorkspaceId, reply)) return;
 
     const store = createPrismaDomainEngineStore(app.prisma);
     const source = await store.getInstalledPackage(sourceInstalledPackageId);
     if (!source) {
       return reply.status(404).send({ error: "Source installed package not found" });
     }
-    if (
-      source.workspaceId !== request.auth.workspaceId &&
-      !request.auth.isMiddlewareAdmin &&
-      !request.auth.isPlatformAdmin
-    ) {
-      return reply.status(403).send({ error: "Cannot clone from another workspace" });
+    const auth = request.auth;
+    if (!auth) {
+      return reply.status(401).send({ error: "Authentication required" });
+    }
+    if (!(await workspaceWithinOperationalScope(app.prisma, auth, source.workspaceId))) {
+      return reply.status(403).send({ error: "Source workspace out of operational scope" });
     }
 
     try {
@@ -306,7 +283,7 @@ export async function registerPackageRoutes(app: FastifyInstance): Promise<void>
         packageDeps(app, newUlid()),
         sourceInstalledPackageId,
         targetWorkspaceId,
-        request.auth.userId,
+        auth.userId,
       );
       return { installed };
     } catch (error) {
@@ -317,11 +294,13 @@ export async function registerPackageRoutes(app: FastifyInstance): Promise<void>
   app.post<{ Params: { id: string } }>(
     "/packages/installed/:id/archive",
     async (request, reply) => {
-      if (!requireWorkspaceAdmin(request.auth, reply)) return;
       const body = request.body as Record<string, unknown> | null;
       const wsId = body?.workspaceId;
       if (typeof wsId !== "string" || !wsId) {
         return reply.status(400).send({ error: "workspaceId is required" });
+      }
+      if (!(await enforceOperationalPermission(request, reply, "package_workspace", { workspaceId: wsId }))) {
+        return;
       }
       if (!enforceWorkspaceScope(request, reply, wsId)) return;
 
@@ -345,7 +324,7 @@ export async function registerPackageRoutes(app: FastifyInstance): Promise<void>
   );
 
   app.get("/platform/packages", async (request, reply) => {
-    if (!requireMiddlewareAdmin(request.auth, reply)) return;
+    if (!(await enforceOperationalPermission(request, reply, "package_catalog"))) return;
     const publishedOnly = (request.query as Record<string, string>).published === "true";
     const store = createPrismaDomainEngineStore(app.prisma);
     const packages = await store.listPackageDefinitions(publishedOnly);
@@ -353,7 +332,7 @@ export async function registerPackageRoutes(app: FastifyInstance): Promise<void>
   });
 
   app.post("/platform/packages", async (request, reply) => {
-    if (!requireMiddlewareAdmin(request.auth, reply)) return;
+    if (!(await enforceOperationalPermission(request, reply, "package_catalog"))) return;
     const body = request.body as Record<string, unknown> | null;
     const parsed = parseManifest(body?.manifest ?? body);
     if ("error" in parsed) return reply.status(400).send({ error: parsed.error });
@@ -369,7 +348,7 @@ export async function registerPackageRoutes(app: FastifyInstance): Promise<void>
   });
 
   app.patch<{ Params: { id: string } }>("/platform/packages/:id", async (request, reply) => {
-    if (!requireMiddlewareAdmin(request.auth, reply)) return;
+    if (!(await enforceOperationalPermission(request, reply, "package_catalog"))) return;
     const body = request.body as Record<string, unknown> | null;
     const store = createPrismaDomainEngineStore(app.prisma);
     const existing = await store.getPackageDefinition(request.params.id);

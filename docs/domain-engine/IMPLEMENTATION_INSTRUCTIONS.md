@@ -203,9 +203,11 @@ Emit domain events via injected `EventEmitter` (mirror ingestion/retrieval patte
 
 **Exit criteria:** Round-trip export → modify → compare → install on second workspace.
 
-### Phase 6 — RBAC
+### Phase 6 — RBAC ✅
 
 **Goal:** Enforce matrix in [RBAC.md](./RBAC.md).
+
+**Completed:** `operationalRole` on `AuthContext`, `enforceOperationalPermission`, domain/global-fact/instruction/package routes, session-only writes, security events on denial.
 
 1. Extend `AuthContext` with `operationalRole` resolution.
 2. Add `enforceOperationalPermission()` middleware helper.
