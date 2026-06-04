@@ -9,6 +9,12 @@ import type {
   RetrievalRule,
   OperationalObject,
   ListOperationalObjectsResult,
+  Workflow,
+  WorkflowInstructionRef,
+  WorkflowRun,
+  WorkflowRunDetail,
+  WorkflowOutput,
+  WorkflowExecutionContext,
 } from "@memory-middleware/shared-types";
 
 export interface CreateGlobalFactInput {
@@ -103,6 +109,78 @@ export interface ListOperationalObjectsQuery {
   cursor?: string;
 }
 
+export interface CreateWorkflowInput {
+  workspaceId: string;
+  name: string;
+  description?: string;
+  domains?: string[];
+  packages?: string[];
+  instructionRefs?: WorkflowInstructionRef[];
+  outputTypes?: string[];
+  objectTypeFilters?: string[];
+}
+
+export interface UpdateWorkflowInput {
+  name?: string;
+  description?: string;
+  domains?: string[];
+  packages?: string[];
+  instructionRefs?: WorkflowInstructionRef[];
+  outputTypes?: string[];
+  objectTypeFilters?: string[];
+  active?: boolean;
+}
+
+export interface WorkflowExecutionContextLoadInput {
+  workspaceId: string;
+  workflowId: string;
+  previousRunLimit?: number;
+}
+
+export interface InstalledPackageWithManifest {
+  installedPackage: InstalledPackage;
+  manifest: PackageManifest;
+}
+
+export interface WorkflowExecutionContextLoadResult {
+  workflow: Workflow;
+  domains: Domain[];
+  packages: InstalledPackage[];
+  packageManifests: PackageManifest[];
+  globalFacts: Fact[];
+  domainFacts: Fact[];
+  instructions: Instruction[];
+  objects: OperationalObject[];
+  previousWorkflowRuns: WorkflowRunDetail[];
+}
+
+export interface CreateWorkflowOutputInput {
+  workflowRunId: string;
+  workspaceId: string;
+  outputType: string;
+  title: string;
+  content: string;
+  data?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}
+
+export interface CreateWorkflowRunInput {
+  workflowId: string;
+  workspaceId: string;
+  status?: WorkflowRun["status"];
+}
+
+export interface UpdateWorkflowRunInput {
+  status?: WorkflowRun["status"];
+  completedAt?: string;
+  errorMessage?: string;
+  outputCount?: number;
+  generatedFactIds?: string[];
+  generatedMemoryIds?: string[];
+  generatedObjectIds?: string[];
+  executionContext?: WorkflowExecutionContext;
+}
+
 export interface InstallPackageInput {
   workspaceId: string;
   manifest?: PackageManifest;
@@ -192,4 +270,27 @@ export interface DomainEngineStore {
   deleteOperationalObject(objectId: string): Promise<boolean>;
   getOperationalObject(objectId: string): Promise<OperationalObject | null>;
   listOperationalObjects(query: ListOperationalObjectsQuery): Promise<ListOperationalObjectsResult>;
+
+  createWorkflow(input: CreateWorkflowInput): Promise<Workflow>;
+  updateWorkflow(workflowId: string, input: UpdateWorkflowInput): Promise<Workflow | null>;
+  archiveWorkflow(workflowId: string): Promise<Workflow | null>;
+  deleteWorkflow(workflowId: string): Promise<boolean>;
+  getWorkflow(workflowId: string): Promise<Workflow | null>;
+  listWorkflows(workspaceId: string, includeArchived?: boolean): Promise<Workflow[]>;
+  getActiveInstalledPackageByKey(
+    workspaceId: string,
+    packageKey: string,
+  ): Promise<InstalledPackageWithManifest | null>;
+  loadWorkflowExecutionContextData(
+    input: WorkflowExecutionContextLoadInput,
+  ): Promise<WorkflowExecutionContextLoadResult>;
+
+  createWorkflowRun(input: CreateWorkflowRunInput): Promise<WorkflowRun>;
+  updateWorkflowRun(workflowRunId: string, input: UpdateWorkflowRunInput): Promise<WorkflowRun | null>;
+  archiveWorkflowRun(workflowRunId: string): Promise<WorkflowRun | null>;
+  getWorkflowRun(workflowRunId: string): Promise<WorkflowRun | null>;
+  getRunningWorkflowRun(workflowId: string): Promise<WorkflowRun | null>;
+  getWorkflowRunDetail(workflowRunId: string): Promise<WorkflowRunDetail | null>;
+  listWorkflowRuns(workflowId: string, workspaceId: string, limit?: number): Promise<WorkflowRun[]>;
+  createWorkflowOutput(input: CreateWorkflowOutputInput): Promise<WorkflowOutput>;
 }

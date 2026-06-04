@@ -5,12 +5,18 @@ import type {
   CreateGlobalFactInput,
   CreateInstructionInput,
   CreateOperationalObjectInput,
+  CreateWorkflowInput,
+  CreateWorkflowRunInput,
+  CreateWorkflowOutputInput,
+  UpdateWorkflowRunInput,
   UpdateDomainFactInput,
   UpdateDomainInput,
   UpdateGlobalFactInput,
   UpdateOperationalObjectInput,
+  UpdateWorkflowInput,
   VersionInstructionInput,
   ListOperationalObjectsQuery,
+  WorkflowExecutionContextLoadInput,
 } from "@memory-middleware/domain-engine";
 import { DomainEngineError } from "@memory-middleware/domain-engine";
 import type {
@@ -29,6 +35,11 @@ import {
   resolveManifestForInstall,
 } from "./package-operations.js";
 import type { Prisma, PrismaClient } from "@prisma/client";
+import type {
+  WorkflowExecutionContext,
+  WorkflowRunDetail,
+} from "@memory-middleware/shared-types";
+import { DEFAULT_WORKFLOW_PREVIOUS_RUN_LIMIT } from "@memory-middleware/shared-types";
 import {
   mapDomain,
   mapDomainFact,
@@ -37,6 +48,11 @@ import {
   mapInstruction,
   mapOperationalObject,
   mapPackageDefinition,
+  mapWorkflow,
+  mapWorkflowRun,
+  mapWorkflowOutput,
+  parseWorkflowExecutionContext,
+  parseJsonArray,
   matchesOperationalObjectMetadata,
   retrievalRuleToConfig,
 } from "./mappers.js";
@@ -52,6 +68,80 @@ async function loadDomainWithRules(
   });
   if (!full) return null;
   return mapDomain(full, full.retrievalRules);
+}
+
+async function buildWorkflowRunDetail(
+  prisma: PrismaClient,
+  row: {
+    id: string;
+    workflowId: string;
+    workspaceId: string;
+    status: string;
+    startedAt: Date;
+    completedAt: Date | null;
+    errorMessage: string | null;
+    outputCount: number;
+    generatedFactIds: unknown;
+    generatedMemoryIds: unknown;
+    generatedObjectIds: unknown;
+    executionContext: unknown;
+    archivedAt: Date | null;
+    outputs: Array<{
+      id: string;
+      workflowRunId: string;
+      workspaceId: string;
+      outputType: string;
+      title: string;
+      content: string;
+      data: unknown;
+      metadata: unknown;
+      createdAt: Date;
+    }>;
+  },
+): Promise<WorkflowRunDetail> {
+  const run = mapWorkflowRun(row as Parameters<typeof mapWorkflowRun>[0]);
+  const outputs = row.outputs.map((output) => mapWorkflowOutput(output as Parameters<typeof mapWorkflowOutput>[0]));
+  const factIds = parseJsonArray(row.generatedFactIds);
+  const objectIds = parseJsonArray(row.generatedObjectIds);
+
+  const generatedFacts = [];
+  if (factIds.length > 0) {
+    const globalFacts = await prisma.globalFact.findMany({ where: { id: { in: factIds } } });
+    const domainFacts = await prisma.domainFact.findMany({ where: { id: { in: factIds } } });
+    generatedFacts.push(...globalFacts.map(mapGlobalFact), ...domainFacts.map(mapDomainFact));
+  }
+
+  const generatedObjects = [];
+  if (objectIds.length > 0) {
+    const objects = await prisma.operationalObject.findMany({ where: { id: { in: objectIds } } });
+    generatedObjects.push(...objects.map(mapOperationalObject));
+  }
+
+  const parsedContext = parseWorkflowExecutionContext(row.executionContext);
+  const executionContext: WorkflowExecutionContext =
+    parsedContext ??
+    ({
+      workflowId: run.workflowId,
+      workflowRunId: run.workflowRunId,
+      workspaceId: run.workspaceId,
+      domains: [],
+      packages: [],
+      globalFacts: [],
+      domainFacts: [],
+      instructions: [],
+      objects: [],
+      retrievedContext: [],
+      previousWorkflowRuns: [],
+      resolvedAt: run.startedAt,
+    } satisfies WorkflowExecutionContext);
+
+  return {
+    ...run,
+    outputs,
+    generatedFacts,
+    generatedObjects,
+    executionContext,
+  };
 }
 
 export function createPrismaDomainEngineStore(prisma: PrismaClient): DomainEngineStore {
@@ -620,6 +710,307 @@ export function createPrismaDomainEngineStore(prisma: PrismaClient): DomainEngin
         objects: page,
         ...(nextCursor ? { nextCursor } : {}),
       };
+    },
+
+    async createWorkflow(input: CreateWorkflowInput) {
+      const row = await prisma.workflow.create({
+        data: {
+          id: newUlid(),
+          workspaceId: input.workspaceId,
+          name: input.name.trim(),
+          description: input.description?.trim() ?? "",
+          domains: (input.domains ?? []) as Prisma.InputJsonValue,
+          packages: (input.packages ?? []) as Prisma.InputJsonValue,
+          instructionRefs: (input.instructionRefs ?? []) as unknown as Prisma.InputJsonValue,
+          outputTypes: (input.outputTypes ?? []) as Prisma.InputJsonValue,
+          objectTypeFilters: (input.objectTypeFilters ?? []) as Prisma.InputJsonValue,
+        },
+      });
+      return mapWorkflow(row);
+    },
+
+    async updateWorkflow(workflowId, input) {
+      const existing = await prisma.workflow.findUnique({ where: { id: workflowId } });
+      if (!existing) return null;
+      const row = await prisma.workflow.update({
+        where: { id: workflowId },
+        data: {
+          ...(input.name != null ? { name: input.name.trim() } : {}),
+          ...(input.description != null ? { description: input.description.trim() } : {}),
+          ...(input.domains != null ? { domains: input.domains as Prisma.InputJsonValue } : {}),
+          ...(input.packages != null ? { packages: input.packages as Prisma.InputJsonValue } : {}),
+          ...(input.instructionRefs != null
+            ? { instructionRefs: input.instructionRefs as unknown as Prisma.InputJsonValue }
+            : {}),
+          ...(input.outputTypes != null
+            ? { outputTypes: input.outputTypes as Prisma.InputJsonValue }
+            : {}),
+          ...(input.objectTypeFilters != null
+            ? { objectTypeFilters: input.objectTypeFilters as Prisma.InputJsonValue }
+            : {}),
+          ...(input.active != null ? { active: input.active } : {}),
+        },
+      });
+      return mapWorkflow(row);
+    },
+
+    async archiveWorkflow(workflowId) {
+      const existing = await prisma.workflow.findUnique({ where: { id: workflowId } });
+      if (!existing) return null;
+      const row = await prisma.workflow.update({
+        where: { id: workflowId },
+        data: { active: false, archivedAt: new Date() },
+      });
+      return mapWorkflow(row);
+    },
+
+    async deleteWorkflow(workflowId) {
+      await prisma.workflow.delete({ where: { id: workflowId } });
+      return true;
+    },
+
+    async getWorkflow(workflowId) {
+      const row = await prisma.workflow.findUnique({ where: { id: workflowId } });
+      return row ? mapWorkflow(row) : null;
+    },
+
+    async listWorkflows(workspaceId, includeArchived = false) {
+      const rows = await prisma.workflow.findMany({
+        where: {
+          workspaceId,
+          ...(includeArchived ? {} : { active: true, archivedAt: null }),
+        },
+        orderBy: [{ updatedAt: "desc" }, { name: "asc" }],
+      });
+      return rows.map(mapWorkflow);
+    },
+
+    async getActiveInstalledPackageByKey(workspaceId, packageKey) {
+      const row = await prisma.installedPackage.findFirst({
+        where: { workspaceId, packageKey, status: "active" },
+        orderBy: { installedAt: "desc" },
+      });
+      if (!row) return null;
+      return {
+        installedPackage: mapInstalledPackage(row),
+        manifest: row.manifestSnapshot as unknown as PackageManifest,
+      };
+    },
+
+    async loadWorkflowExecutionContextData(input: WorkflowExecutionContextLoadInput) {
+      const workflow = await this.getWorkflow(input.workflowId);
+      if (!workflow || workflow.workspaceId !== input.workspaceId) {
+        throw new DomainEngineError(`Workflow not found: ${input.workflowId}`, "not_found");
+      }
+
+      const missingRefs: string[] = [];
+      const packages: InstalledPackage[] = [];
+      const packageManifests: PackageManifest[] = [];
+      const domainKeys = new Set<string>(workflow.domains);
+
+      for (const packageKey of workflow.packages) {
+        const installed = await this.getActiveInstalledPackageByKey(input.workspaceId, packageKey);
+        if (!installed) {
+          missingRefs.push(`package:${packageKey}`);
+          continue;
+        }
+        packages.push(installed.installedPackage);
+        packageManifests.push(installed.manifest);
+        for (const manifestDomain of installed.manifest.domains ?? []) {
+          domainKeys.add(manifestDomain.domainKey);
+        }
+      }
+
+      const domains = [];
+      for (const domainKey of domainKeys) {
+        const domain = await this.getDomainByKey(input.workspaceId, domainKey);
+        if (!domain || domain.status !== "active") {
+          missingRefs.push(`domain:${domainKey}`);
+          continue;
+        }
+        domains.push(domain);
+      }
+
+      if (missingRefs.length > 0) {
+        throw new DomainEngineError(
+          "Workflow references missing domains or packages",
+          "not_found",
+          { missingRefs },
+        );
+      }
+
+      const globalFacts = await this.listActiveGlobalFacts(input.workspaceId);
+      const domainFacts = [];
+      for (const domain of domains) {
+        domainFacts.push(...(await this.listActiveDomainFacts(domain.domainId)));
+      }
+
+      const instructions = [];
+      if (workflow.instructionRefs.length > 0) {
+        for (const ref of workflow.instructionRefs) {
+          const domain = await this.getDomainByKey(input.workspaceId, ref.domainKey);
+          if (!domain) continue;
+          const instruction = await this.getActiveInstruction(domain.domainId, ref.actionKey);
+          if (instruction) instructions.push(instruction);
+        }
+      } else {
+        for (const domain of domains) {
+          const all = await this.listInstructions(domain.domainId);
+          instructions.push(...all.filter((i) => i.isActive && i.status === "active"));
+        }
+      }
+
+      const objectTypeFilters = new Set<string>(workflow.objectTypeFilters ?? []);
+      for (const domain of domains) {
+        for (const rule of domain.retrievalRules) {
+          for (const objectType of rule.objectTypeFilter ?? []) {
+            objectTypeFilters.add(objectType);
+          }
+        }
+      }
+
+      const objects = [];
+      if (objectTypeFilters.size === 0) {
+        const listed = await this.listOperationalObjects({
+          workspaceId: input.workspaceId,
+          limit: 100,
+        });
+        objects.push(...listed.objects);
+      } else {
+        for (const objectType of objectTypeFilters) {
+          const listed = await this.listOperationalObjects({
+            workspaceId: input.workspaceId,
+            objectType,
+            limit: 100,
+          });
+          objects.push(...listed.objects);
+        }
+      }
+
+      const previousLimit = input.previousRunLimit ?? DEFAULT_WORKFLOW_PREVIOUS_RUN_LIMIT;
+      const previousRows = await prisma.workflowRun.findMany({
+        where: {
+          workflowId: input.workflowId,
+          status: "completed",
+          archivedAt: null,
+        },
+        orderBy: { startedAt: "desc" },
+        take: previousLimit,
+        include: { outputs: { orderBy: { createdAt: "asc" } } },
+      });
+      const previousWorkflowRuns = await Promise.all(
+        previousRows.map((row) => buildWorkflowRunDetail(prisma, row)),
+      );
+
+      return {
+        workflow,
+        domains,
+        packages,
+        packageManifests,
+        globalFacts,
+        domainFacts,
+        instructions,
+        objects,
+        previousWorkflowRuns,
+      };
+    },
+
+    async createWorkflowRun(input: CreateWorkflowRunInput) {
+      const row = await prisma.workflowRun.create({
+        data: {
+          id: newUlid(),
+          workflowId: input.workflowId,
+          workspaceId: input.workspaceId,
+          status: input.status ?? "pending",
+        },
+      });
+      return mapWorkflowRun(row);
+    },
+
+    async updateWorkflowRun(workflowRunId, input) {
+      const existing = await prisma.workflowRun.findUnique({ where: { id: workflowRunId } });
+      if (!existing) return null;
+      const row = await prisma.workflowRun.update({
+        where: { id: workflowRunId },
+        data: {
+          ...(input.status != null ? { status: input.status } : {}),
+          ...(input.completedAt != null ? { completedAt: new Date(input.completedAt) } : {}),
+          ...(input.errorMessage != null ? { errorMessage: input.errorMessage } : {}),
+          ...(input.outputCount != null ? { outputCount: input.outputCount } : {}),
+          ...(input.generatedFactIds != null
+            ? { generatedFactIds: input.generatedFactIds as Prisma.InputJsonValue }
+            : {}),
+          ...(input.generatedMemoryIds != null
+            ? { generatedMemoryIds: input.generatedMemoryIds as Prisma.InputJsonValue }
+            : {}),
+          ...(input.generatedObjectIds != null
+            ? { generatedObjectIds: input.generatedObjectIds as Prisma.InputJsonValue }
+            : {}),
+          ...(input.executionContext != null
+            ? {
+                executionContext: input.executionContext as unknown as Prisma.InputJsonValue,
+              }
+            : {}),
+        },
+      });
+      return mapWorkflowRun(row);
+    },
+
+    async archiveWorkflowRun(workflowRunId) {
+      const existing = await prisma.workflowRun.findUnique({ where: { id: workflowRunId } });
+      if (!existing) return null;
+      const row = await prisma.workflowRun.update({
+        where: { id: workflowRunId },
+        data: { status: "archived", archivedAt: new Date() },
+      });
+      return mapWorkflowRun(row);
+    },
+
+    async getWorkflowRun(workflowRunId) {
+      const row = await prisma.workflowRun.findUnique({ where: { id: workflowRunId } });
+      return row ? mapWorkflowRun(row) : null;
+    },
+
+    async getRunningWorkflowRun(workflowId) {
+      const row = await prisma.workflowRun.findFirst({
+        where: { workflowId, status: "running" },
+        orderBy: { startedAt: "desc" },
+      });
+      return row ? mapWorkflowRun(row) : null;
+    },
+
+    async getWorkflowRunDetail(workflowRunId) {
+      const row = await prisma.workflowRun.findUnique({
+        where: { id: workflowRunId },
+        include: { outputs: { orderBy: { createdAt: "asc" } } },
+      });
+      if (!row) return null;
+      return buildWorkflowRunDetail(prisma, row);
+    },
+
+    async listWorkflowRuns(workflowId, workspaceId, limit = 50) {
+      const rows = await prisma.workflowRun.findMany({
+        where: { workflowId, workspaceId },
+        orderBy: { startedAt: "desc" },
+        take: Math.min(Math.max(limit, 1), 100),
+      });
+      return rows.map(mapWorkflowRun);
+    },
+
+    async createWorkflowOutput(input: CreateWorkflowOutputInput) {
+      const row = await prisma.workflowOutput.create({
+        data: {
+          id: newUlid(),
+          workflowRunId: input.workflowRunId,
+          workspaceId: input.workspaceId,
+          outputType: input.outputType,
+          title: input.title,
+          content: input.content,
+          ...(input.data != null ? { data: input.data as Prisma.InputJsonValue } : {}),
+          ...(input.metadata != null ? { metadata: input.metadata as Prisma.InputJsonValue } : {}),
+        },
+      });
+      return mapWorkflowOutput(row);
     },
   };
 }

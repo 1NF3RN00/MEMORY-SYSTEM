@@ -8,7 +8,7 @@ export function sendDomainEngineError(reply: FastifyReply, error: unknown): void
         ? 404
         : error.code === "conflict"
           ? 409
-          : error.code === "invalid_request" || error.code === "invalid_slug"
+          : error.code === "invalid_request" || error.code === "invalid_slug" || error.code === "validation"
             ? 400
             : 500;
     reply.status(status).send({

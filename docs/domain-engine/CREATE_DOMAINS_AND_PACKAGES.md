@@ -75,7 +75,7 @@ Global facts → Domain facts → Instructions → Retrieved context
 | Instructions | `/domains/:id/instructions` | 7 ✅ |
 | Packages | `/packages` | 7 ✅ |
 | Operational objects | `/objects` | 8 ✅ |
-| Workflows | `/workflows` | 11 (planned) |
+| Workflows | `/workflows` | 9 ✅ |
 
 ---
 

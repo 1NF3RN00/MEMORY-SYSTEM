@@ -33,9 +33,9 @@ This folder is the **authoritative build guide** for the Domain Engine and Packa
 | 6 | RBAC on new routes | **Done** |
 | 7 | Dashboard managers (domains, facts, instructions, packages) | **Done** |
 | 8 | Operational objects (contracts, schema, API, dashboard) | **Done** |
-| 9 | Workflow registry + execution context resolver | **Planned** |
-| 10 | Workflow execution, runs, observability events | **Planned** |
-| 11 | Dashboard workflow managers + replay integration | **Planned** |
+| 9 | Workflow registry + execution context resolver | **Done** |
+| 10 | Workflow execution, runs, observability events | **Done** |
+| 11 | Dashboard workflow managers + replay integration | **Done** |
 
 Update the **Build status** table when a phase completes.
 

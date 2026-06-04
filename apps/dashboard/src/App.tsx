@@ -24,6 +24,10 @@ import { ObjectManagerPage } from "./pages/ObjectManagerPage.js";
 import { DomainFactManagerPage } from "./pages/DomainFactManagerPage.js";
 import { InstructionManagerPage } from "./pages/InstructionManagerPage.js";
 import { PackageManagerPage } from "./pages/PackageManagerPage.js";
+import { WorkflowManagerPage } from "./pages/WorkflowManagerPage.js";
+import { WorkflowRunsPage } from "./pages/WorkflowRunsPage.js";
+import { WorkflowOutputsPage } from "./pages/WorkflowOutputsPage.js";
+import { WorkflowReplayPage } from "./pages/WorkflowReplayPage.js";
 
 function OperationalRoutes() {
   const location = useLocation();
@@ -60,6 +64,10 @@ function OperationalRoutes() {
         <Route path="/domains/:id/instructions" element={<InstructionManagerPage />} />
         <Route path="/global-facts" element={<GlobalFactManagerPage />} />
         <Route path="/objects" element={<ObjectManagerPage />} />
+        <Route path="/workflows" element={<WorkflowManagerPage />} />
+        <Route path="/workflows/:workflowId/runs" element={<WorkflowRunsPage />} />
+        <Route path="/workflows/:workflowId/outputs" element={<WorkflowOutputsPage />} />
+        <Route path="/workflows/runs/:runId/replay" element={<WorkflowReplayPage />} />
         <Route path="/packages" element={<PackageManagerPage />} />
         <Route path="/admin/provisioning" element={<PlatformAdminPage />} />
         <Route path="/admin/api-keys" element={<PlatformApiKeysPage />} />

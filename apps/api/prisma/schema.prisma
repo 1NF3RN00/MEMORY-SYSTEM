@@ -156,6 +156,12 @@ model Workspace {
 
   operationalObjects    OperationalObject[]
 
+  workflows             Workflow[]
+
+  workflowRuns          WorkflowRun[]
+
+  workflowOutputs       WorkflowOutput[]
+
 
 
   @@index([platformId])
@@ -211,6 +217,8 @@ model Memory {
   lineage              Json      @default("{}")
 
   observability        Json      @default("{}")
+
+  sourceWorkflowRunId  String?   @map("source_workflow_run_id")
 
   archived             Boolean   @default(false)
 
@@ -1050,6 +1058,8 @@ model GlobalFact {
 
   sourcePackageId       String?   @map("source_package_id")
 
+  sourceWorkflowRunId   String?   @map("source_workflow_run_id")
+
   version               Int       @default(1)
 
   archivedAt            DateTime? @map("archived_at")
@@ -1095,6 +1105,8 @@ model DomainFact {
   appliesToMetadataKeys Json      @default("[]") @map("applies_to_metadata_keys")
 
   sourcePackageId       String?   @map("source_package_id")
+
+  sourceWorkflowRunId   String?   @map("source_workflow_run_id")
 
   version               Int       @default(1)
 
@@ -1271,6 +1283,136 @@ model OperationalObject {
   @@index([workspaceId, status])
 
   @@map("operational_objects")
+
+}
+
+
+
+model Workflow {
+
+  id                String    @id
+
+  workspaceId       String    @map("workspace_id")
+
+  name              String
+
+  description       String    @default("")
+
+  domains           Json      @default("[]")
+
+  packages          Json      @default("[]")
+
+  instructionRefs   Json      @default("[]") @map("instruction_refs")
+
+  outputTypes       Json      @default("[]") @map("output_types")
+
+  objectTypeFilters Json      @default("[]") @map("object_type_filters")
+
+  active            Boolean   @default(true)
+
+  archivedAt        DateTime? @map("archived_at")
+
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  runs      WorkflowRun[]
+
+
+
+  @@index([workspaceId])
+
+  @@map("workflows")
+
+}
+
+
+
+model WorkflowRun {
+
+  id                 String    @id
+
+  workflowId         String    @map("workflow_id")
+
+  workspaceId        String    @map("workspace_id")
+
+  status             String    @default("pending")
+
+  startedAt          DateTime  @default(now()) @map("started_at")
+
+  completedAt        DateTime? @map("completed_at")
+
+  errorMessage       String?   @map("error_message")
+
+  outputCount        Int       @default(0) @map("output_count")
+
+  generatedFactIds   Json      @default("[]") @map("generated_fact_ids")
+
+  generatedMemoryIds Json      @default("[]") @map("generated_memory_ids")
+
+  generatedObjectIds Json      @default("[]") @map("generated_object_ids")
+
+  executionContext   Json?     @map("execution_context")
+
+  archivedAt         DateTime? @map("archived_at")
+
+
+
+  workflow  Workflow         @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  workspace Workspace        @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  outputs   WorkflowOutput[]
+
+
+
+  @@index([workflowId])
+
+  @@index([workspaceId])
+
+  @@map("workflow_runs")
+
+}
+
+
+
+model WorkflowOutput {
+
+  id            String   @id
+
+  workflowRunId String   @map("workflow_run_id")
+
+  workspaceId   String   @map("workspace_id")
+
+  outputType    String   @map("output_type")
+
+  title         String
+
+  content       String
+
+  data          Json?
+
+  metadata      Json?
+
+  createdAt     DateTime @default(now()) @map("created_at")
+
+
+
+  workflowRun WorkflowRun @relation(fields: [workflowRunId], references: [id], onDelete: Cascade)
+
+  workspace   Workspace   @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+
+
+  @@index([workflowRunId])
+
+  @@index([workspaceId, outputType])
+
+  @@map("workflow_outputs")
 
 }
 

@@ -14,6 +14,11 @@ import type {
   PackageManifest,
   RelationshipNeighborhoodConstraint,
   RetrievalRule,
+  Workflow,
+  WorkflowInstructionRef,
+  WorkflowRun,
+  WorkflowOutput,
+  WorkflowExecutionContext,
 } from "@memory-middleware/shared-types";
 import { DEFAULT_RELATIONSHIP_NEIGHBORHOOD_CONSTRAINT } from "@memory-middleware/shared-types";
 import type {
@@ -25,6 +30,9 @@ import type {
   InstalledPackage as PrismaInstalledPackage,
   OperationalObject as PrismaOperationalObject,
   PackageDefinition,
+  Workflow as PrismaWorkflow,
+  WorkflowRun as PrismaWorkflowRun,
+  WorkflowOutput as PrismaWorkflowOutput,
 } from "@prisma/client";
 
 export function parseJsonArray(value: unknown): string[] {
@@ -247,6 +255,82 @@ export function mapOperationalObject(row: PrismaOperationalObject): OperationalO
   };
   if (row.archivedAt) object.archivedAt = row.archivedAt.toISOString();
   return object;
+}
+
+export function mapWorkflow(row: PrismaWorkflow): Workflow {
+  const objectTypeFilters = parseJsonArray(row.objectTypeFilters);
+  const workflow: Workflow = {
+    workflowId: row.id,
+    workspaceId: row.workspaceId,
+    name: row.name,
+    description: row.description,
+    domains: parseJsonArray(row.domains),
+    packages: parseJsonArray(row.packages),
+    instructionRefs: parseInstructionRefs(row.instructionRefs),
+    outputTypes: parseJsonArray(row.outputTypes),
+    active: row.active,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+  if (objectTypeFilters.length) workflow.objectTypeFilters = objectTypeFilters;
+  if (row.archivedAt) workflow.archivedAt = row.archivedAt.toISOString();
+  return workflow;
+}
+
+export function parseInstructionRefs(value: unknown): WorkflowInstructionRef[] {
+  if (!Array.isArray(value)) return [];
+  const refs: WorkflowInstructionRef[] = [];
+  for (const item of value) {
+    if (item && typeof item === "object" && !Array.isArray(item)) {
+      const obj = item as Record<string, unknown>;
+      if (typeof obj.domainKey === "string" && typeof obj.actionKey === "string") {
+        refs.push({ domainKey: obj.domainKey, actionKey: obj.actionKey });
+      }
+    }
+  }
+  return refs;
+}
+
+export function mapWorkflowRun(row: PrismaWorkflowRun): WorkflowRun {
+  const run: WorkflowRun = {
+    workflowRunId: row.id,
+    workflowId: row.workflowId,
+    workspaceId: row.workspaceId,
+    status: row.status as WorkflowRun["status"],
+    startedAt: row.startedAt.toISOString(),
+    outputCount: row.outputCount,
+    generatedFactIds: parseJsonArray(row.generatedFactIds),
+    generatedMemoryIds: parseJsonArray(row.generatedMemoryIds),
+    generatedObjectIds: parseJsonArray(row.generatedObjectIds),
+  };
+  if (row.completedAt) run.completedAt = row.completedAt.toISOString();
+  if (row.errorMessage) run.errorMessage = row.errorMessage;
+  if (row.archivedAt) run.archivedAt = row.archivedAt.toISOString();
+  return run;
+}
+
+export function mapWorkflowOutput(row: PrismaWorkflowOutput): WorkflowOutput {
+  const output: WorkflowOutput = {
+    outputId: row.id,
+    workflowRunId: row.workflowRunId,
+    workspaceId: row.workspaceId,
+    outputType: row.outputType,
+    title: row.title,
+    content: row.content,
+    createdAt: row.createdAt.toISOString(),
+  };
+  if (row.data && typeof row.data === "object" && !Array.isArray(row.data)) {
+    output.data = row.data as Record<string, unknown>;
+  }
+  if (row.metadata && typeof row.metadata === "object" && !Array.isArray(row.metadata)) {
+    output.metadata = row.metadata as Record<string, unknown>;
+  }
+  return output;
+}
+
+export function parseWorkflowExecutionContext(value: unknown): WorkflowExecutionContext | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  return value as WorkflowExecutionContext;
 }
 
 export function matchesOperationalObjectMetadata(

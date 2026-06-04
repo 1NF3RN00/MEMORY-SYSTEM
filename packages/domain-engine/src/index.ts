@@ -9,6 +9,23 @@ export {
   type ResolveExecutionContextDeps,
   type ResolveExecutionContextInput,
 } from "./execution-context.js";
+export {
+  resolveWorkflowExecutionContext,
+  type ResolveWorkflowExecutionContextDeps,
+  type ResolveWorkflowExecutionContextInput,
+} from "./workflow-execution-context.js";
+export {
+  getWorkflowContextLayerOrder,
+  summarizeWorkflowContextLayers,
+  workflowLayerPrecedes,
+} from "./workflow-precedence.js";
+export { createWorkflow, updateWorkflow, archiveWorkflow, deleteWorkflow } from "./workflows.js";
+export {
+  executeWorkflow,
+  archiveWorkflowRun,
+  type WorkflowRetrievalInput,
+  type WorkflowRetrievalPort,
+} from "./workflow-execution.js";
 export { addGlobalFact, updateGlobalFact, archiveGlobalFact, deleteGlobalFact } from "./global-facts.js";
 export { createDomain, updateDomain, archiveDomain, deleteDomain } from "./domains.js";
 export { addFact, updateFact, archiveFact, deleteFact } from "./domain-facts.js";
@@ -43,6 +60,9 @@ export type {
   CreateGlobalFactInput,
   CreateInstructionInput,
   CreateOperationalObjectInput,
+  CreateWorkflowInput,
+  CreateWorkflowRunInput,
+  CreateWorkflowOutputInput,
   DomainEngineStore,
   ExecutionContextLoadResult,
   InstallPackageInput,
@@ -51,5 +71,8 @@ export type {
   UpdateDomainInput,
   UpdateGlobalFactInput,
   UpdateOperationalObjectInput,
+  UpdateWorkflowInput,
+  UpdateWorkflowRunInput,
   VersionInstructionInput,
+  WorkflowExecutionContextLoadInput,
 } from "./store.js";

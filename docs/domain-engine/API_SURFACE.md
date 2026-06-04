@@ -286,6 +286,7 @@ See [WORKFLOW_ENGINE_AND_OPERATIONAL_OBJECTS.md](../WORKFLOW_ENGINE_AND_OPERATIO
 |--------|------|------|
 | GET | `/workflows?workspaceId=` | workspace_user+ |
 | GET | `/workflows/:workflowId` | workspace_user+ |
+| GET | `/workflows/:workflowId/execution-context` | workspace_user+ |
 | POST | `/workflows` | workspace_admin+ |
 | PATCH | `/workflows/:workflowId` | workspace_admin+ |
 | POST | `/workflows/:workflowId/archive` | workspace_admin+ |

@@ -6,6 +6,12 @@ import type {
   OperationalObject,
   PackageManifest,
   PackageManifestDiff,
+  Workflow,
+  WorkflowExecutionContext,
+  WorkflowInstructionRef,
+  WorkflowOutput,
+  WorkflowRun,
+  WorkflowRunDetail,
 } from "@memory-middleware/shared-types";
 import { apiGet, apiPatch, apiPost } from "./api.js";
 
@@ -284,4 +290,157 @@ export async function archiveOperationalObjectApi(
     workspaceId,
   });
   return data.object;
+}
+
+export async function fetchWorkflows(workspaceId: string): Promise<Workflow[]> {
+  const data = await apiGet<{ workflows: Workflow[] }>(`/workflows?workspaceId=${workspaceId}`);
+  return data.workflows;
+}
+
+export async function fetchWorkflow(workspaceId: string, workflowId: string): Promise<Workflow> {
+  const data = await apiGet<{ workflow: Workflow }>(
+    `/workflows/${workflowId}?workspaceId=${workspaceId}`,
+  );
+  return data.workflow;
+}
+
+export async function fetchWorkflowExecutionContext(
+  workspaceId: string,
+  workflowId: string,
+  previousRunLimit?: number,
+): Promise<WorkflowExecutionContext> {
+  const params = new URLSearchParams({ workspaceId });
+  if (previousRunLimit != null) params.set("previousRunLimit", String(previousRunLimit));
+  const data = await apiGet<{ executionContext: WorkflowExecutionContext }>(
+    `/workflows/${workflowId}/execution-context?${params.toString()}`,
+  );
+  return data.executionContext;
+}
+
+export async function createWorkflowApi(
+  workspaceId: string,
+  body: Record<string, unknown>,
+): Promise<Workflow> {
+  const data = await apiPost<{ workflow: Workflow }>("/workflows", { workspaceId, ...body });
+  return data.workflow;
+}
+
+export async function updateWorkflowApi(
+  workspaceId: string,
+  workflowId: string,
+  body: Record<string, unknown>,
+): Promise<Workflow> {
+  const data = await apiPatch<{ workflow: Workflow }>(`/workflows/${workflowId}`, {
+    workspaceId,
+    ...body,
+  });
+  return data.workflow;
+}
+
+export async function archiveWorkflowApi(
+  workspaceId: string,
+  workflowId: string,
+): Promise<Workflow> {
+  const data = await apiPost<{ workflow: Workflow }>(`/workflows/${workflowId}/archive`, {
+    workspaceId,
+  });
+  return data.workflow;
+}
+
+export async function executeWorkflowApi(
+  workspaceId: string,
+  workflowId: string,
+  body: { query: string; tokenBudget?: number; previousRunLimit?: number },
+): Promise<{
+  workflowRunId: string;
+  status: WorkflowRun["status"];
+  outputs: WorkflowOutput[];
+  executionContext: WorkflowExecutionContext;
+}> {
+  const data = await apiPost<{
+    workflowRunId: string;
+    status: WorkflowRun["status"];
+    outputs: WorkflowOutput[];
+    executionContext: WorkflowExecutionContext;
+  }>(`/workflows/${workflowId}/execute`, { workspaceId, ...body });
+  return data;
+}
+
+export async function fetchWorkflowRuns(
+  workspaceId: string,
+  workflowId: string,
+  limit = 50,
+): Promise<WorkflowRun[]> {
+  const data = await apiGet<{ runs: WorkflowRun[] }>(
+    `/workflows/${workflowId}/runs?workspaceId=${workspaceId}&limit=${limit}`,
+  );
+  return data.runs;
+}
+
+export async function fetchWorkflowRunDetail(
+  workspaceId: string,
+  workflowRunId: string,
+): Promise<WorkflowRunDetail> {
+  const data = await apiGet<{ run: WorkflowRunDetail }>(
+    `/workflow-runs/${workflowRunId}?workspaceId=${workspaceId}`,
+  );
+  return data.run;
+}
+
+export interface WorkflowRunReplayResponse {
+  replayId: string;
+  retrievalTraceId: string;
+  workspaceId: string;
+  originalQuery: string;
+  integrityHash: string;
+  replayTimestamp?: string;
+  workflowReplay?: {
+    workflowId: string;
+    workflowRunId: string;
+    workspaceId: string;
+    executionContext: WorkflowExecutionContext;
+    outputs: WorkflowOutput[];
+    generatedFactIds: string[];
+    generatedMemoryIds: string[];
+    generatedObjectIds: string[];
+  };
+}
+
+export async function fetchWorkflowRunReplay(
+  workspaceId: string,
+  workflowRunId: string,
+): Promise<WorkflowRunReplayResponse> {
+  const data = await apiGet<{ replay: WorkflowRunReplayResponse }>(
+    `/workflow-runs/${workflowRunId}/replay?workspaceId=${workspaceId}`,
+  );
+  return data.replay;
+}
+
+export async function archiveWorkflowRunApi(
+  workspaceId: string,
+  workflowRunId: string,
+): Promise<WorkflowRun> {
+  const data = await apiPost<{ run: WorkflowRun }>(`/workflow-runs/${workflowRunId}/archive`, {
+    workspaceId,
+  });
+  return data.run;
+}
+
+export function parseInstructionRefsJson(value: string): WorkflowInstructionRef[] {
+  const parsed = JSON.parse(value) as unknown;
+  if (!Array.isArray(parsed)) throw new Error("Instruction refs must be a JSON array");
+  return parsed.map((item, index) => {
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      throw new Error(`Instruction ref at index ${index} must be an object`);
+    }
+    const obj = item as Record<string, unknown>;
+    if (typeof obj.domainKey !== "string" || typeof obj.actionKey !== "string") {
+      throw new Error(`Instruction ref at index ${index} requires domainKey and actionKey`);
+    }
+    return { domainKey: obj.domainKey, actionKey: obj.actionKey };
+  });
+}
+
+export function formatInstructionRefs(refs: WorkflowInstructionRef[] | undefined): string {
+  return JSON.stringify(refs ?? [], null, 2);
 }

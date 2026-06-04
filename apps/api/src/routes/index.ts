@@ -18,6 +18,7 @@ import { registerPlatformRoutes } from "./platform.js";
 import { registerPackageRoutes } from "./packages.js";
 import { registerDomainRoutes } from "./domains.js";
 import { registerObjectRoutes } from "./objects.js";
+import { registerWorkflowRoutes } from "./workflows.js";
 
 export async function registerRoutes(app: FastifyInstance): Promise<void> {
   await registerHealthRoutes(app);
@@ -38,5 +39,6 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
   await registerDiagnosticsRoutes(app);
   await registerDomainRoutes(app);
   await registerObjectRoutes(app);
+  await registerWorkflowRoutes(app);
   await registerPackageRoutes(app);
 }

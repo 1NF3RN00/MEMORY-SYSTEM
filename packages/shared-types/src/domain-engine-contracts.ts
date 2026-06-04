@@ -273,6 +273,165 @@ export interface ListOperationalObjectsResult {
   nextCursor?: string;
 }
 
+export interface WorkflowInstructionRef {
+  domainKey: string;
+  actionKey: string;
+}
+
+export interface Workflow {
+  workflowId: string;
+  workspaceId: string;
+  name: string;
+  description: string;
+  domains: string[];
+  packages: string[];
+  instructionRefs: WorkflowInstructionRef[];
+  outputTypes: string[];
+  objectTypeFilters?: string[];
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+  archivedAt?: string;
+}
+
+export interface CreateWorkflowInput {
+  workspaceId: string;
+  name: string;
+  description?: string;
+  domains?: string[];
+  packages?: string[];
+  instructionRefs?: WorkflowInstructionRef[];
+  outputTypes?: string[];
+  objectTypeFilters?: string[];
+}
+
+export interface UpdateWorkflowInput {
+  name?: string;
+  description?: string;
+  domains?: string[];
+  packages?: string[];
+  instructionRefs?: WorkflowInstructionRef[];
+  outputTypes?: string[];
+  objectTypeFilters?: string[];
+  active?: boolean;
+}
+
+export interface WorkflowRun {
+  workflowRunId: string;
+  workflowId: string;
+  workspaceId: string;
+  status: "pending" | "running" | "completed" | "failed" | "archived";
+  startedAt: string;
+  completedAt?: string;
+  errorMessage?: string;
+  outputCount: number;
+  generatedFactIds: string[];
+  generatedMemoryIds: string[];
+  generatedObjectIds: string[];
+  archivedAt?: string;
+}
+
+export interface WorkflowOutput {
+  outputId: string;
+  workflowRunId: string;
+  workspaceId: string;
+  outputType: string;
+  title: string;
+  content: string;
+  data?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface WorkflowRunDetail extends WorkflowRun {
+  outputs: WorkflowOutput[];
+  generatedFacts: Fact[];
+  generatedObjects: OperationalObject[];
+  executionContext: WorkflowExecutionContext;
+}
+
+export interface WorkflowExecutionContext {
+  workflowId: string;
+  workflowRunId?: string;
+  workspaceId: string;
+  domains: Domain[];
+  packages: InstalledPackage[];
+  globalFacts: Fact[];
+  domainFacts: Fact[];
+  instructions: Instruction[];
+  objects: OperationalObject[];
+  retrievedContext: import("./retrieval-contracts.js").ContextPackage[];
+  previousWorkflowRuns: WorkflowRunDetail[];
+  resolvedAt: string;
+}
+
+export type WorkflowContextLayer =
+  | "globalFacts"
+  | "domainFacts"
+  | "instructions"
+  | "objects"
+  | "retrievedContext"
+  | "previousWorkflowRuns";
+
+export const WORKFLOW_CONTEXT_LAYER_ORDER: readonly WorkflowContextLayer[] = [
+  "globalFacts",
+  "domainFacts",
+  "instructions",
+  "objects",
+  "retrievedContext",
+  "previousWorkflowRuns",
+] as const;
+
+export const DEFAULT_WORKFLOW_PREVIOUS_RUN_LIMIT = 10;
+
+export interface ExecuteWorkflowInput {
+  workspaceId: string;
+  workflowId: string;
+  query: string;
+  tokenBudget?: number;
+  previousRunLimit?: number;
+}
+
+export interface WorkflowReplayPayload {
+  workflowId: string;
+  workflowRunId: string;
+  workspaceId: string;
+  executionContext: WorkflowExecutionContext;
+  outputs: WorkflowOutput[];
+  generatedFactIds: string[];
+  generatedMemoryIds: string[];
+  generatedObjectIds: string[];
+  domainKey?: string;
+  domainAction?: string;
+}
+
+export interface CreateWorkflowRunInput {
+  workflowId: string;
+  workspaceId: string;
+  status?: WorkflowRun["status"];
+}
+
+export interface UpdateWorkflowRunInput {
+  status?: WorkflowRun["status"];
+  completedAt?: string;
+  errorMessage?: string;
+  outputCount?: number;
+  generatedFactIds?: string[];
+  generatedMemoryIds?: string[];
+  generatedObjectIds?: string[];
+  executionContext?: WorkflowExecutionContext;
+}
+
+export interface CreateWorkflowOutputInput {
+  workflowRunId: string;
+  workspaceId: string;
+  outputType: string;
+  title: string;
+  content: string;
+  data?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}
+
 export const DOMAIN_ENGINE_EVENT_TYPES = {
   GLOBAL_FACT_CREATED: "global_fact_created",
   GLOBAL_FACT_UPDATED: "global_fact_updated",
@@ -306,6 +465,22 @@ export const OPERATIONAL_OBJECT_EVENT_TYPES = {
 
 export type OperationalObjectEventType =
   (typeof OPERATIONAL_OBJECT_EVENT_TYPES)[keyof typeof OPERATIONAL_OBJECT_EVENT_TYPES];
+
+export const WORKFLOW_ENGINE_EVENT_TYPES = {
+  WORKFLOW_CREATED: "workflow_created",
+  WORKFLOW_UPDATED: "workflow_updated",
+  WORKFLOW_ARCHIVED: "workflow_archived",
+  WORKFLOW_STARTED: "workflow_started",
+  WORKFLOW_CONTEXT_BUILT: "workflow_context_built",
+  WORKFLOW_RETRIEVAL_COMPLETED: "workflow_retrieval_completed",
+  WORKFLOW_EXECUTION_COMPLETED: "workflow_execution_completed",
+  WORKFLOW_FAILED: "workflow_failed",
+  WORKFLOW_OUTPUT_GENERATED: "workflow_output_generated",
+  WORKFLOW_RUN_ARCHIVED: "workflow_run_archived",
+} as const;
+
+export type WorkflowEngineEventType =
+  (typeof WORKFLOW_ENGINE_EVENT_TYPES)[keyof typeof WORKFLOW_ENGINE_EVENT_TYPES];
 
 export type DomainEngineEventType =
   (typeof DOMAIN_ENGINE_EVENT_TYPES)[keyof typeof DOMAIN_ENGINE_EVENT_TYPES];

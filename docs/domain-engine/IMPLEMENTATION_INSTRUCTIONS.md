@@ -260,9 +260,11 @@ Workspace without domains shows empty states — no errors.
 
 **Exit criteria:** CRUD round-trip; objects searchable by type/status; no hardcoded object types in middleware.
 
-### Phase 9 — Workflow registry + execution context (planned)
+### Phase 9 — Workflow registry + execution context ✅
 
 **Goal:** Workflow definitions and `resolveWorkflowExecutionContext()`.
+
+**Completed:** `Workflow` types, Prisma model + migration, `workflows.ts`, `workflow-execution-context.ts`, `workflow-precedence.ts`, `/workflows/*` CRUD routes, `GET /workflows/:workflowId/execution-context`, `WORKFLOW_*` registry/context events, unit tests for precedence ordering.
 
 1. Add `Workflow`, `WorkflowExecutionContext` types and Prisma `Workflow` model.
 2. Modules: `workflows.ts`, `workflow-execution-context.ts`.
@@ -272,19 +274,21 @@ Workspace without domains shows empty states — no errors.
 
 **Exit criteria:** Context resolver returns deterministic snapshot; unit tests for precedence ordering.
 
-### Phase 10 — Workflow execution + runs (planned)
+### Phase 10 — Workflow execution + runs ✅
 
 **Goal:** Execute workflows; persist replayable runs.
 
+**Completed:** `WorkflowRun` + `WorkflowOutput` Prisma models, `executeWorkflow()`, domain-scoped retrieval per linked domain, deterministic output generation, all `WORKFLOW_*` execution events, Historian replay via `captureWorkflowRunReplaySnapshot`, execute/run/replay API routes, prior-run chaining in execution context.
+
 1. Add `WorkflowRun`, `WorkflowOutput` types and Prisma models.
 2. `POST /workflows/:workflowId/execute` — builds context, runs retrieval per linked domains, invokes downstream generation, persists outputs.
-3. Generated facts/memories/objects link to `workflowRunId`.
+3. Generated facts/memories/objects link to `workflowRunId` (schema ready; generation deferred until LLM integration).
 4. Emit all `WORKFLOW_*` Historian events (see CONTRACTS.md).
-5. `ReplaySnapshot.payload` includes `workflowExecutionContext`, outputs, generated entity IDs.
+5. `ReplaySnapshot.payload` includes `workflowExecutionContext`, outputs, and generated entity IDs via `workflowReplay`.
 
 **Exit criteria:** Two sequential runs of same workflow; Run #2 includes Run #1 in `previousWorkflowRuns`; Historian replay reconstructs run.
 
-### Phase 11 — Dashboard workflow surfaces (planned)
+### Phase 11 — Dashboard workflow surfaces ✅
 
 **Goal:** User-facing workflow management and replay.
 
@@ -295,7 +299,7 @@ Workspace without domains shows empty states — no errors.
 | Workflow Outputs | `/workflows/:id/outputs` |
 | Workflow Replay | `/workflows/runs/:runId/replay` |
 
-Add nav entries under **Operational Intelligence**.
+**Completed:** `WorkflowManagerPage`, `WorkflowRunsPage`, `WorkflowOutputsPage`, `WorkflowReplayPage`, workflow API helpers in `domain-engine-api.ts`, nav entry under Operational Intelligence.
 
 **Exit criteria:** Admin can create workflow, execute, inspect run, replay from Historian.
 
