@@ -154,6 +154,8 @@ model Workspace {
 
   installedPackages     InstalledPackage[]
 
+  operationalObjects    OperationalObject[]
+
 
 
   @@index([platformId])
@@ -1231,6 +1233,44 @@ model InstalledPackage {
   @@index([workspaceId])
 
   @@map("installed_packages")
+
+}
+
+
+
+model OperationalObject {
+
+  id          String    @id
+
+  workspaceId String    @map("workspace_id")
+
+  objectType  String    @map("object_type")
+
+  name        String
+
+  status      String
+
+  metadata    Json      @default("{}")
+
+  rowStatus   String    @default("active") @map("row_status")
+
+  archivedAt  DateTime? @map("archived_at")
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+
+
+  @@index([workspaceId, objectType])
+
+  @@index([workspaceId, status])
+
+  @@map("operational_objects")
 
 }
 

@@ -7,6 +7,8 @@ import type {
   PackageManifest,
   RelationshipNeighborhoodConstraint,
   RetrievalRule,
+  OperationalObject,
+  ListOperationalObjectsResult,
 } from "@memory-middleware/shared-types";
 
 export interface CreateGlobalFactInput {
@@ -75,6 +77,30 @@ export interface CreateInstructionInput {
 export interface VersionInstructionInput {
   title?: string;
   content: string;
+}
+
+export interface CreateOperationalObjectInput {
+  workspaceId: string;
+  objectType: string;
+  name: string;
+  status: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface UpdateOperationalObjectInput {
+  name?: string;
+  status?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ListOperationalObjectsQuery {
+  workspaceId: string;
+  objectType?: string;
+  status?: string;
+  metadataMatch?: Record<string, string | string[]>;
+  includeArchived?: boolean;
+  limit?: number;
+  cursor?: string;
 }
 
 export interface InstallPackageInput {
@@ -156,4 +182,14 @@ export interface DomainEngineStore {
     domainKey?: string,
     domainAction?: string,
   ): Promise<ExecutionContextLoadResult>;
+
+  createOperationalObject(input: CreateOperationalObjectInput): Promise<OperationalObject>;
+  updateOperationalObject(
+    objectId: string,
+    input: UpdateOperationalObjectInput,
+  ): Promise<OperationalObject | null>;
+  archiveOperationalObject(objectId: string): Promise<OperationalObject | null>;
+  deleteOperationalObject(objectId: string): Promise<boolean>;
+  getOperationalObject(objectId: string): Promise<OperationalObject | null>;
+  listOperationalObjects(query: ListOperationalObjectsQuery): Promise<ListOperationalObjectsResult>;
 }

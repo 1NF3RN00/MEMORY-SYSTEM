@@ -60,6 +60,9 @@ export interface RetrievalRule {
   rankingTagBoosts?: Record<string, number>;
   maxExpansionDepth?: number;
   tokenBudgetOverride?: number;
+  /** When set, include operational objects of these types in domain scope */
+  objectTypeFilter?: string[];
+  objectMetadataMatch?: Record<string, string | string[]>;
 }
 
 export interface RelationshipNeighborhoodConstraint {
@@ -226,6 +229,50 @@ export interface DomainContextMetadata {
   factOverrides: FactOverrideRecord[];
 }
 
+export type OperationalObjectStatus = "active" | "archived";
+
+export interface OperationalObject {
+  objectId: string;
+  workspaceId: string;
+  objectType: string;
+  name: string;
+  status: string;
+  metadata: Record<string, unknown>;
+  objectStatus: OperationalObjectStatus;
+  createdAt: string;
+  updatedAt: string;
+  archivedAt?: string;
+}
+
+export interface CreateOperationalObjectInput {
+  workspaceId: string;
+  objectType: string;
+  name: string;
+  status: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface UpdateOperationalObjectInput {
+  name?: string;
+  status?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ListOperationalObjectsQuery {
+  workspaceId: string;
+  objectType?: string;
+  status?: string;
+  metadataMatch?: Record<string, string | string[]>;
+  includeArchived?: boolean;
+  limit?: number;
+  cursor?: string;
+}
+
+export interface ListOperationalObjectsResult {
+  objects: OperationalObject[];
+  nextCursor?: string;
+}
+
 export const DOMAIN_ENGINE_EVENT_TYPES = {
   GLOBAL_FACT_CREATED: "global_fact_created",
   GLOBAL_FACT_UPDATED: "global_fact_updated",
@@ -249,6 +296,16 @@ export const DOMAIN_ENGINE_EVENT_TYPES = {
   EXECUTION_CONTEXT_RESOLVED: "execution_context_resolved",
   FACT_OVERRIDE_APPLIED: "fact_override_applied",
 } as const;
+
+export const OPERATIONAL_OBJECT_EVENT_TYPES = {
+  OPERATIONAL_OBJECT_CREATED: "operational_object_created",
+  OPERATIONAL_OBJECT_UPDATED: "operational_object_updated",
+  OPERATIONAL_OBJECT_ARCHIVED: "operational_object_archived",
+  OPERATIONAL_OBJECT_DELETED: "operational_object_deleted",
+} as const;
+
+export type OperationalObjectEventType =
+  (typeof OPERATIONAL_OBJECT_EVENT_TYPES)[keyof typeof OPERATIONAL_OBJECT_EVENT_TYPES];
 
 export type DomainEngineEventType =
   (typeof DOMAIN_ENGINE_EVENT_TYPES)[keyof typeof DOMAIN_ENGINE_EVENT_TYPES];

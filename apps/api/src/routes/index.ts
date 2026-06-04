@@ -17,6 +17,7 @@ import { registerAuthRoutes } from "./auth.js";
 import { registerPlatformRoutes } from "./platform.js";
 import { registerPackageRoutes } from "./packages.js";
 import { registerDomainRoutes } from "./domains.js";
+import { registerObjectRoutes } from "./objects.js";
 
 export async function registerRoutes(app: FastifyInstance): Promise<void> {
   await registerHealthRoutes(app);
@@ -36,5 +37,6 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
   await registerContextRoutes(app);
   await registerDiagnosticsRoutes(app);
   await registerDomainRoutes(app);
+  await registerObjectRoutes(app);
   await registerPackageRoutes(app);
 }

@@ -51,6 +51,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { to: "/domains", label: "Domain Manager", keywords: ["domain", "retrieval", "task"] },
       { to: "/global-facts", label: "Global Facts", keywords: ["facts", "global", "truth"] },
+      { to: "/objects", label: "Object Manager", keywords: ["object", "customer", "entity"] },
       { to: "/packages", label: "Package Manager", keywords: ["package", "install", "export"] },
     ],
   },

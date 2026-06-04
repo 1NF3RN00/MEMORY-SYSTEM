@@ -346,10 +346,18 @@ export type {
   PackageSnapshotRecord,
   RelationshipNeighborhoodConstraint,
   RetrievalRule,
+  OperationalObject,
+  OperationalObjectStatus,
+  OperationalObjectEventType,
+  CreateOperationalObjectInput,
+  UpdateOperationalObjectInput,
+  ListOperationalObjectsQuery,
+  ListOperationalObjectsResult,
 } from "./domain-engine-contracts.js";
 export {
   DEFAULT_RELATIONSHIP_NEIGHBORHOOD_CONSTRAINT,
   DOMAIN_ENGINE_EVENT_TYPES,
+  OPERATIONAL_OBJECT_EVENT_TYPES,
   DOMAIN_SLUG_REGEX,
   isDomainSlug,
 } from "./domain-engine-contracts.js";

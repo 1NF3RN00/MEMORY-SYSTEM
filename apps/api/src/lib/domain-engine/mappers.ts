@@ -8,6 +8,8 @@ import type {
   InstructionStatus,
   InstalledPackage,
   InstalledPackageStatus,
+  OperationalObject,
+  OperationalObjectStatus,
   PackageDefinitionRecord,
   PackageManifest,
   RelationshipNeighborhoodConstraint,
@@ -21,6 +23,7 @@ import type {
   DomainRetrievalRule,
   GlobalFact,
   InstalledPackage as PrismaInstalledPackage,
+  OperationalObject as PrismaOperationalObject,
   PackageDefinition,
 } from "@prisma/client";
 
@@ -78,6 +81,16 @@ export function parseRetrievalRuleConfig(
   }
   if (typeof c.maxExpansionDepth === "number") rule.maxExpansionDepth = c.maxExpansionDepth;
   if (typeof c.tokenBudgetOverride === "number") rule.tokenBudgetOverride = c.tokenBudgetOverride;
+  if (Array.isArray(c.objectTypeFilter)) {
+    rule.objectTypeFilter = c.objectTypeFilter.filter((t): t is string => typeof t === "string");
+  }
+  if (
+    c.objectMetadataMatch &&
+    typeof c.objectMetadataMatch === "object" &&
+    !Array.isArray(c.objectMetadataMatch)
+  ) {
+    rule.objectMetadataMatch = c.objectMetadataMatch as Record<string, string | string[]>;
+  }
   return rule;
 }
 
@@ -91,6 +104,8 @@ export function retrievalRuleToConfig(
   if (rule.rankingTagBoosts) config.rankingTagBoosts = rule.rankingTagBoosts;
   if (rule.maxExpansionDepth != null) config.maxExpansionDepth = rule.maxExpansionDepth;
   if (rule.tokenBudgetOverride != null) config.tokenBudgetOverride = rule.tokenBudgetOverride;
+  if (rule.objectTypeFilter) config.objectTypeFilter = rule.objectTypeFilter;
+  if (rule.objectMetadataMatch) config.objectMetadataMatch = rule.objectMetadataMatch;
   return config;
 }
 
@@ -209,4 +224,42 @@ export function mapPackageDefinition(row: PackageDefinition): PackageDefinitionR
   };
   if (row.description) record.description = row.description;
   return record;
+}
+
+export function parseOperationalObjectMetadata(value: unknown): Record<string, unknown> {
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
+  }
+  return {};
+}
+
+export function mapOperationalObject(row: PrismaOperationalObject): OperationalObject {
+  const object: OperationalObject = {
+    objectId: row.id,
+    workspaceId: row.workspaceId,
+    objectType: row.objectType,
+    name: row.name,
+    status: row.status,
+    metadata: parseOperationalObjectMetadata(row.metadata),
+    objectStatus: row.rowStatus as OperationalObjectStatus,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+  if (row.archivedAt) object.archivedAt = row.archivedAt.toISOString();
+  return object;
+}
+
+export function matchesOperationalObjectMetadata(
+  metadata: Record<string, unknown>,
+  match: Record<string, string | string[]>,
+): boolean {
+  for (const [key, expected] of Object.entries(match)) {
+    const actual = metadata[key];
+    if (Array.isArray(expected)) {
+      if (!expected.includes(String(actual ?? ""))) return false;
+    } else if (String(actual ?? "") !== expected) {
+      return false;
+    }
+  }
+  return true;
 }

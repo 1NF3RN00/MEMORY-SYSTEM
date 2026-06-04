@@ -28,6 +28,13 @@ export {
   rollbackPackage,
   archiveInstalledPackage,
 } from "./packages.js";
+export {
+  createOperationalObject,
+  updateOperationalObject,
+  archiveOperationalObject,
+  deleteOperationalObject,
+  listOperationalObjects,
+} from "./operational-objects.js";
 export { DomainEngineError, assertDomainSlug } from "./errors.js";
 export { emitDomainEngineEvent, DOMAIN_ENGINE_EVENT_TYPES } from "./events.js";
 export type {
@@ -35,11 +42,14 @@ export type {
   CreateDomainInput,
   CreateGlobalFactInput,
   CreateInstructionInput,
+  CreateOperationalObjectInput,
   DomainEngineStore,
   ExecutionContextLoadResult,
   InstallPackageInput,
+  ListOperationalObjectsQuery,
   UpdateDomainFactInput,
   UpdateDomainInput,
   UpdateGlobalFactInput,
+  UpdateOperationalObjectInput,
   VersionInstructionInput,
 } from "./store.js";

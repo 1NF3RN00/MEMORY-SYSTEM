@@ -20,6 +20,7 @@ import { PlatformApiKeysPage } from "./pages/PlatformApiKeysPage.js";
 import { PlatformSecurityPage } from "./pages/PlatformSecurityPage.js";
 import { DomainManagerPage } from "./pages/DomainManagerPage.js";
 import { GlobalFactManagerPage } from "./pages/GlobalFactManagerPage.js";
+import { ObjectManagerPage } from "./pages/ObjectManagerPage.js";
 import { DomainFactManagerPage } from "./pages/DomainFactManagerPage.js";
 import { InstructionManagerPage } from "./pages/InstructionManagerPage.js";
 import { PackageManagerPage } from "./pages/PackageManagerPage.js";
@@ -58,6 +59,7 @@ function OperationalRoutes() {
         <Route path="/domains/:id/facts" element={<DomainFactManagerPage />} />
         <Route path="/domains/:id/instructions" element={<InstructionManagerPage />} />
         <Route path="/global-facts" element={<GlobalFactManagerPage />} />
+        <Route path="/objects" element={<ObjectManagerPage />} />
         <Route path="/packages" element={<PackageManagerPage />} />
         <Route path="/admin/provisioning" element={<PlatformAdminPage />} />
         <Route path="/admin/api-keys" element={<PlatformApiKeysPage />} />

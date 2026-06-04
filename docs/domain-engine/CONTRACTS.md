@@ -469,3 +469,399 @@ Single Prisma transaction:
 4. Insert domain facts and instructions per domain.
 5. Create `InstalledPackage` with full `manifestSnapshot`.
 6. Emit `package_installed` event.
+
+---
+
+# Phase 8+ — Operational Objects, Workflows, and Workflow Runs
+
+Authoritative shapes for Phase 8–11. Implement exactly as specified unless the user amends this doc or [WORKFLOW_ENGINE_AND_OPERATIONAL_OBJECTS.md](../WORKFLOW_ENGINE_AND_OPERATIONAL_OBJECTS.md).
+
+File additions: extend `packages/shared-types/src/domain-engine-contracts.ts` (or `workflow-engine-contracts.ts` if split).
+
+Imports from existing contracts:
+
+```ts
+import type { ContextPackage } from "./retrieval-contracts.js";
+import type { Fact, Instruction, Domain, InstalledPackage } from "./domain-engine-contracts.js";
+```
+
+---
+
+## Operational Object
+
+```ts
+export type OperationalObjectStatus = "active" | "archived";
+
+export interface OperationalObject {
+  objectId: string;
+  workspaceId: string;
+  /** Free-form slug, e.g. customer, competitor, campaign — never enum-enforced in middleware */
+  objectType: string;
+  name: string;
+  /** Free-form status string — never enum-enforced in middleware */
+  status: string;
+  metadata: Record<string, unknown>;
+  objectStatus: OperationalObjectStatus; // row lifecycle (active/archived), not business status
+  createdAt: string;
+  updatedAt: string;
+  archivedAt?: string;
+}
+
+export interface CreateOperationalObjectInput {
+  workspaceId: string;
+  objectType: string;
+  name: string;
+  status: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface UpdateOperationalObjectInput {
+  name?: string;
+  status?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ListOperationalObjectsQuery {
+  workspaceId: string;
+  objectType?: string;
+  status?: string;
+  metadataMatch?: Record<string, string | string[]>;
+  includeArchived?: boolean;
+  limit?: number;
+  cursor?: string;
+}
+```
+
+**Rules:**
+
+- Middleware never validates `objectType` or business `status` against a fixed enum.
+- `objectStatus` is the only enforced lifecycle field (`active` | `archived`).
+- Objects are searchable by `objectType`, `status`, and JSON metadata keys.
+
+---
+
+## Workflow
+
+```ts
+export interface WorkflowInstructionRef {
+  domainKey: string;
+  actionKey: string;
+}
+
+export interface Workflow {
+  workflowId: string;
+  workspaceId: string;
+  name: string;
+  description: string;
+  /** domainKey slugs resolved at execution time */
+  domains: string[];
+  /** installed packageKey slugs — expands to manifest domains/facts/instructions */
+  packages: string[];
+  /** Explicit instruction refs; merged with domain default actions when empty */
+  instructionRefs: WorkflowInstructionRef[];
+  /** Configurable output type labels, e.g. report, insight, recommendation */
+  outputTypes: string[];
+  /** Optional objectType filters applied when resolving execution context */
+  objectTypeFilters?: string[];
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+  archivedAt?: string;
+}
+
+export interface CreateWorkflowInput {
+  workspaceId: string;
+  name: string;
+  description?: string;
+  domains?: string[];
+  packages?: string[];
+  instructionRefs?: WorkflowInstructionRef[];
+  outputTypes?: string[];
+  objectTypeFilters?: string[];
+}
+
+export interface UpdateWorkflowInput {
+  name?: string;
+  description?: string;
+  domains?: string[];
+  packages?: string[];
+  instructionRefs?: WorkflowInstructionRef[];
+  outputTypes?: string[];
+  objectTypeFilters?: string[];
+  active?: boolean;
+}
+```
+
+---
+
+## Workflow output
+
+```ts
+export type WorkflowOutputType = string; // free-form label from workflow.outputTypes
+
+export interface WorkflowOutput {
+  outputId: string;
+  workflowRunId: string;
+  workspaceId: string;
+  outputType: WorkflowOutputType;
+  title: string;
+  content: string;
+  /** Structured payload for machine consumption */
+  data?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+  createdAt: string;
+}
+```
+
+Workflow outputs are persisted and indexed for retrieval by future runs.
+
+---
+
+## Workflow run
+
+```ts
+export type WorkflowRunStatus =
+  | "pending"
+  | "running"
+  | "completed"
+  | "failed"
+  | "archived";
+
+export interface WorkflowRun {
+  workflowRunId: string;
+  workflowId: string;
+  workspaceId: string;
+  status: WorkflowRunStatus;
+  startedAt: string;
+  completedAt?: string;
+  errorMessage?: string;
+  /** Denormalized counts; full entities in replay payload */
+  outputCount: number;
+  generatedFactIds: string[];
+  generatedMemoryIds: string[];
+  generatedObjectIds: string[];
+  archivedAt?: string;
+}
+
+/** Full run detail for API GET and Historian replay */
+export interface WorkflowRunDetail extends WorkflowRun {
+  outputs: WorkflowOutput[];
+  generatedFacts: Fact[];
+  generatedObjects: OperationalObject[];
+  executionContext: WorkflowExecutionContext;
+}
+```
+
+---
+
+## Workflow execution context
+
+```ts
+export interface WorkflowExecutionContext {
+  workflowId: string;
+  workflowRunId?: string;
+  workspaceId: string;
+  domains: Domain[];
+  packages: InstalledPackage[];
+  globalFacts: Fact[];
+  domainFacts: Fact[];
+  instructions: Instruction[];
+  objects: OperationalObject[];
+  retrievedContext: ContextPackage[];
+  /** Prior completed runs for same workflowId, newest first, capped by config */
+  previousWorkflowRuns: WorkflowRunDetail[];
+  resolvedAt: string;
+}
+
+/** Snapshot stored on ReplaySnapshot.payload for workflow runs */
+export interface WorkflowReplayPayload {
+  workflowId: string;
+  workflowRunId: string;
+  workspaceId: string;
+  executionContext: WorkflowExecutionContext;
+  outputs: WorkflowOutput[];
+  generatedFactIds: string[];
+  generatedMemoryIds: string[];
+  generatedObjectIds: string[];
+  domainKey?: string;
+  domainAction?: string;
+}
+```
+
+---
+
+## Workflow retrieval precedence (Phase 9/10)
+
+When assembling workflow input, materialize sections in this order (mandatory):
+
+1. Global facts
+2. Domain facts
+3. Instructions
+4. Operational objects (metadata + status summaries)
+5. Retrieved context (`ContextPackage[]` from linked domains)
+6. Previous workflow runs (outputs + generated artifacts from prior runs)
+
+Facts always win over all lower layers. This extends — does not replace — domain-scoped retrieval precedence in Phase 2/4.
+
+---
+
+## Extended retrieval rule (optional Phase 8)
+
+Add optional fields to `RetrievalRule`:
+
+```ts
+  /** When set, include operational objects of these types in domain scope */
+  objectTypeFilter?: string[];
+  objectMetadataMatch?: Record<string, string | string[]>;
+```
+
+---
+
+## Prisma models (Phase 8+)
+
+```prisma
+model OperationalObject {
+  id          String   @id
+  workspaceId String   @map("workspace_id")
+  objectType  String   @map("object_type")
+  name        String
+  status      String   // business status — free-form string
+  metadata    Json     @default("{}")
+  rowStatus   String   @default("active") @map("row_status") // active | archived
+  archivedAt  DateTime? @map("archived_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  @@index([workspaceId, objectType])
+  @@index([workspaceId, status])
+  @@map("operational_objects")
+}
+
+model Workflow {
+  id                String   @id
+  workspaceId       String   @map("workspace_id")
+  name              String
+  description       String   @default("")
+  domains           Json     @default("[]")      // string[] domainKeys
+  packages          Json     @default("[]")      // string[] packageKeys
+  instructionRefs   Json     @default("[]") @map("instruction_refs")
+  outputTypes       Json     @default("[]") @map("output_types")
+  objectTypeFilters Json     @default("[]") @map("object_type_filters")
+  active            Boolean  @default(true)
+  archivedAt        DateTime? @map("archived_at")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+  workspace         Workspace @relation(...)
+  runs              WorkflowRun[]
+  @@index([workspaceId])
+  @@map("workflows")
+}
+
+model WorkflowRun {
+  id                  String   @id
+  workflowId          String   @map("workflow_id")
+  workspaceId         String   @map("workspace_id")
+  status              String   @default("pending")
+  startedAt           DateTime @default(now()) @map("started_at")
+  completedAt         DateTime? @map("completed_at")
+  errorMessage        String?  @map("error_message")
+  outputCount         Int      @default(0) @map("output_count")
+  generatedFactIds    Json     @default("[]") @map("generated_fact_ids")
+  generatedMemoryIds  Json     @default("[]") @map("generated_memory_ids")
+  generatedObjectIds  Json     @default("[]") @map("generated_object_ids")
+  executionContext    Json?    @map("execution_context") // WorkflowExecutionContext snapshot
+  archivedAt          DateTime? @map("archived_at")
+  workflow            Workflow @relation(...)
+  outputs             WorkflowOutput[]
+  @@index([workflowId])
+  @@index([workspaceId])
+  @@map("workflow_runs")
+}
+
+model WorkflowOutput {
+  id            String   @id
+  workflowRunId String   @map("workflow_run_id")
+  workspaceId   String   @map("workspace_id")
+  outputType    String   @map("output_type")
+  title         String
+  content       String
+  data          Json?
+  metadata      Json?
+  createdAt     DateTime @default(now()) @map("created_at")
+  workflowRun   WorkflowRun @relation(...)
+  @@index([workflowRunId])
+  @@index([workspaceId, outputType])
+  @@map("workflow_outputs")
+}
+```
+
+Add relations on `Workspace`:
+
+```prisma
+  operationalObjects OperationalObject[]
+  workflows          Workflow[]
+```
+
+Link generated facts/memories/objects to runs via optional nullable fields (Phase 10 migration):
+
+```prisma
+  sourceWorkflowRunId String? @map("source_workflow_run_id") // on GlobalFact, DomainFact, Memory as applicable
+```
+
+---
+
+## Event types (Phase 8+)
+
+```ts
+export const OPERATIONAL_OBJECT_EVENT_TYPES = {
+  OPERATIONAL_OBJECT_CREATED: "operational_object_created",
+  OPERATIONAL_OBJECT_UPDATED: "operational_object_updated",
+  OPERATIONAL_OBJECT_ARCHIVED: "operational_object_archived",
+  OPERATIONAL_OBJECT_DELETED: "operational_object_deleted",
+} as const;
+
+export const WORKFLOW_ENGINE_EVENT_TYPES = {
+  WORKFLOW_CREATED: "workflow_created",
+  WORKFLOW_UPDATED: "workflow_updated",
+  WORKFLOW_ARCHIVED: "workflow_archived",
+  WORKFLOW_STARTED: "workflow_started",
+  WORKFLOW_CONTEXT_BUILT: "workflow_context_built",
+  WORKFLOW_RETRIEVAL_COMPLETED: "workflow_retrieval_completed",
+  WORKFLOW_EXECUTION_COMPLETED: "workflow_execution_completed",
+  WORKFLOW_FAILED: "workflow_failed",
+  WORKFLOW_OUTPUT_GENERATED: "workflow_output_generated",
+  WORKFLOW_RUN_ARCHIVED: "workflow_run_archived",
+} as const;
+```
+
+Merge into Historian `EventLog` with structured payloads:
+
+| Event | Minimum payload fields |
+|-------|------------------------|
+| `workflow_started` | `workflowId`, `workflowRunId`, `workspaceId` |
+| `workflow_context_built` | `workflowRunId`, `executionContext` (full snapshot) |
+| `workflow_retrieval_completed` | `workflowRunId`, `retrievedContextCount`, `domainKeys[]` |
+| `workflow_execution_completed` | `workflowRunId`, `outputCount`, `durationMs` |
+| `workflow_failed` | `workflowRunId`, `errorMessage`, `stage` |
+| `workflow_output_generated` | `workflowRunId`, `outputId`, `outputType` |
+| `workflow_run_archived` | `workflowRunId` |
+
+`ReplaySnapshot.payload` for workflow operations uses `WorkflowReplayPayload`.
+
+---
+
+## Workflow execute transaction (Phase 10)
+
+Single logical transaction (may span async steps with status updates):
+
+1. Create `WorkflowRun` with `status: running`.
+2. Emit `workflow_started`.
+3. Resolve `WorkflowExecutionContext`; emit `workflow_context_built`.
+4. Run retrieval per linked domains/packages; emit `workflow_retrieval_completed`.
+5. Invoke generation; persist `WorkflowOutput` rows; emit `workflow_output_generated` per output.
+6. Persist generated facts/memories/objects with `sourceWorkflowRunId`.
+7. Update run with `executionContext` snapshot, IDs, `status: completed`; emit `workflow_execution_completed`.
+8. On failure: set `status: failed`, emit `workflow_failed` — partial outputs remain observable.
+
+Prior runs for same `workflowId` loaded with configurable limit (default **10**, newest first).
+

@@ -13,10 +13,14 @@ Build the **operational intelligence layer** above domain-agnostic middleware:
 | Layer | Responsibility |
 |-------|----------------|
 | **Middleware** | retrieval, replay, diagnostics, relationships, rendering |
-| **Domain Engine** | domains, facts, instructions, packages, execution context |
-| **Downstream LLM** | consumes assembled context after middleware + domain layers |
+| **Domain Engine** | domains, facts, instructions, packages, domain execution context |
+| **Operational Objects** | metadata-driven entities that organize real-world things |
+| **Workflow Engine** | executable intelligence processes, runs, outputs |
+| **Downstream LLM** | consumes assembled context after middleware + domain + workflow layers |
 
-Domains are **task-shaped** retrieval boundaries. Workspaces function as a memory system **without** any domains installed.
+Domains are **task-shaped retrieval operators**. Workflows **execute** using domain configuration. Workspaces function as a memory system **without** any domains installed.
+
+Product spec: [WORKFLOW_ENGINE_AND_OPERATIONAL_OBJECTS.md](../WORKFLOW_ENGINE_AND_OPERATIONAL_OBJECTS.md).
 
 ---
 
@@ -27,8 +31,13 @@ Domains are **task-shaped** retrieval boundaries. Workspaces function as a memor
 Implement full hierarchy:
 
 ```txt
-Agency → Platform → Workspace → Domain → Facts / Instructions
+Agency → Platform → Workspace → Sources → Operational Objects
+  → Facts → Memories → Domains → Domain Packages → Workflows → Workflow Runs → Applications
 ```
+
+Phase 1–7 implement: `Agency → Platform → Workspace → Domains → Facts / Instructions / Packages`.
+
+Phase 8+ adds Operational Objects, Workflows, and Workflow Runs per [WORKFLOW_ENGINE_AND_OPERATIONAL_OBJECTS.md](../WORKFLOW_ENGINE_AND_OPERATIONAL_OBJECTS.md).
 
 - Add `Agency` and `Platform` Prisma models.
 - Every `Workspace` belongs to exactly one `Platform`.
@@ -236,22 +245,78 @@ Workspace without domains shows empty states — no errors.
 
 **Exit criteria:** Admin can manage full lifecycle from UI; traces show fact overrides.
 
+### Phase 8 — Operational objects ✅
+
+**Goal:** Metadata-driven organizational entities; CRUD API and dashboard.
+
+**Completed:** `OperationalObject` types, Prisma model + migration, `@memory-middleware/domain-engine` operational-objects module, `/objects/*` routes, Object Manager dashboard at `/objects`, `OPERATIONAL_OBJECT_*` events, optional `RetrievalRule.objectTypeFilter` / `objectMetadataMatch` on contracts.
+
+1. Add `OperationalObject` to `packages/shared-types` and Prisma per [CONTRACTS.md](./CONTRACTS.md) Phase 8.
+2. Create `@memory-middleware/domain-engine` modules: `operational-objects.ts` (`createObject`, `updateObject`, `archiveObject`, `deleteObject`, `listObjects`).
+3. Routes: `/objects/*` — see [API_SURFACE.md](./API_SURFACE.md) Phase 8.
+4. Emit `OPERATIONAL_OBJECT_*` events.
+5. Dashboard: Object Manager at `/objects` — filter by `objectType`, `status`, metadata keys.
+6. Optional: extend domain `retrievalRules` with `objectTypeFilter` / `objectMetadataMatch` (Phase 8 or 9).
+
+**Exit criteria:** CRUD round-trip; objects searchable by type/status; no hardcoded object types in middleware.
+
+### Phase 9 — Workflow registry + execution context (planned)
+
+**Goal:** Workflow definitions and `resolveWorkflowExecutionContext()`.
+
+1. Add `Workflow`, `WorkflowExecutionContext` types and Prisma `Workflow` model.
+2. Modules: `workflows.ts`, `workflow-execution-context.ts`.
+3. `resolveWorkflowExecutionContext(workspaceId, workflowId)` loads domains, packages, facts, instructions, objects, and prior runs per workflow config.
+4. Routes: `/workflows/*` CRUD — WorkspaceAdmin+.
+5. Enforce workflow retrieval precedence when building context (facts → instructions → objects → retrieved context → previous runs).
+
+**Exit criteria:** Context resolver returns deterministic snapshot; unit tests for precedence ordering.
+
+### Phase 10 — Workflow execution + runs (planned)
+
+**Goal:** Execute workflows; persist replayable runs.
+
+1. Add `WorkflowRun`, `WorkflowOutput` types and Prisma models.
+2. `POST /workflows/:workflowId/execute` — builds context, runs retrieval per linked domains, invokes downstream generation, persists outputs.
+3. Generated facts/memories/objects link to `workflowRunId`.
+4. Emit all `WORKFLOW_*` Historian events (see CONTRACTS.md).
+5. `ReplaySnapshot.payload` includes `workflowExecutionContext`, outputs, generated entity IDs.
+
+**Exit criteria:** Two sequential runs of same workflow; Run #2 includes Run #1 in `previousWorkflowRuns`; Historian replay reconstructs run.
+
+### Phase 11 — Dashboard workflow surfaces (planned)
+
+**Goal:** User-facing workflow management and replay.
+
+| Page | Path |
+|------|------|
+| Workflow Registry | `/workflows` |
+| Workflow Runs | `/workflows/:id/runs` |
+| Workflow Outputs | `/workflows/:id/outputs` |
+| Workflow Replay | `/workflows/runs/:runId/replay` |
+
+Add nav entries under **Operational Intelligence**.
+
+**Exit criteria:** Admin can create workflow, execute, inspect run, replay from Historian.
+
 ---
 
 ## Integration map (where to touch code)
 
 ```txt
-packages/shared-types/src/domain-engine-contracts.ts   ← Phase 1
-apps/api/prisma/schema.prisma                          ← Phase 1
-packages/domain-engine/**                              ← Phase 2
-apps/api/src/lib/domain-engine-store.ts                ← Phase 2
+packages/shared-types/src/domain-engine-contracts.ts   ← Phase 1, 8+
+apps/api/prisma/schema.prisma                          ← Phase 1, 8+
+packages/domain-engine/**                              ← Phase 2, 8+
+apps/api/src/lib/domain-engine-store.ts                ← Phase 2, 8+
 apps/api/src/routes/domains.ts                         ← Phase 2/5/6
+apps/api/src/routes/objects.ts                         ← Phase 8
+apps/api/src/routes/workflows.ts                       ← Phase 9/10
 packages/retrieval/src/pipeline.ts                     ← Phase 3
 apps/api/src/routes/retrieval.ts                       ← Phase 3
 packages/context-delivery/src/pipeline.ts              ← Phase 4
-apps/api/src/lib/historian-store.ts                    ← Phase 4 (replay payload)
+apps/api/src/lib/historian-store.ts                    ← Phase 4, 10 (workflow replay)
 apps/api/src/middleware/auth.ts                        ← Phase 6
-apps/dashboard/src/pages/*Manager*.tsx                 ← Phase 7
+apps/dashboard/src/pages/*Manager*.tsx                 ← Phase 7, 8, 11
 ```
 
 ---

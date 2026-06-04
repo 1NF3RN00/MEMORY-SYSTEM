@@ -4,10 +4,13 @@ import type {
   CreateDomainInput,
   CreateGlobalFactInput,
   CreateInstructionInput,
+  CreateOperationalObjectInput,
   UpdateDomainFactInput,
   UpdateDomainInput,
   UpdateGlobalFactInput,
+  UpdateOperationalObjectInput,
   VersionInstructionInput,
+  ListOperationalObjectsQuery,
 } from "@memory-middleware/domain-engine";
 import { DomainEngineError } from "@memory-middleware/domain-engine";
 import type {
@@ -32,7 +35,9 @@ import {
   mapGlobalFact,
   mapInstalledPackage,
   mapInstruction,
+  mapOperationalObject,
   mapPackageDefinition,
+  matchesOperationalObjectMetadata,
   retrievalRuleToConfig,
 } from "./mappers.js";
 
@@ -538,6 +543,83 @@ export function createPrismaDomainEngineStore(prisma: PrismaClient): DomainEngin
       }
 
       return { domain, globalFacts, domainFacts, instructions };
+    },
+
+    async createOperationalObject(input: CreateOperationalObjectInput) {
+      const row = await prisma.operationalObject.create({
+        data: {
+          id: newUlid(),
+          workspaceId: input.workspaceId,
+          objectType: input.objectType,
+          name: input.name.trim(),
+          status: input.status.trim(),
+          metadata: (input.metadata ?? {}) as Prisma.InputJsonValue,
+        },
+      });
+      return mapOperationalObject(row);
+    },
+
+    async updateOperationalObject(objectId, input) {
+      const existing = await prisma.operationalObject.findUnique({ where: { id: objectId } });
+      if (!existing) return null;
+      const row = await prisma.operationalObject.update({
+        where: { id: objectId },
+        data: {
+          ...(input.name != null ? { name: input.name.trim() } : {}),
+          ...(input.status != null ? { status: input.status.trim() } : {}),
+          ...(input.metadata != null ? { metadata: input.metadata as Prisma.InputJsonValue } : {}),
+        },
+      });
+      return mapOperationalObject(row);
+    },
+
+    async archiveOperationalObject(objectId) {
+      const existing = await prisma.operationalObject.findUnique({ where: { id: objectId } });
+      if (!existing) return null;
+      const row = await prisma.operationalObject.update({
+        where: { id: objectId },
+        data: { rowStatus: "archived", archivedAt: new Date() },
+      });
+      return mapOperationalObject(row);
+    },
+
+    async deleteOperationalObject(objectId) {
+      await prisma.operationalObject.delete({ where: { id: objectId } });
+      return true;
+    },
+
+    async getOperationalObject(objectId) {
+      const row = await prisma.operationalObject.findUnique({ where: { id: objectId } });
+      return row ? mapOperationalObject(row) : null;
+    },
+
+    async listOperationalObjects(query: ListOperationalObjectsQuery) {
+      const limit = Math.min(Math.max(query.limit ?? 50, 1), 100);
+      const rows = await prisma.operationalObject.findMany({
+        where: {
+          workspaceId: query.workspaceId,
+          ...(query.includeArchived ? {} : { rowStatus: "active" }),
+          ...(query.objectType ? { objectType: query.objectType } : {}),
+          ...(query.status ? { status: query.status } : {}),
+        },
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: query.metadataMatch ? 500 : limit + 1,
+      });
+
+      let objects = rows.map(mapOperationalObject);
+      if (query.metadataMatch && Object.keys(query.metadataMatch).length > 0) {
+        objects = objects.filter((obj) =>
+          matchesOperationalObjectMetadata(obj.metadata, query.metadataMatch!),
+        );
+      }
+
+      const hasMore = objects.length > limit;
+      const page = hasMore ? objects.slice(0, limit) : objects;
+      const nextCursor = hasMore ? page[page.length - 1]?.objectId : undefined;
+      return {
+        objects: page,
+        ...(nextCursor ? { nextCursor } : {}),
+      };
     },
   };
 }

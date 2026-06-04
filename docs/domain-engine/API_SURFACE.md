@@ -244,11 +244,139 @@ Historian replay uses these fields to reconstruct context assembly identically.
 
 ---
 
+# Phase 8+ — Operational Objects and Workflows
+
+See [WORKFLOW_ENGINE_AND_OPERATIONAL_OBJECTS.md](../WORKFLOW_ENGINE_AND_OPERATIONAL_OBJECTS.md) for product architecture.
+
+---
+
+## Operational objects
+
+| Method | Path | Role |
+|--------|------|------|
+| GET | `/objects?workspaceId=&objectType=&status=` | workspace_user+ |
+| GET | `/objects/:objectId` | workspace_user+ |
+| POST | `/objects` | workspace_admin+ |
+| PATCH | `/objects/:objectId` | workspace_admin+ |
+| POST | `/objects/:objectId/archive` | workspace_admin+ |
+| DELETE | `/objects/:objectId` | middleware_admin |
+
+**POST body:**
+
+```json
+{
+  "workspaceId": "01J...",
+  "objectType": "customer",
+  "name": "Acme HVAC",
+  "status": "client",
+  "metadata": {
+    "industry": "HVAC",
+    "region": "Connecticut"
+  }
+}
+```
+
+**GET query:** `objectType`, `status`, `metadataMatch` (JSON-encoded), `includeArchived`, `limit`, `cursor`.
+
+---
+
+## Workflows
+
+| Method | Path | Role |
+|--------|------|------|
+| GET | `/workflows?workspaceId=` | workspace_user+ |
+| GET | `/workflows/:workflowId` | workspace_user+ |
+| POST | `/workflows` | workspace_admin+ |
+| PATCH | `/workflows/:workflowId` | workspace_admin+ |
+| POST | `/workflows/:workflowId/archive` | workspace_admin+ |
+| DELETE | `/workflows/:workflowId` | middleware_admin |
+
+**POST body:**
+
+```json
+{
+  "workspaceId": "01J...",
+  "name": "Competitor Analysis",
+  "description": "Periodic competitor scan and delta report",
+  "domains": ["competitor", "strategy"],
+  "packages": ["marketing-kit"],
+  "instructionRefs": [
+    { "domainKey": "competitor", "actionKey": "analyze" }
+  ],
+  "outputTypes": ["report", "insight"],
+  "objectTypeFilters": ["competitor"]
+}
+```
+
+---
+
+## Workflow execution
+
+| Method | Path | Role |
+|--------|------|------|
+| POST | `/workflows/:workflowId/execute` | workspace_user+ |
+| GET | `/workflows/:workflowId/runs` | workspace_user+ |
+| GET | `/workflow-runs/:workflowRunId` | workspace_user+ |
+| POST | `/workflow-runs/:workflowRunId/archive` | workspace_admin+ |
+
+**Execute body:**
+
+```json
+{
+  "workspaceId": "01J...",
+  "query": "Analyze competitor pricing changes since last run",
+  "tokenBudget": 8000,
+  "previousRunLimit": 10
+}
+```
+
+**Execute response:**
+
+```json
+{
+  "workflowRunId": "01J...",
+  "status": "completed",
+  "outputs": [ { "...": "WorkflowOutput" } ],
+  "generatedFactIds": [],
+  "generatedMemoryIds": [],
+  "generatedObjectIds": [],
+  "executionContext": { "...": "WorkflowExecutionContext" }
+}
+```
+
+Execution is asynchronous-capable: initial response may return `status: running` with poll via `GET /workflow-runs/:id`.
+
+---
+
+## Workflow replay payload extension
+
+`ReplaySnapshot.payload` for workflow operations must include:
+
+```json
+{
+  "workflowId": "01J...",
+  "workflowRunId": "01J...",
+  "workspaceId": "01J...",
+  "executionContext": { "...": "WorkflowExecutionContext" },
+  "outputs": [],
+  "generatedFactIds": [],
+  "generatedMemoryIds": [],
+  "generatedObjectIds": []
+}
+```
+
+Historian replay reconstructs workflow context and outputs identically per [OPERATIONAL_HISTORIAN_REPLAY_SYSTEM.md](../OPERATIONAL_HISTORIAN_REPLAY_SYSTEM.md).
+
+---
+
 ## Error codes
 
 | Code | When |
 |------|------|
 | 404 | `domainKey` not found in workspace |
 | 404 | `domainAction` / `actionKey` not found; include `availableActions: string[]` |
+| 404 | `workflowId` or `objectId` not found in workspace |
+| 404 | Linked `domainKey` or `packageKey` on workflow not found; include `missingRefs: string[]` |
 | 409 | Package install key conflict when `failOnConflict: true` |
+| 409 | Workflow execute while prior run still `running` (when single-flight enforced) |
 | 403 | RBAC denial |

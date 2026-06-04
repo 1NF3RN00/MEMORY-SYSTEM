@@ -1,10 +1,12 @@
 # DOMAIN ENGINE AND PACKAGE SYSTEM
 
-> **Implementation guide:** [docs/domain-engine/README.md](./domain-engine/README.md) — phased build instructions, contracts, and API surface.
+> **Implementation guide:** [docs/domain-engine/README.md](./domain-engine/README.md) — phased build instructions, contracts, and API surface.  
+> **How to create domains and packages:** [docs/domain-engine/CREATE_DOMAINS_AND_PACKAGES.md](./domain-engine/CREATE_DOMAINS_AND_PACKAGES.md)  
+> **Workflows and operational objects:** [WORKFLOW_ENGINE_AND_OPERATIONAL_OBJECTS.md](./WORKFLOW_ENGINE_AND_OPERATIONAL_OBJECTS.md)
 
 ## Purpose
 
-The Domain Engine is the primary abstraction layer above middleware retrieval infrastructure.
+The Domain Engine is the **retrieval operator layer** above middleware retrieval infrastructure.
 
 The middleware is intentionally domain-agnostic.
 
@@ -18,30 +20,55 @@ The middleware does not understand:
 
 Those are implemented through Domains and Packages.
 
-A Domain is a task-scoped contextual intelligence object.
+A Domain is a task-scoped retrieval operator.
 
-Domains own:
+Domains **do not own data**. Domains define:
 
-* instructions
-* facts
-* memories
-* retrieval configuration
-* metadata boundaries
-* execution context
+* retrieval rules
+* metadata filters
+* fact references
+* instruction references
+* retrieval boundaries
 
 The middleware retrieves information.
 
-Domains determine how retrieval should occur.
+Domains determine **where and how** retrieval should occur.
+
+**Workflows** (see [WORKFLOW_ENGINE_AND_OPERATIONAL_OBJECTS.md](./WORKFLOW_ENGINE_AND_OPERATIONAL_OBJECTS.md)) consume domain configuration to execute intelligence processes. Domains retrieve; workflows execute.
 
 ---
 
 # Core Hierarchy
 
+```txt
 Agency
-→ Platform
-→ Workspace
-→ Domain
-→ Facts / Instructions / Memories
+  ↓
+Platform
+  ↓
+Workspace
+  ↓
+Sources
+  ↓
+Operational Objects
+  ↓
+Facts
+  ↓
+Memories
+  ↓
+Domains
+  ↓
+Domain Packages
+  ↓
+Workflows
+  ↓
+Workflow Runs
+  ↓
+Applications
+```
+
+Domain-scoped retrieval uses: **Global Facts → Domain Facts → Instructions → Retrieved Context**.
+
+Workflow execution extends precedence with **Operational Objects** and **Previous Workflow Runs** (see workflow spec).
 
 ---
 
@@ -57,10 +84,13 @@ Examples:
 
 Workspaces contain:
 
+* Sources (ingestion origins)
+* Operational Objects
 * Global Facts
 * Domains
 * Packages
 * Memories
+* Workflows
 * Users
 
 ---
@@ -98,7 +128,7 @@ Global Facts
 
 # Domains
 
-Domains are task-scoped intelligence environments.
+Domains are task-scoped retrieval operators.
 
 Examples:
 
@@ -109,15 +139,17 @@ Strategy Domain
 
 Domains are NOT categories.
 
-Domains are executable contextual intelligence units.
+Domains are NOT execution engines — workflows execute; domains retrieve.
 
 Domains define:
 
 * retrieval boundaries
 * retrieval rules
 * metadata filters
-* execution instructions
-* contextual behavior
+* instruction references
+* fact references
+
+Domains answer: **"Where should we retrieve information from?"**
 
 ---
 
@@ -174,11 +206,25 @@ Domains determine:
 * what metadata is required
 * what retrieval boundaries exist
 
+Memories are not owned by domains — domains filter and shape retrieval against workspace memories.
+
+---
+
+# Operational Objects
+
+Operational Objects organize real-world entities (customers, competitors, campaigns, etc.) with configurable `objectType`, `status`, and metadata.
+
+Objects participate in retrieval but are **not** memories.
+
+Domains and workflows may reference objects in retrieval scope.
+
+See [WORKFLOW_ENGINE_AND_OPERATIONAL_OBJECTS.md](./WORKFLOW_ENGINE_AND_OPERATIONAL_OBJECTS.md).
+
 ---
 
 # Retrieval Rules
 
-Domains own retrieval behavior.
+Domains define retrieval behavior.
 
 Examples:
 
@@ -234,7 +280,7 @@ This becomes the primary object passed into execution pipelines.
 
 # Packages
 
-Packages are installable operational intelligence bundles.
+Packages are installable **retrieval bundles**.
 
 Packages may contain:
 
@@ -244,7 +290,8 @@ Packages may contain:
 * Retrieval Rules
 * Metadata Rules
 * Archive Rules
-* Domain Relationships
+
+Packages contain **no execution logic**.
 
 Packages are reusable.
 

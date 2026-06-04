@@ -3,6 +3,7 @@ import type {
   Fact,
   InstalledPackage,
   Instruction,
+  OperationalObject,
   PackageManifest,
   PackageManifestDiff,
 } from "@memory-middleware/shared-types";
@@ -242,4 +243,45 @@ export function downloadJson(filename: string, data: unknown): void {
   anchor.download = filename;
   anchor.click();
   URL.revokeObjectURL(url);
+}
+
+export async function fetchOperationalObjects(
+  workspaceId: string,
+  opts?: { objectType?: string; status?: string },
+): Promise<OperationalObject[]> {
+  const params = new URLSearchParams({ workspaceId });
+  if (opts?.objectType) params.set("objectType", opts.objectType);
+  if (opts?.status) params.set("status", opts.status);
+  const data = await apiGet<{ objects: OperationalObject[] }>(`/objects?${params.toString()}`);
+  return data.objects;
+}
+
+export async function createOperationalObjectApi(
+  workspaceId: string,
+  body: Record<string, unknown>,
+): Promise<OperationalObject> {
+  const data = await apiPost<{ object: OperationalObject }>("/objects", { workspaceId, ...body });
+  return data.object;
+}
+
+export async function updateOperationalObjectApi(
+  workspaceId: string,
+  objectId: string,
+  body: Record<string, unknown>,
+): Promise<OperationalObject> {
+  const data = await apiPatch<{ object: OperationalObject }>(`/objects/${objectId}`, {
+    workspaceId,
+    ...body,
+  });
+  return data.object;
+}
+
+export async function archiveOperationalObjectApi(
+  workspaceId: string,
+  objectId: string,
+): Promise<OperationalObject> {
+  const data = await apiPost<{ object: OperationalObject }>(`/objects/${objectId}/archive`, {
+    workspaceId,
+  });
+  return data.object;
 }

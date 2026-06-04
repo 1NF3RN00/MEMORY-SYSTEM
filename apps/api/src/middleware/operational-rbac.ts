@@ -103,7 +103,8 @@ export function domainEngineWriteRequiresSession(method: string, path: string): 
     path.startsWith("/global-facts") ||
     path.startsWith("/domains") ||
     path.startsWith("/domain-facts") ||
-    path.startsWith("/instructions")
+    path.startsWith("/instructions") ||
+    path.startsWith("/objects")
   );
 }
 
