@@ -47,6 +47,14 @@ export const navGroups: NavGroup[] = [
     ],
   },
   {
+    label: "Operational Intelligence",
+    items: [
+      { to: "/domains", label: "Domain Manager", keywords: ["domain", "retrieval", "task"] },
+      { to: "/global-facts", label: "Global Facts", keywords: ["facts", "global", "truth"] },
+      { to: "/packages", label: "Package Manager", keywords: ["package", "install", "export"] },
+    ],
+  },
+  {
     label: "Operations",
     items: [
       { to: "/historian", label: "Historian & Replay", keywords: ["replay", "history"] },

@@ -216,9 +216,11 @@ Emit domain events via injected `EventEmitter` (mirror ingestion/retrieval patte
 
 **Exit criteria:** WorkspaceUser cannot install packages; MiddlewareAdmin can hard delete.
 
-### Phase 7 — Dashboard
+### Phase 7 — Dashboard ✅
 
 **Goal:** Five managers in dashboard.
+
+**Completed:** Operational Intelligence nav group; Domain, Global Fact, Domain Fact, Instruction, and Package manager pages with CRUD/archive, export/install/compare.
 
 | Page | Path | Minimum features |
 |------|------|------------------|

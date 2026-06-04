@@ -29,7 +29,7 @@ This folder is the **authoritative build guide** for the Domain Engine and Packa
 | 4 | Context-delivery + fact override traces | **Done** |
 | 5 | Package engine (install/export/clone/update) | **Done** |
 | 6 | RBAC on new routes | **Done** |
-| 7 | Dashboard managers | Not started |
+| 7 | Dashboard managers | **Done** |
 
 Update the **Build status** table when a phase completes.
 

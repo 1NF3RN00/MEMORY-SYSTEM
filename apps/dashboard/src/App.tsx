@@ -18,6 +18,11 @@ import { AccessLandingPage } from "./pages/AccessLandingPage.js";
 import { PlatformAdminPage } from "./pages/PlatformAdminPage.js";
 import { PlatformApiKeysPage } from "./pages/PlatformApiKeysPage.js";
 import { PlatformSecurityPage } from "./pages/PlatformSecurityPage.js";
+import { DomainManagerPage } from "./pages/DomainManagerPage.js";
+import { GlobalFactManagerPage } from "./pages/GlobalFactManagerPage.js";
+import { DomainFactManagerPage } from "./pages/DomainFactManagerPage.js";
+import { InstructionManagerPage } from "./pages/InstructionManagerPage.js";
+import { PackageManagerPage } from "./pages/PackageManagerPage.js";
 
 function OperationalRoutes() {
   const location = useLocation();
@@ -49,6 +54,11 @@ function OperationalRoutes() {
         <Route path="/context-delivery/:deliveryId" element={<ContextDeliveryPage />} />
         <Route path="/historian" element={<HistorianPage />} />
         <Route path="/historian/:traceId" element={<HistorianPage />} />
+        <Route path="/domains" element={<DomainManagerPage />} />
+        <Route path="/domains/:id/facts" element={<DomainFactManagerPage />} />
+        <Route path="/domains/:id/instructions" element={<InstructionManagerPage />} />
+        <Route path="/global-facts" element={<GlobalFactManagerPage />} />
+        <Route path="/packages" element={<PackageManagerPage />} />
         <Route path="/admin/provisioning" element={<PlatformAdminPage />} />
         <Route path="/admin/api-keys" element={<PlatformApiKeysPage />} />
         <Route path="/admin/security" element={<PlatformSecurityPage />} />
