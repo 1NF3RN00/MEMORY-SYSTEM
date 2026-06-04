@@ -216,6 +216,7 @@ Copy the returned `id` into `VITE_WORKSPACE_ID` in `apps/dashboard/.env`.
 | `FUNCTION_INVOCATION_FAILED` on Vercel | Set `DATABASE_URL` (and `DIRECT_URL`); do **not** set `outputDirectory` on the API project; redeploy after `npm run build:api` so workspace `packages/*/dist` exists |
 | Vercel “No entrypoint found” / `src/app.js` crash | Entry is `src/index.ts` (default export handler). Never commit `apps/api/src/**/*.js` or `apps/api/api/**` build output — use `create-app.ts`, not `app.ts` |
 | `event_logs` does not exist (P2021) | Database is reachable but migrations were never applied. From repo root with `.env` pointing at Supabase **direct** URL: `npm run db:migrate:deploy`. Enable **vector** in Supabase if the migration uses pgvector |
+| Vercel build `P1001` during `db:migrate:deploy` | Do **not** run migrations in the Vercel build step — the build network often cannot reach Supabase `:5432`. Run `npm run db:migrate:deploy` locally or in CI before/after deploy |
 
 ---
 
