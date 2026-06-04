@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@memory-middleware/compression": "*",
+    "@memory-middleware/domain-engine": "*",
     "@memory-middleware/context-delivery": "*",
     "@memory-middleware/historian": "*",
     "@memory-middleware/ingestion": "*",

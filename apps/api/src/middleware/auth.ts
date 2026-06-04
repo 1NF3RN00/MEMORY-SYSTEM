@@ -15,6 +15,7 @@ export interface AuthContext {
   permissions: ApiKeyPermission[];
   apiKeyId?: string;
   isPlatformAdmin?: boolean;
+  isMiddlewareAdmin?: boolean;
 }
 
 declare module "fastify" {
@@ -111,7 +112,7 @@ async function resolveSessionAuth(
   if (adminEmails.includes(platformUser.email.toLowerCase()) && !platformUser.isPlatformAdmin) {
     platformUser = await request.server.prisma.platformUser.update({
       where: { id: platformUser.id },
-      data: { isPlatformAdmin: true },
+      data: { isPlatformAdmin: true, isMiddlewareAdmin: true },
       include: {
         memberships: { orderBy: { createdAt: "asc" }, take: 1 },
       },
@@ -127,6 +128,7 @@ async function resolveSessionAuth(
     workspaceId: membership.workspaceId,
     permissions: ["ingest", "retrieve", "replay", "diagnostics", "relationships", "admin"],
     isPlatformAdmin: platformUser.isPlatformAdmin,
+    isMiddlewareAdmin: platformUser.isMiddlewareAdmin || platformUser.isPlatformAdmin,
   };
   if (membership.role === "owner" || membership.role === "admin" || membership.role === "member") {
     ctx.role = membership.role;

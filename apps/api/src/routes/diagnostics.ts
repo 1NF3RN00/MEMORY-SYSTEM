@@ -444,7 +444,7 @@ export async function registerDiagnosticsRoutes(app: FastifyInstance): Promise<v
         retrievalTraceId: benchmarkTraceId,
         mode: "balanced",
         stages: deliveryResult.stages,
-        originalContextPackage: benchmarkOptimizedPackage ?? benchmarkContextPackage,
+        originalContextPackage: deliveryResult.preparedContextPackage,
         deliveryContext: deliveryResult.deliveryContext,
         renderingDecisions: deliveryResult.renderingDecisions,
         ...(deliveryResult.error ? { error: deliveryResult.error } : {}),

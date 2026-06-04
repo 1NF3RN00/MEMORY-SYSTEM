@@ -53,16 +53,44 @@ function expandTags(keywords: string[]): string[] {
 }
 
 /** Deterministic metadata expansion for retrieval augmentation. */
+const LEXICAL_NEIGHBORS: Record<string, string[]> = {
+  incident: ["outage", "failure", "alert", "degradation"],
+  policy: ["compliance", "governance", "rule", "regulation"],
+  architecture: ["design", "component", "service", "module"],
+  operations: ["runbook", "procedure", "systems", "infrastructure"],
+  trading: ["execution", "market", "order", "settlement"],
+};
+
+function expandLexicalNeighbors(terms: string[]): string[] {
+  const expanded = new Set<string>();
+  for (const term of terms) {
+    const lower = term.toLowerCase();
+    for (const [root, neighbors] of Object.entries(LEXICAL_NEIGHBORS)) {
+      if (lower.includes(root) || neighbors.some((n) => lower.includes(n))) {
+        expanded.add(root);
+        for (const n of neighbors) expanded.add(n);
+      }
+    }
+  }
+  return [...expanded].sort();
+}
+
 export function expandRetrievalMetadata(
   query: string,
   keywords: string[],
   memories: MemoryMetadataLookup[],
   decomposition?: QueryDecomposition,
+  expansionWeighting = 1.0,
 ): RetrievalExpansionResult["metadataExpansion"] {
-  const expandedTags = expandTags(keywords);
+  const expandedTags = expandTags([
+    ...keywords,
+    ...expandLexicalNeighbors(keywords),
+    ...(decomposition?.operationalConcepts ?? []),
+  ]);
   const matchedMetadataKeys: string[] = [];
   const surfaceExpansionTerms: string[] = [];
   let enrichmentScore = 0;
+  const weightScale = Math.max(0.5, Math.min(2, expansionWeighting));
   const queryLower = query.toLowerCase();
 
   if (decomposition) {
@@ -132,6 +160,20 @@ export function expandRetrievalMetadata(
           enrichmentScore += 0.04;
         }
       }
+      for (const kw of surface.contextualKeywords.slice(0, 6)) {
+        if (expandedTags.some((t) => kw.includes(t) || t.includes(kw))) {
+          surfaceExpansionTerms.push(kw);
+          matchedMetadataKeys.push(`keyword:${memory.memoryId}:${kw}`);
+          enrichmentScore += 0.05;
+        }
+      }
+      if (surface.hierarchyPath?.length) {
+        const adjacent = surface.hierarchyPath.slice(-2);
+        for (const segment of adjacent) {
+          surfaceExpansionTerms.push(segment);
+          enrichmentScore += 0.03;
+        }
+      }
     }
 
     if (queryLower.includes(memory.title.toLowerCase().slice(0, 20))) {
@@ -143,7 +185,7 @@ export function expandRetrievalMetadata(
   return {
     expandedTags: [...new Set(expandedTags)].sort(),
     matchedMetadataKeys: [...new Set(matchedMetadataKeys)],
-    enrichmentScore: Math.min(1, enrichmentScore),
+    enrichmentScore: Math.min(1, enrichmentScore * weightScale),
     surfaceExpansionTerms: [...new Set(surfaceExpansionTerms)].sort().slice(0, 24),
   };
 }
@@ -206,12 +248,14 @@ export function applyRetrievalExpansion(input: {
   memories: MemoryMetadataLookup[];
   adjacencyByChunkId: Map<string, ChunkAdjacencyLookup>;
   decomposition?: QueryDecomposition;
+  expansionWeighting?: number;
 }): RetrievalExpansionResult {
   const metadataExpansion = expandRetrievalMetadata(
     input.query,
     input.keywords,
     input.memories,
     input.decomposition,
+    input.expansionWeighting ?? 1,
   );
 
   const contextualNeighbors = buildContextualNeighborHints(

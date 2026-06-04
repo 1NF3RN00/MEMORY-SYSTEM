@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { newUlid } from "@memory-middleware/shared-types";
+import { DEFAULT_PLATFORM_ID } from "../src/lib/tenancy-defaults.js";
 
 const prisma = new PrismaClient();
 
@@ -9,6 +10,7 @@ async function main(): Promise<void> {
     await prisma.workspace.create({
       data: {
         id: newUlid(),
+        platformId: DEFAULT_PLATFORM_ID,
         name: "Default Workspace",
         slug: "default",
         plan: "internal",

@@ -3,6 +3,7 @@ import { mergeRetrievalConfig } from "@memory-middleware/retrieval";
 import {
   DEFAULT_RETRIEVAL_RUNTIME_CONFIG,
   type ContextPackage,
+  type DomainExecutionContext,
   type RelationshipAugmentationResult,
   type RetrievalHeatmapEntry,
   type RetrievalMode,
@@ -24,6 +25,7 @@ export interface StoredRetrievalResult {
   retrievalMode: RetrievalMode;
   tokenBudget: number;
   relationshipAugmentation?: RelationshipAugmentationResult;
+  executionContext?: DomainExecutionContext;
   error?: string;
 }
 
@@ -94,6 +96,10 @@ export async function getRetrievalTrace(
     stages: result.stages ?? [],
     ...(result.contextPackage ? { contextPackage: result.contextPackage } : {}),
     ...(result.preprocessedQuery ? { preprocessedQuery: result.preprocessedQuery } : {}),
+    ...(result.executionContext ? { executionContext: result.executionContext } : {}),
+    ...(result.contextPackage?.domainMetadata?.factOverrides
+      ? { factOverrides: result.contextPackage.domainMetadata.factOverrides }
+      : {}),
     createdAt: op.createdAt.toISOString(),
     ...(op.completedAt ? { completedAt: op.completedAt.toISOString() } : {}),
   };
@@ -329,6 +335,16 @@ export function parseRetrievalBody(body: unknown): RetrievalQuery | { error: str
       ...(typeof timeframe.start === "string" ? { start: timeframe.start } : {}),
       ...(typeof timeframe.end === "string" ? { end: timeframe.end } : {}),
     };
+  }
+
+  const domainKey = b.domainKey ?? b.domain_key;
+  if (typeof domainKey === "string" && domainKey) {
+    parsed.domainKey = domainKey;
+  }
+
+  const domainAction = b.domainAction ?? b.domain_action;
+  if (typeof domainAction === "string" && domainAction) {
+    parsed.domainAction = domainAction;
   }
 
   return parsed;

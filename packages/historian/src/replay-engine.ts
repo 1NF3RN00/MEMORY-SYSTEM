@@ -31,6 +31,7 @@ export interface BuildSnapshotInput {
 }
 
 const RETRIEVAL_STAGE_MAP: Record<string, ReplayStageName | null> = {
+  domain_execution_context: null,
   preprocessing: "preprocessing",
   vector_retrieval: "vector_retrieval",
   reranking: "reranking",

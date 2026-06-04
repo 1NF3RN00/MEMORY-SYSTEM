@@ -19,10 +19,14 @@ export interface VectorSearchCandidate {
   normalizationTraceId: string;
 }
 
+import type { DomainVectorScope } from "./domain-scope.js";
+
 export interface VectorSearchFilter {
   workspaceId: string;
   memoryTypes?: string[];
   timeframe?: { start?: string; end?: string };
+  /** Domain Engine — metadata and rule predicates for task-scoped retrieval */
+  domainScope?: DomainVectorScope;
 }
 
 export const MIN_SIMILARITY_THRESHOLD = 0.45;

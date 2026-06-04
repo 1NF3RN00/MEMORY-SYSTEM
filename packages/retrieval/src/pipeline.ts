@@ -3,6 +3,7 @@ import { createOpenAiEmbeddingClient } from "@memory-middleware/ingestion";
 import type { EventEmitter } from "@memory-middleware/observability";
 import type {
   ContextPackage,
+  DomainExecutionContext,
   RejectedCandidate,
   RelationshipAugmentationResult,
   RetrievalCalibrationControls,
@@ -44,6 +45,10 @@ import {
   type VectorSearchStore,
 } from "./vector-retrieval.js";
 import { resolveCalibratedRetrievalParams } from "./threshold-calibration.js";
+import {
+  filterRelationshipsByNeighborhoodConstraints,
+  resolveDomainRetrievalScope,
+} from "./domain-scope.js";
 
 export interface RunRetrievalInput {
   query: RetrievalQuery;
@@ -80,6 +85,12 @@ export interface RunRetrievalInput {
   retrievalPlan?: RetrievalPlan;
   /** Workspace calibration controls for threshold/top-K tuning */
   calibration?: Partial<RetrievalCalibrationControls>;
+  /** Domain Engine — task-scoped operational context */
+  executionContext?: DomainExecutionContext;
+  /** Load target memory metadata for relationship neighborhood constraints */
+  loadTargetMemoryMetadata?: (
+    memoryIds: string[],
+  ) => Promise<Map<string, Record<string, unknown>>>;
 }
 
 export interface RunRetrievalResult {
@@ -88,6 +99,7 @@ export interface RunRetrievalResult {
   stages: RetrievalStageRecord[];
   preprocessedQuery: ReturnType<typeof preprocessQuery>;
   relationshipAugmentation?: RelationshipAugmentationResult;
+  executionContext?: DomainExecutionContext;
 }
 
 function pushStage(
@@ -135,16 +147,48 @@ export async function runRetrievalPipeline(
     throw new Error(`Invalid retrieval scope: ${scope.errors.join("; ")}`);
   }
 
+  const domainScope = resolveDomainRetrievalScope(input.query, input.executionContext);
+  const effectiveQuery = domainScope.query;
+
   await emitRetrievalStarted(input.events, {
     traceId,
     workspaceId: input.query.workspaceId,
-    extra: { retrieval_mode: input.query.retrievalMode },
+    extra: {
+      retrieval_mode: input.query.retrievalMode,
+      ...(input.executionContext?.domainKey
+        ? { domain_key: input.executionContext.domainKey }
+        : {}),
+      ...(input.executionContext?.domainAction
+        ? { domain_action: input.executionContext.domainAction }
+        : {}),
+    },
   });
+
+  if (input.executionContext) {
+    pushStage(stages, "domain_execution_context", "completed", new Date().toISOString(), {
+      metadata: {
+        domain_key: input.executionContext.domainKey,
+        domain_action: input.executionContext.domainAction,
+        global_fact_count: input.executionContext.globalFacts.length,
+        domain_fact_count: input.executionContext.domainFacts.length,
+        metadata_filter_count: input.executionContext.metadataFilters.length,
+        retrieval_rule_count: input.executionContext.retrievalRules.length,
+      },
+    });
+  }
 
   pushStage(stages, "preprocessing", "started", new Date().toISOString());
   await notify();
 
-  const preprocessed = preprocessQuery(input.query.query);
+  const preprocessOptions: import("./preprocessing.js").PreprocessQueryOptions = {
+    ...(input.retrievalPlan?.expansionTerms?.length
+      ? { expansionTerms: input.retrievalPlan.expansionTerms }
+      : {}),
+    ...(input.retrievalPlan?.decomposition
+      ? { decomposition: input.retrievalPlan.decomposition }
+      : {}),
+  };
+  const preprocessed = preprocessQuery(effectiveQuery.query, preprocessOptions);
   const calibratedParams = resolveCalibratedRetrievalParams(
     input.calibration,
     input.query.retrievalMode,
@@ -152,7 +196,13 @@ export async function runRetrievalPipeline(
   );
   const preprocessStarted = Date.now();
   pushStage(stages, "preprocessing", "completed", new Date().toISOString(), {
-    metadata: { keywords: preprocessed.keywords, token_count: preprocessed.tokenCount },
+    metadata: {
+      keywords: preprocessed.keywords,
+      token_count: preprocessed.tokenCount,
+      operational_concepts: preprocessed.operationalConcepts ?? [],
+      domains: preprocessed.domains ?? [],
+      embedding_enriched: Boolean(preprocessed.embeddingText),
+    },
   });
   await emitPreprocessingCompleted(input.events, {
     traceId,
@@ -180,7 +230,8 @@ export async function runRetrievalPipeline(
   const vectorStarted = Date.now();
   let queryEmbedding: number[];
   try {
-    const vectors = await input.embeddingClient.embed([preprocessed.normalizedQuery]);
+    const embeddingInput = preprocessed.embeddingText ?? preprocessed.normalizedQuery;
+    const vectors = await input.embeddingClient.embed([embeddingInput]);
     queryEmbedding = vectors[0] ?? [];
     if (queryEmbedding.length === 0) throw new Error("Empty query embedding returned");
   } catch (error) {
@@ -200,15 +251,13 @@ export async function runRetrievalPipeline(
 
   const expansionKeywords = [
     ...preprocessed.keywords,
+    ...(preprocessed.operationalConcepts ?? []).slice(0, 8),
+    ...(preprocessed.domains ?? []),
     ...(input.retrievalPlan?.expansionTerms ?? []).slice(0, 12),
   ];
   const scannedCandidates = await input.vectorStore.search(
     queryEmbedding,
-    {
-      workspaceId: input.query.workspaceId,
-      ...(input.query.memoryTypes ? { memoryTypes: input.query.memoryTypes } : {}),
-      ...(input.query.timeframe ? { timeframe: input.query.timeframe } : {}),
-    },
+    domainScope.filter,
     topK,
   );
 
@@ -238,6 +287,7 @@ export async function runRetrievalPipeline(
     metadata: {
       candidate_count: vectorCandidates.length,
       scanned_count: scannedCandidates.length,
+      rejected_below_threshold: thresholdResult.rejected.length,
       top_k: topK,
       threshold: thresholdResult.effectiveThreshold,
       base_threshold: similarityThreshold,
@@ -271,16 +321,32 @@ export async function runRetrievalPipeline(
   const rerankStarted = Date.now();
   let { ranked, breakdown } = rankChunks(
     rankable,
-    config,
-    input.retrievalPlan?.weightingAdjustments,
-    calibratedParams.precisionWeighting,
-  );
+        config,
+        input.retrievalPlan?.weightingAdjustments,
+        calibratedParams.precisionWeighting,
+      );
 
   let relationshipAugmentation: RelationshipAugmentationResult | undefined;
 
   if (input.loadRelationshipsForMemories && ranked.length > 0) {
     const topMemoryIds = [...new Set(ranked.slice(0, 20).map((r) => r.memoryId))];
-    const relationships = await input.loadRelationshipsForMemories(topMemoryIds);
+    let relationships = await input.loadRelationshipsForMemories(topMemoryIds);
+
+    if (input.executionContext && relationships.length > 0) {
+      const neighborIds = new Set<string>();
+      for (const r of relationships) {
+        neighborIds.add(r.sourceMemoryId);
+        neighborIds.add(r.targetMemoryId);
+      }
+      const targetMetadata = input.loadTargetMemoryMetadata
+        ? await input.loadTargetMemoryMetadata([...neighborIds])
+        : new Map<string, Record<string, unknown>>();
+      relationships = filterRelationshipsByNeighborhoodConstraints(
+        relationships,
+        domainScope.relationshipConstraints,
+        targetMetadata,
+      );
+    }
 
     if (relationships.length > 0) {
       const { result, adjustedCandidates } = applyRelationshipAugmentation({
@@ -299,6 +365,7 @@ export async function runRetrievalPipeline(
           finalScore: r.finalScore,
           semanticSimilarity: r.semanticSimilarity,
         })),
+        config: domainScope.relationshipConfig,
       });
 
       relationshipAugmentation = result;
@@ -397,7 +464,7 @@ export async function runRetrievalPipeline(
   const budgetStarted = Date.now();
   const tokenBudget = applyTokenBudget({
     chunks: withTokens,
-    maxTokens: input.query.tokenBudget,
+    maxTokens: effectiveQuery.tokenBudget,
   });
   rejected.push(...tokenBudgetRejections(tokenBudget.trimmed));
   pushStage(stages, "token_budgeting", "completed", new Date().toISOString(), {
@@ -423,8 +490,8 @@ export async function runRetrievalPipeline(
 
   const assemblyStarted = Date.now();
   const contextPackage = assembleContextPackage({
-    query: input.query.query,
-    workspaceId: input.query.workspaceId,
+    query: effectiveQuery.query,
+    workspaceId: effectiveQuery.workspaceId,
     retrievalTraceId: traceId,
     tokenBudget,
     dedup,
@@ -435,8 +502,18 @@ export async function runRetrievalPipeline(
     rankingBreakdown: breakdown,
     retrievalLatencyMs: Date.now() - pipelineStarted,
     retrievedChunkCount: vectorCandidates.length,
-    maxTokens: input.query.tokenBudget,
+    maxTokens: effectiveQuery.tokenBudget,
   });
+
+  if (input.executionContext) {
+    contextPackage.retrievalMetadata = {
+      ...contextPackage.retrievalMetadata,
+      ...(input.executionContext.domainKey ? { domainKey: input.executionContext.domainKey } : {}),
+      ...(input.executionContext.domainAction
+        ? { domainAction: input.executionContext.domainAction }
+        : {}),
+    };
+  }
 
   pushStage(stages, "context_assembly", "completed", new Date().toISOString(), {
     metadata: { memory_count: contextPackage.memories.length },
@@ -477,13 +554,16 @@ export async function runRetrievalPipeline(
         }));
 
     const expansion = applyRetrievalExpansion({
-      query: input.query.query,
+      query: effectiveQuery.query,
       keywords: expansionKeywords,
       retrievedChunkIds,
       memories,
       adjacencyByChunkId,
       ...(input.retrievalPlan?.decomposition
         ? { decomposition: input.retrievalPlan.decomposition }
+        : {}),
+      ...(input.calibration?.expansionWeighting !== undefined
+        ? { expansionWeighting: input.calibration.expansionWeighting }
         : {}),
     });
 
@@ -511,6 +591,7 @@ export async function runRetrievalPipeline(
     stages,
     preprocessedQuery: preprocessed,
     ...(relationshipAugmentation ? { relationshipAugmentation } : {}),
+    ...(input.executionContext ? { executionContext: input.executionContext } : {}),
   };
 }
 

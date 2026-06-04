@@ -3,6 +3,7 @@
  * Deterministic signal engineering — no autonomous optimization.
  */
 
+import type { FactOverrideRecord } from "./domain-engine-contracts.js";
 import type { BenchmarkComparisonResult } from "./historian-contracts.js";
 import type { ReplaySnapshot } from "./historian-contracts.js";
 
@@ -21,8 +22,8 @@ export const DEFAULT_THRESHOLD_MODE_TOP_K: Record<CalibrationThresholdMode, numb
 export const DEFAULT_THRESHOLD_MODE_DELTAS: Record<CalibrationThresholdMode, number> = {
   strict: 0.05,
   balanced: 0,
-  exploratory: -0.05,
-  calibration: -0.1,
+  exploratory: -0.07,
+  calibration: -0.12,
 };
 
 export type PipelineStageName =
@@ -139,6 +140,16 @@ export interface TraceStageAnalysis {
   details: Record<string, unknown>;
 }
 
+export interface FactOverrideDiagnostics {
+  overrideCount: number;
+  overrides: FactOverrideRecord[];
+  globalFactCount: number;
+  domainFactCount: number;
+  instructionCount: number;
+  domainKey?: string;
+  domainAction?: string;
+}
+
 export interface FullTraceAnalysis {
   retrievalTraceId: string;
   query: string;
@@ -150,6 +161,7 @@ export interface FullTraceAnalysis {
   relationshipDiagnostics: RelationshipDiagnostics;
   compressionDiagnostics: CompressionDiagnostics;
   renderingDiagnostics: RenderingDiagnostics;
+  factOverrideDiagnostics: FactOverrideDiagnostics;
   generatedAt: string;
 }
 
@@ -167,6 +179,8 @@ export interface RetrievalCalibrationControls {
   topKCalibration: number;
   /** Breadth multiplier applied to mode top-K */
   breadthMultiplier: number;
+  /** Metadata expansion contribution weight (0.5–2.0) */
+  expansionWeighting: number;
 }
 
 export interface RankingCalibrationControls {
@@ -393,6 +407,7 @@ export const DEFAULT_SYSTEM_CALIBRATION: SystemCalibrationConfig = {
     topKExploratory: 60,
     topKCalibration: 120,
     breadthMultiplier: 1.0,
+    expansionWeighting: 1.0,
   },
   ranking: {
     recencyWeighting: 0.08,

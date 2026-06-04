@@ -117,6 +117,14 @@ export async function captureReplaySnapshotFromTrace(
   };
 
   const snapshot = buildReplaySnapshot(buildInput);
+  if (result.executionContext) {
+    (snapshot as ReplaySnapshot & { executionContext?: unknown }).executionContext =
+      result.executionContext;
+  }
+  if (result.contextPackage.domainMetadata?.factOverrides.length) {
+    (snapshot as ReplaySnapshot & { factOverrides?: unknown }).factOverrides =
+      result.contextPackage.domainMetadata.factOverrides;
+  }
   await persistReplaySnapshot(prisma, snapshot);
   return snapshot;
 }

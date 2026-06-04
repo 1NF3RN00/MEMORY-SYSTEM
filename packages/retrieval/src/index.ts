@@ -1,5 +1,14 @@
 export { mergeRetrievalConfig } from "./config.js";
-export { preprocessQuery, validateRetrievalScope } from "./preprocessing.js";
+export {
+  preprocessQuery,
+  validateRetrievalScope,
+  type PreprocessQueryOptions,
+} from "./preprocessing.js";
+export {
+  buildRetrievalEmbeddingText,
+  extractQuerySignals,
+  type QuerySignalExtraction,
+} from "./query-signals.js";
 export { rankChunks, type RankableChunk, type RankedChunk } from "./ranking.js";
 export {
   deduplicateChunks,
@@ -24,6 +33,15 @@ export {
   type RunRetrievalInput,
   type RunRetrievalResult,
 } from "./pipeline.js";
+export {
+  buildDomainVectorScope,
+  filterRelationshipsByNeighborhoodConstraints,
+  resolveDomainRetrievalScope,
+  type DomainVectorScope,
+  type ResolvedDomainRetrievalScope,
+  type RelationshipRowForFilter,
+} from "./domain-scope.js";
+export { appendDomainScopeConditions } from "./domain-scope-sql.js";
 export {
   applyRetrievalExpansion,
   buildContextualNeighborHints,

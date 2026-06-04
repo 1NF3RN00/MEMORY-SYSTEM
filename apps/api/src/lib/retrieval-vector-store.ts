@@ -1,8 +1,9 @@
 import type { PrismaClient } from "@prisma/client";
-import type {
-  VectorSearchCandidate,
-  VectorSearchFilter,
-  VectorSearchStore,
+import {
+  appendDomainScopeConditions,
+  type VectorSearchCandidate,
+  type VectorSearchFilter,
+  type VectorSearchStore,
 } from "@memory-middleware/retrieval";
 import type { CanonicalMemoryScoring } from "@memory-middleware/shared-types";
 
@@ -33,7 +34,7 @@ export function createPgVectorSearchStore(prisma: PrismaClient): VectorSearchSto
     ): Promise<VectorSearchCandidate[]> {
       const vectorLiteral = `[${queryEmbedding.join(",")}]`;
       const conditions: string[] = [
-        `m.workspace_id = $2::uuid`,
+        `m.workspace_id = $2::text`,
         `m.retrieval_eligible = true`,
         `m.archived = false`,
         `mc.embedding_status = 'completed'`,
@@ -59,6 +60,15 @@ export function createPgVectorSearchStore(prisma: PrismaClient): VectorSearchSto
         conditions.push(`m.created_at <= $${paramIndex}::timestamptz`);
         params.push(filter.timeframe.end);
         paramIndex += 1;
+      }
+
+      if (filter.domainScope) {
+        paramIndex = appendDomainScopeConditions(
+          filter.domainScope,
+          conditions,
+          params,
+          paramIndex,
+        );
       }
 
       const similarityExpr = `(1 - (mc.embedding <=> $1::vector))`;

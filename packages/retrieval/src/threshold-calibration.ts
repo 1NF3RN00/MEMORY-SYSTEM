@@ -64,6 +64,7 @@ export function resolveCalibratedRetrievalParams(
     topKExploratory: calibration?.topKExploratory ?? 60,
     topKCalibration: calibration?.topKCalibration ?? 120,
     breadthMultiplier,
+    expansionWeighting: calibration?.expansionWeighting ?? 1,
   });
 
   topK = Math.round(topK * breadthMultiplier);
@@ -80,8 +81,10 @@ export function resolveCalibratedRetrievalParams(
     topK = Math.max(topK, Math.round(calibration.topK * breadthMultiplier));
   }
 
+  const topKCap = thresholdMode === "calibration" ? 150 : 120;
+
   return {
-    topK: Math.max(8, Math.min(150, topK)),
+    topK: Math.max(8, Math.min(topKCap, topK)),
     similarityThreshold: adjustedThreshold,
     thresholdMode,
     precisionWeighting,

@@ -3,6 +3,12 @@ export {
   type RunContextRenderInput,
   type RunContextRenderResult,
 } from "./pipeline.js";
+export {
+  prepareContextPackageForDelivery,
+  buildInstructionSections,
+  type PrepareContextPackageInput,
+  type PrepareContextPackageResult,
+} from "./domain-preparation.js";
 export { compareDeliveryContexts, buildContextDiff } from "./compare.js";
 export { groupContext, type ContextGroup } from "./grouping.js";
 export { formatHierarchy } from "./hierarchy.js";

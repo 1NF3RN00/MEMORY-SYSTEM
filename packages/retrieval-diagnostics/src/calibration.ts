@@ -219,6 +219,7 @@ export const CALIBRATION_BOUNDS: Record<
     topKExploratory: [40, 80],
     topKCalibration: [80, 150],
     breadthMultiplier: [0.5, 3.0],
+    expansionWeighting: [0.5, 2.0],
   },
   ranking: {
     recencyWeighting: [0, 0.25],

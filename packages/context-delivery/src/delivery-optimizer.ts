@@ -18,6 +18,22 @@ function trimTrailingWhitespace(text: string): string {
     .trim();
 }
 
+/** Remove consecutive duplicate lines — deterministic redundancy elimination. */
+function dedupeConsecutiveLines(text: string): string {
+  const lines = text.split("\n");
+  const result: string[] = [];
+  let prev = "";
+
+  for (const line of lines) {
+    const normalized = line.trim();
+    if (normalized && normalized === prev) continue;
+    result.push(line);
+    prev = normalized;
+  }
+
+  return result.join("\n");
+}
+
 export function optimizeDelivery(
   sections: RenderedSection[],
   mode: DeliveryMode,
@@ -38,6 +54,9 @@ export function optimizeDelivery(
     const beforeLines = content.split("\n").length;
 
     content = collapseBlankLines(content);
+    if (densityFactor >= 0.55) {
+      content = dedupeConsecutiveLines(content);
+    }
 
     if (profile.compactBullets || densityFactor > 0.7) {
       content = content.replace(/\n\s*\n(?=- )/g, "\n");

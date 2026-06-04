@@ -1,13 +1,18 @@
 import { Prisma } from "@prisma/client";
 import type { FastifyInstance } from "fastify";
 import { createOpenAiEmbeddingClient } from "@memory-middleware/ingestion";
+import { prepareContextPackageForDelivery } from "@memory-middleware/context-delivery";
 import {
   mergeRetrievalConfig,
   runRetrievalPipeline,
   applyCalibrationToRetrievalConfig,
 } from "@memory-middleware/retrieval";
 import { mergeSystemCalibration } from "@memory-middleware/retrieval-diagnostics";
-import { newUlid, RELATIONSHIP_EVENT_TYPES } from "@memory-middleware/shared-types";
+import {
+  DOMAIN_ENGINE_EVENT_TYPES,
+  newUlid,
+  RELATIONSHIP_EVENT_TYPES,
+} from "@memory-middleware/shared-types";
 import { loadEnv } from "../config/env.js";
 import { recordRetrievalForMemories } from "../lib/memory-evolution.js";
 import {
@@ -34,6 +39,13 @@ import {
 } from "../lib/retrieval-store.js";
 import { captureReplaySnapshotFromTrace } from "../lib/historian-store.js";
 import { getRetrievalPlan } from "../lib/planning-store.js";
+import { createPrismaDomainEngineStore } from "../lib/domain-engine/index.js";
+import { buildChunkMetadataLookup } from "../lib/domain-chunk-metadata.js";
+import { loadMemoryMetadataByIds } from "../lib/domain-memory-metadata.js";
+import {
+  DomainEngineError,
+  resolveDomainExecutionContext,
+} from "@memory-middleware/domain-engine";
 
 export async function registerRetrievalRoutes(app: FastifyInstance): Promise<void> {
   const env = loadEnv();
@@ -131,6 +143,31 @@ export async function registerRetrievalRoutes(app: FastifyInstance): Promise<voi
 
     const vectorStore = createPgVectorSearchStore(app.prisma);
 
+    let executionContext: import("@memory-middleware/shared-types").DomainExecutionContext | undefined;
+    if (parsed.domainKey) {
+      const domainStore = createPrismaDomainEngineStore(app.prisma);
+      try {
+        executionContext = await resolveDomainExecutionContext(
+          { store: domainStore, events: app.events, traceId },
+          {
+            workspaceId: parsed.workspaceId,
+            domainKey: parsed.domainKey,
+            ...(parsed.domainAction ? { domainAction: parsed.domainAction } : {}),
+          },
+        );
+      } catch (error) {
+        if (error instanceof DomainEngineError) {
+          const status = error.code === "instruction_not_found" ? 404 : 404;
+          return reply.status(status).send({
+            error: error.message,
+            code: error.code,
+            ...(error.details ? { details: error.details } : {}),
+          });
+        }
+        throw error;
+      }
+    }
+
     let retrievalPlan;
     if (parsed.planId) {
       const storedPlan = await getRetrievalPlan(app.prisma, parsed.planId);
@@ -152,7 +189,10 @@ export async function registerRetrievalRoutes(app: FastifyInstance): Promise<voi
         embeddingClient,
         events: app.events,
         calibration: calibration.retrieval,
+        ...(executionContext ? { executionContext } : {}),
         ...(retrievalPlan ? { retrievalPlan } : {}),
+        loadTargetMemoryMetadata: (memoryIds) =>
+          loadMemoryMetadataByIds(app.prisma, memoryIds),
         loadAdjacencyForChunks: (chunkIds) =>
           buildAdjacencyLookupForChunks(app.prisma, chunkIds),
         loadMemoryMetadata: (memoryIds) =>
@@ -193,8 +233,31 @@ export async function registerRetrievalRoutes(app: FastifyInstance): Promise<voi
         },
       });
 
+      let contextPackage = result.contextPackage;
+      if (result.executionContext) {
+        const metadataByChunkId = await buildChunkMetadataLookup(app.prisma, contextPackage);
+        const prepared = prepareContextPackageForDelivery({
+          contextPackage,
+          executionContext: result.executionContext,
+          metadataByChunkId,
+        });
+        contextPackage = prepared.contextPackage;
+
+        if (prepared.domainMetadata.factOverrides.length > 0) {
+          await app.events.emit({
+            event_type: DOMAIN_ENGINE_EVENT_TYPES.FACT_OVERRIDE_APPLIED,
+            trace_id: traceId,
+            workspace_id: parsed.workspaceId,
+            metadata: {
+              override_count: prepared.domainMetadata.factOverrides.length,
+              domain_key: result.executionContext.domainKey,
+            },
+          });
+        }
+      }
+
       const stored: StoredRetrievalResult = {
-        contextPackage: result.contextPackage,
+        contextPackage,
         stages: result.stages,
         preprocessedQuery: result.preprocessedQuery,
         retrievalMode: parsed.retrievalMode,
@@ -202,6 +265,7 @@ export async function registerRetrievalRoutes(app: FastifyInstance): Promise<voi
         ...(result.relationshipAugmentation
           ? { relationshipAugmentation: result.relationshipAugmentation }
           : {}),
+        ...(result.executionContext ? { executionContext: result.executionContext } : {}),
       };
 
       await completeRetrievalOperation(app.prisma, traceId, stored, "completed");
@@ -220,7 +284,7 @@ export async function registerRetrievalRoutes(app: FastifyInstance): Promise<voi
 
       await captureReplaySnapshotFromTrace(app.prisma, traceId);
 
-      const retrievedMemoryIds = result.contextPackage.memories.map((m) => m.memoryId);
+      const retrievedMemoryIds = contextPackage.memories.map((m) => m.memoryId);
       await recordRetrievalForMemories(
         app.prisma,
         app.events,
@@ -237,7 +301,11 @@ export async function registerRetrievalRoutes(app: FastifyInstance): Promise<voi
 
       return {
         retrievalTraceId: traceId,
-        contextPackage: result.contextPackage,
+        contextPackage,
+        ...(contextPackage.domainMetadata
+          ? { factOverrides: contextPackage.domainMetadata.factOverrides }
+          : {}),
+        ...(result.executionContext ? { executionContext: result.executionContext } : {}),
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);

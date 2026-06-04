@@ -11,6 +11,7 @@ import {
 } from "@memory-middleware/shared-types";
 import { generateRawApiKey, hashApiKey, extractKeyPrefix } from "./api-keys.js";
 import { createAuthUserAndInvite, isSupabaseConfigured } from "./supabase-admin.js";
+import { DEFAULT_PLATFORM_ID } from "./tenancy-defaults.js";
 
 export interface ProvisionWorkspaceInput {
   email: string;
@@ -89,6 +90,7 @@ export async function provisionWorkspaceForUser(
       await tx.workspace.create({
         data: {
           id: workspaceId,
+          platformId: DEFAULT_PLATFORM_ID,
           name: input.workspaceName,
           slug,
           ownerUserId: userId,
@@ -103,6 +105,7 @@ export async function provisionWorkspaceForUser(
           workspaceId,
           userId,
           role: "owner",
+          operationalRole: "workspace_admin",
         },
       });
 

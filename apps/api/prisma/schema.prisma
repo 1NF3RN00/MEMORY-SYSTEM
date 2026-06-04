@@ -24,11 +24,79 @@ datasource db {
 
 
 
+/// Top-level tenancy — agencies own platforms.
+
+model Agency {
+
+  id        String   @id
+
+  name      String
+
+  slug      String   @unique
+
+  archived  Boolean  @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+
+
+  platforms     Platform[]
+
+  platformUsers PlatformUser[] @relation("AgencyUsers")
+
+
+
+  @@map("agencies")
+
+}
+
+
+
+/// Platform — workspaces belong to a platform.
+
+model Platform {
+
+  id        String   @id
+
+  agencyId  String   @map("agency_id")
+
+  name      String
+
+  slug      String   @unique
+
+  archived  Boolean  @default(false)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+
+
+  agency        Agency         @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  workspaces    Workspace[]
+
+  platformUsers PlatformUser[] @relation("PlatformUsers")
+
+
+
+  @@index([agencyId])
+
+  @@map("platforms")
+
+}
+
+
+
 /// Tenant workspace — configuration and isolation boundary (ULID).
 
 model Workspace {
 
   id          String   @id
+
+  platformId  String   @map("platform_id")
 
   name        String
 
@@ -48,37 +116,47 @@ model Workspace {
 
 
 
-  memberships          WorkspaceMembership[]
+  platform              Platform            @relation(fields: [platformId], references: [id], onDelete: Restrict)
 
-  apiKeys              ApiKey[]
+  memberships           WorkspaceMembership[]
 
-  memories             Memory[]
+  apiKeys               ApiKey[]
 
-  retrievalOperations  RetrievalOperation[]
+  memories              Memory[]
+
+  retrievalOperations   RetrievalOperation[]
 
   compressionOperations CompressionOperation[]
 
   contextRenderOperations ContextRenderOperation[]
 
-  memoryRelationships  MemoryRelationship[]
+  memoryRelationships   MemoryRelationship[]
 
-  compressionArtifacts CompressionArtifact[]
+  compressionArtifacts  CompressionArtifact[]
 
-  snapshots            Snapshot[]
+  snapshots             Snapshot[]
 
-  replaySnapshots      ReplaySnapshot[]
+  replaySnapshots       ReplaySnapshot[]
 
-  retrievalPlans       RetrievalPlan[]
+  retrievalPlans        RetrievalPlan[]
 
-  eventLogs            EventLog[]
+  eventLogs             EventLog[]
 
-  ingestionJobs        IngestionJob[]
+  ingestionJobs         IngestionJob[]
 
-  ingestionTraces      IngestionTrace[]
+  ingestionTraces       IngestionTrace[]
 
-  sourceTruths         SourceTruth[]
+  sourceTruths          SourceTruth[]
+
+  domains               Domain[]
+
+  globalFacts           GlobalFact[]
+
+  installedPackages     InstalledPackage[]
 
 
+
+  @@index([platformId])
 
   @@map("workspaces")
 
@@ -734,21 +812,35 @@ model AccessRequest {
 
 model PlatformUser {
 
-  id             String   @id
+  id                String   @id
 
-  supabaseUserId String   @unique @map("supabase_user_id")
+  supabaseUserId    String   @unique @map("supabase_user_id")
 
-  email          String   @unique
+  email             String   @unique
 
-  isPlatformAdmin Boolean @default(false) @map("is_platform_admin")
+  isPlatformAdmin   Boolean  @default(false) @map("is_platform_admin")
 
-  createdAt      DateTime @default(now()) @map("created_at")
+  isMiddlewareAdmin Boolean  @default(false) @map("is_middleware_admin")
+
+  agencyId          String?  @map("agency_id")
+
+  platformId        String?  @map("platform_id")
+
+  createdAt         DateTime @default(now()) @map("created_at")
 
 
+
+  agency      Agency?  @relation("AgencyUsers", fields: [agencyId], references: [id], onDelete: SetNull)
+
+  platform    Platform? @relation("PlatformUsers", fields: [platformId], references: [id], onDelete: SetNull)
 
   memberships WorkspaceMembership[]
 
 
+
+  @@index([agencyId])
+
+  @@index([platformId])
 
   @@map("platform_users")
 
@@ -760,15 +852,17 @@ model PlatformUser {
 
 model WorkspaceMembership {
 
-  id          String   @id
+  id              String   @id
 
-  workspaceId String   @map("workspace_id")
+  workspaceId     String   @map("workspace_id")
 
-  userId      String   @map("user_id")
+  userId          String   @map("user_id")
 
-  role        String
+  role            String
 
-  createdAt   DateTime @default(now()) @map("created_at")
+  operationalRole String?  @map("operational_role")
+
+  createdAt       DateTime @default(now()) @map("created_at")
 
 
 
@@ -853,6 +947,290 @@ model SecurityEvent {
   @@index([createdAt])
 
   @@map("security_events")
+
+}
+
+
+
+/// Domain Engine — task-scoped operational intelligence boundary.
+
+model Domain {
+
+  id                      String    @id
+
+  workspaceId             String    @map("workspace_id")
+
+  domainKey               String    @map("domain_key")
+
+  name                    String
+
+  description             String?
+
+  status                  String    @default("active")
+
+  metadataFilters         Json      @default("[]") @map("metadata_filters")
+
+  relationshipConstraints Json      @default("{}") @map("relationship_constraints")
+
+  sourcePackageId         String?   @map("source_package_id")
+
+  archivedAt              DateTime? @map("archived_at")
+
+  createdAt               DateTime  @default(now()) @map("created_at")
+
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+
+
+
+  workspace      Workspace             @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  retrievalRules DomainRetrievalRule[]
+
+  facts          DomainFact[]
+
+  instructions   DomainInstruction[]
+
+
+
+  @@unique([workspaceId, domainKey])
+
+  @@index([workspaceId])
+
+  @@map("domains")
+
+}
+
+
+
+model DomainRetrievalRule {
+
+  id        String @id
+
+  domainId  String @map("domain_id")
+
+  name      String
+
+  config    Json   @default("{}")
+
+  sortOrder Int    @default(0) @map("sort_order")
+
+
+
+  domain Domain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+
+
+
+  @@index([domainId])
+
+  @@map("domain_retrieval_rules")
+
+}
+
+
+
+model GlobalFact {
+
+  id                    String    @id
+
+  workspaceId           String    @map("workspace_id")
+
+  key                   String
+
+  title                 String
+
+  content               String
+
+  priority              Int       @default(0)
+
+  status                String    @default("active")
+
+  appliesToMetadataKeys Json      @default("[]") @map("applies_to_metadata_keys")
+
+  sourcePackageId       String?   @map("source_package_id")
+
+  version               Int       @default(1)
+
+  archivedAt            DateTime? @map("archived_at")
+
+  createdAt             DateTime  @default(now()) @map("created_at")
+
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+
+
+  @@unique([workspaceId, key])
+
+  @@index([workspaceId])
+
+  @@map("global_facts")
+
+}
+
+
+
+model DomainFact {
+
+  id                    String    @id
+
+  workspaceId           String    @map("workspace_id")
+
+  domainId              String    @map("domain_id")
+
+  key                   String
+
+  title                 String
+
+  content               String
+
+  priority              Int       @default(0)
+
+  status                String    @default("active")
+
+  appliesToMetadataKeys Json      @default("[]") @map("applies_to_metadata_keys")
+
+  sourcePackageId       String?   @map("source_package_id")
+
+  version               Int       @default(1)
+
+  archivedAt            DateTime? @map("archived_at")
+
+  createdAt             DateTime  @default(now()) @map("created_at")
+
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+
+
+  domain Domain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+
+
+
+  @@unique([domainId, key])
+
+  @@index([workspaceId])
+
+  @@map("domain_facts")
+
+}
+
+
+
+model DomainInstruction {
+
+  id              String    @id
+
+  workspaceId     String    @map("workspace_id")
+
+  domainId        String    @map("domain_id")
+
+  actionKey       String    @map("action_key")
+
+  title           String
+
+  content         String
+
+  status          String    @default("active")
+
+  version         Int       @default(1)
+
+  isActive        Boolean   @default(true) @map("is_active")
+
+  sourcePackageId String?   @map("source_package_id")
+
+  archivedAt      DateTime? @map("archived_at")
+
+  createdAt       DateTime  @default(now()) @map("created_at")
+
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+
+
+  domain Domain @relation(fields: [domainId], references: [id], onDelete: Cascade)
+
+
+
+  @@index([domainId, actionKey])
+
+  @@index([workspaceId])
+
+  @@map("domain_instructions")
+
+}
+
+
+
+model PackageDefinition {
+
+  id          String   @id
+
+  packageKey  String   @unique @map("package_key")
+
+  name        String
+
+  version     String
+
+  description String?
+
+  manifest    Json
+
+  published   Boolean  @default(false)
+
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+
+
+  installations InstalledPackage[]
+
+
+
+  @@map("package_definitions")
+
+}
+
+
+
+model InstalledPackage {
+
+  id                  String    @id
+
+  workspaceId         String    @map("workspace_id")
+
+  packageDefinitionId String    @map("package_definition_id")
+
+  packageKey          String    @map("package_key")
+
+  installedVersion    String    @map("installed_version")
+
+  snapshotVersion     String    @map("snapshot_version")
+
+  status              String    @default("active")
+
+  manifestSnapshot    Json      @map("manifest_snapshot")
+
+  snapshotHistory     Json      @default("[]") @map("snapshot_history")
+
+  installedByUserId   String?   @map("installed_by_user_id")
+
+  installedAt         DateTime  @default(now()) @map("installed_at")
+
+  archivedAt          DateTime? @map("archived_at")
+
+
+
+  workspace         Workspace         @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  packageDefinition PackageDefinition @relation(fields: [packageDefinitionId], references: [id], onDelete: Restrict)
+
+
+
+  @@index([workspaceId])
+
+  @@map("installed_packages")
 
 }
 

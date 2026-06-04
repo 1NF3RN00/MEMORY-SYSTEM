@@ -20,6 +20,7 @@ import {
 import { MetricCell, MetricStrip } from "../components/ui/MetricCell.js";
 import { staggerContainer, staggerItem } from "../design-system/motion.js";
 import { exportRetrievalReportPdf } from "../lib/exportRetrievalReportPdf.js";
+import { ScoreHistogram } from "../components/diagnostics/ScoreHistogram.js";
 
 type TabId = "diagnostics" | "calibration" | "trace" | "benchmark" | "signals";
 
@@ -75,6 +76,28 @@ interface TraceStageAnalysis {
   summary: string;
 }
 
+interface FactOverrideRecord {
+  factId: string;
+  factScope: "global" | "domain";
+  factKey: string;
+  memoryId: string;
+  chunkId: string;
+  originalExcerpt: string;
+  replacementText: string;
+  precedenceRank: number;
+  reason: string;
+}
+
+interface FactOverrideDiagnostics {
+  overrideCount: number;
+  overrides: FactOverrideRecord[];
+  globalFactCount: number;
+  domainFactCount: number;
+  instructionCount: number;
+  domainKey?: string;
+  domainAction?: string;
+}
+
 interface FullTraceAnalysis {
   retrievalTraceId: string;
   query: string;
@@ -86,6 +109,7 @@ interface FullTraceAnalysis {
   relationshipDiagnostics: { issues: string[] };
   compressionDiagnostics: { issues: string[] };
   renderingDiagnostics: { issues: string[] };
+  factOverrideDiagnostics: FactOverrideDiagnostics;
 }
 
 const TABS: Array<{ id: TabId; label: string; code: string }> = [
@@ -127,6 +151,7 @@ const CALIBRATION_SECTIONS: Array<{
       { key: "topKBalanced", label: "Top-K balanced", min: 20, max: 40, step: 1 },
       { key: "topKExploratory", label: "Top-K exploratory", min: 40, max: 80, step: 1 },
       { key: "topKCalibration", label: "Top-K calibration", min: 80, max: 150, step: 1 },
+      { key: "expansionWeighting", label: "Expansion weighting", min: 0.5, max: 2, step: 0.05 },
     ],
   },
   {
@@ -302,7 +327,10 @@ export function RetrievalDiagnosticsPage() {
   }, [traceId]);
 
   useEffect(() => {
-    if (traceInput.trim() && (activeTab === "trace" || activeTab === "signals")) {
+    if (
+      traceInput.trim() &&
+      (activeTab === "trace" || activeTab === "signals" || activeTab === "diagnostics")
+    ) {
       void loadTraceAnalysis(traceInput.trim());
     }
   }, [activeTab, traceInput]);
@@ -661,6 +689,13 @@ export function RetrievalDiagnosticsPage() {
                   </div>
                 </div>
 
+                {breadthAnalysis?.scoreHistogram?.length ? (
+                  <ScoreHistogram
+                    title="Retrieval score distribution (accepted vs rejected)"
+                    buckets={breadthAnalysis.scoreHistogram}
+                  />
+                ) : null}
+
                 <div>
                   <h3 className="mb-3 font-metric text-[0.625rem] uppercase tracking-[0.06em] text-[var(--color-text-muted)]">
                     Detected problems ({report.detectedProblems.length})
@@ -911,6 +946,72 @@ export function RetrievalDiagnosticsPage() {
               </div>
             )}
 
+            {traceAnalysis.factOverrideDiagnostics && activeTab === "trace" && (
+              <div className="mt-6 rounded-md border border-[var(--color-border-subtle)] p-4">
+                <span className="font-metric text-[0.625rem] uppercase text-[var(--color-text-muted)]">
+                  Fact overrides (domain engine)
+                </span>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                  <MetricCell
+                    label="Overrides applied"
+                    value={String(traceAnalysis.factOverrideDiagnostics.overrideCount)}
+                  />
+                  <MetricCell
+                    label="Global facts"
+                    value={String(traceAnalysis.factOverrideDiagnostics.globalFactCount)}
+                  />
+                  <MetricCell
+                    label="Domain facts"
+                    value={String(traceAnalysis.factOverrideDiagnostics.domainFactCount)}
+                  />
+                  <MetricCell
+                    label="Instructions"
+                    value={String(traceAnalysis.factOverrideDiagnostics.instructionCount)}
+                  />
+                </div>
+                {traceAnalysis.factOverrideDiagnostics.domainKey && (
+                  <p className="mt-2 text-xs text-[var(--color-text-tertiary)]">
+                    Domain: {traceAnalysis.factOverrideDiagnostics.domainKey}
+                    {traceAnalysis.factOverrideDiagnostics.domainAction
+                      ? ` · action: ${traceAnalysis.factOverrideDiagnostics.domainAction}`
+                      : ""}
+                  </p>
+                )}
+                {traceAnalysis.factOverrideDiagnostics.overrides.length > 0 ? (
+                  <DataTable className="mt-4">
+                    <DataTableHead>
+                      <DataTableRow>
+                        <DataTableHeaderCell>Fact</DataTableHeaderCell>
+                        <DataTableHeaderCell>Scope</DataTableHeaderCell>
+                        <DataTableHeaderCell>Chunk</DataTableHeaderCell>
+                        <DataTableHeaderCell>Reason</DataTableHeaderCell>
+                      </DataTableRow>
+                    </DataTableHead>
+                    <DataTableBody>
+                      {traceAnalysis.factOverrideDiagnostics.overrides.map((override) => (
+                        <DataTableRow key={`${override.factId}-${override.chunkId}`}>
+                          <DataTableCell className="font-metric text-xs">
+                            {override.factKey}
+                          </DataTableCell>
+                          <DataTableCell>{override.factScope}</DataTableCell>
+                          <DataTableCell className="max-w-[140px] truncate font-metric text-xs">
+                            {override.chunkId.slice(0, 10)}…
+                          </DataTableCell>
+                          <DataTableCell className="max-w-[280px] text-xs text-[var(--color-text-secondary)]">
+                            {override.reason}
+                          </DataTableCell>
+                        </DataTableRow>
+                      ))}
+                    </DataTableBody>
+                  </DataTable>
+                ) : (
+                  <p className="mt-2 text-xs text-[var(--color-text-tertiary)]">
+                    No chunk text replacements for this trace.
+                  </p>
+                )}
+              </div>
+            )}
+
             <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {[
                 { label: "Query", issues: traceAnalysis.queryDiagnostics.issues },
@@ -1061,14 +1162,34 @@ export function RetrievalDiagnosticsPage() {
               />
             </MetricStrip>
             {breadthAnalysis && (
+              <div className="mt-4 space-y-4">
+                <div className="rounded-md border border-[var(--color-border-subtle)] p-3">
+                  <span className="font-metric text-[0.625rem] uppercase text-[var(--color-text-muted)]">
+                    Retrieval breadth
+                  </span>
+                  <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
+                    Breadth {breadthAnalysis.breadthScore.toFixed(2)} · {breadthAnalysis.acceptedCount}{" "}
+                    accepted / {breadthAnalysis.rejectedCount} rejected
+                    {breadthAnalysis.collapseDetected ? " · collapse detected" : ""}
+                  </p>
+                </div>
+                {breadthAnalysis.scoreHistogram?.length ? (
+                  <ScoreHistogram
+                    title="Candidate score histogram"
+                    buckets={breadthAnalysis.scoreHistogram}
+                  />
+                ) : null}
+              </div>
+            )}
+            {expansionAnalysis && (
               <div className="mt-4 rounded-md border border-[var(--color-border-subtle)] p-3">
                 <span className="font-metric text-[0.625rem] uppercase text-[var(--color-text-muted)]">
-                  Retrieval breadth
+                  Metadata expansion
                 </span>
                 <p className="mt-1 text-sm text-[var(--color-text-secondary)]">
-                  Breadth {breadthAnalysis.breadthScore.toFixed(2)} · {breadthAnalysis.acceptedCount}{" "}
-                  accepted / {breadthAnalysis.rejectedCount} rejected
-                  {breadthAnalysis.collapseDetected ? " · collapse detected" : ""}
+                  Enrichment {expansionAnalysis.enrichmentQuality.toFixed(2)} · Usefulness{" "}
+                  {expansionAnalysis.metadataUsefulness.toFixed(2)} · Contribution{" "}
+                  {expansionAnalysis.expansionContribution.toFixed(2)}
                 </p>
               </div>
             )}

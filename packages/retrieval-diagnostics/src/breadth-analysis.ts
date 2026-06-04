@@ -53,6 +53,7 @@ export function analyzeRetrievalBreadth(input: BuildReportInput): RetrievalBread
     (stageOutputs.threshold as number | undefined) ??
     (stageOutputs.effectiveThreshold as number | undefined) ??
     0.55;
+  const scannedCount = stageOutputs.scanned_count as number | undefined;
 
   const scoreEntries: Array<{ score: number; accepted: boolean; memoryId: string }> = [
     ...included.map((c) => ({
@@ -68,7 +69,7 @@ export function analyzeRetrievalBreadth(input: BuildReportInput): RetrievalBread
   ];
 
   const scoreHistogram = buildScoreHistogram(scoreEntries);
-  const candidateCount = scoreEntries.length;
+  const candidateCount = Math.max(scoreEntries.length, scannedCount ?? 0);
   const acceptedCount = included.length;
   const rejectedCount = rejectedThreshold.length;
 

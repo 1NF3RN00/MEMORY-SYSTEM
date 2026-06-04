@@ -2,6 +2,7 @@ import type {
   BuildReportInput,
   ChunkDiagnostics,
   CompressionDiagnostics,
+  FactOverrideDiagnostics,
   FullTraceAnalysis,
   QueryDiagnostics,
   RankingDiagnostics,
@@ -402,6 +403,30 @@ export function buildTraceStageSummaries(input: BuildReportInput): TraceStageAna
   return stages;
 }
 
+export function analyzeFactOverrideDiagnostics(
+  input: BuildReportInput,
+): FactOverrideDiagnostics {
+  const pkg = input.snapshot.contextPackage;
+  const domainMetadata = pkg.domainMetadata;
+  const executionContext = domainMetadata?.executionContext;
+
+  const overrides = domainMetadata?.factOverrides ?? [];
+  const globalFactCount = executionContext?.globalFacts.filter((f) => f.status === "active").length ?? 0;
+  const domainFactCount = executionContext?.domainFacts.filter((f) => f.status === "active").length ?? 0;
+  const instructionCount =
+    executionContext?.instructions.filter((i) => i.status === "active" && i.isActive).length ?? 0;
+
+  return {
+    overrideCount: overrides.length,
+    overrides,
+    globalFactCount,
+    domainFactCount,
+    instructionCount,
+    ...(executionContext?.domainKey ? { domainKey: executionContext.domainKey } : {}),
+    ...(executionContext?.domainAction ? { domainAction: executionContext.domainAction } : {}),
+  };
+}
+
 export function buildFullTraceAnalysis(input: BuildReportInput): FullTraceAnalysis {
   const normalized = normalizeReportInput(input);
   return {
@@ -415,6 +440,7 @@ export function buildFullTraceAnalysis(input: BuildReportInput): FullTraceAnalys
     relationshipDiagnostics: analyzeRelationshipStage(normalized),
     compressionDiagnostics: analyzeCompressionStage(normalized),
     renderingDiagnostics: analyzeRenderingStage(normalized),
+    factOverrideDiagnostics: analyzeFactOverrideDiagnostics(normalized),
     generatedAt: new Date().toISOString(),
   };
 }

@@ -3,10 +3,13 @@ import {
   applyCalibrationToWorkspaceConfig,
   buildCalibrationChangeRecords,
   clampCalibrationValue,
+  computeMetricDeltas,
+  computeRetrievalQualityMetrics,
   mergeSystemCalibration,
   resolveDefaultsFromRuntime,
   CALIBRATION_BOUNDS,
 } from "@memory-middleware/retrieval-diagnostics";
+import { getReplaySnapshotByTraceId } from "./historian-store.js";
 import type {
   BuildReportInput,
   CalibrationChangeRecord,
@@ -112,13 +115,48 @@ export async function patchCalibration(
     [request.section]: sectionValues,
   } as SystemCalibrationConfig;
 
-  const changes = buildCalibrationChangeRecords(
+  let changes = buildCalibrationChangeRecords(
     request.workspaceId,
     request.section,
     previous,
     next,
     request.benchmarkTraceId,
   );
+
+  if (request.benchmarkTraceId && changes.length > 0) {
+    const snapshot = await getReplaySnapshotByTraceId(prisma, request.benchmarkTraceId);
+    if (snapshot) {
+      const beforeInput = await buildReportInputFromTrace(
+        prisma,
+        request.benchmarkTraceId,
+        snapshot,
+      );
+      const beforeMetrics = computeRetrievalQualityMetrics(beforeInput);
+      const afterMetrics = { ...beforeMetrics };
+      for (const key of Object.keys(beforeMetrics) as Array<
+        keyof typeof beforeMetrics
+      >) {
+        if (request.section === "retrieval" && key === "retrievalBreadth") {
+          afterMetrics.retrievalBreadth = Math.min(
+            1,
+            beforeMetrics.retrievalBreadth * (next.retrieval.breadthMultiplier / previous.retrieval.breadthMultiplier),
+          );
+        }
+        if (request.section === "retrieval" && key === "retrievalPrecision") {
+          const thresholdDelta = next.retrieval.semanticThreshold - previous.retrieval.semanticThreshold;
+          afterMetrics.retrievalPrecision = Math.max(
+            0,
+            beforeMetrics.retrievalPrecision - thresholdDelta * 0.5,
+          );
+        }
+      }
+      const deltas = computeMetricDeltas(beforeMetrics, afterMetrics);
+      changes = changes.map((record) => ({
+        ...record,
+        retrievalImpact: deltas,
+      }));
+    }
+  }
 
   if (changes.length === 0) {
     const view = await getCalibrationView(prisma, request.workspaceId);

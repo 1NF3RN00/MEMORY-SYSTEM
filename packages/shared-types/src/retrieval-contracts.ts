@@ -20,6 +20,10 @@ export interface RetrievalQuery {
     start?: string;
     end?: string;
   };
+  /** Domain Engine — task-scoped retrieval boundary (optional) */
+  domainKey?: string;
+  /** Maps to instruction actionKey when domainKey is set */
+  domainAction?: string;
 }
 
 export interface RetrievalTokenBudget {
@@ -35,6 +39,9 @@ export interface RetrievalPipelineMetadata {
   finalChunkCount: number;
   /** Sprint 4 — retrieval expansion (metadata + neighbor hints) */
   expansion?: import("./structural-contracts.js").RetrievalExpansionResult;
+  /** Domain Engine — task identity when domain-scoped retrieve */
+  domainKey?: string;
+  domainAction?: string;
 }
 
 export interface RetrievedChunk {
@@ -126,6 +133,8 @@ export interface ContextPackage {
   rankingBreakdown: RankingBreakdown[];
   chunkTraces: ChunkRetrievalTrace[];
   generatedAt: string;
+  /** Domain Engine — execution context and fact override trace (Phase 4) */
+  domainMetadata?: import("./domain-engine-contracts.js").DomainContextMetadata;
 }
 
 export interface RetrievalStageRecord {
@@ -148,6 +157,8 @@ export interface RetrievalTraceView {
   stages: RetrievalStageRecord[];
   contextPackage?: ContextPackage;
   preprocessedQuery?: PreprocessedQuery;
+  executionContext?: import("./domain-engine-contracts.js").DomainExecutionContext;
+  factOverrides?: import("./domain-engine-contracts.js").FactOverrideRecord[];
   createdAt: string;
   completedAt?: string;
 }
@@ -156,6 +167,12 @@ export interface PreprocessedQuery {
   normalizedQuery: string;
   keywords: string[];
   tokenCount: number;
+  /** Deterministic operational concepts extracted from query structure */
+  operationalConcepts?: string[];
+  /** Matched operational domain labels */
+  domains?: string[];
+  /** Text used for query embedding (may include retrieval anchors) */
+  embeddingText?: string;
 }
 
 export interface RetrievalHeatmapEntry {

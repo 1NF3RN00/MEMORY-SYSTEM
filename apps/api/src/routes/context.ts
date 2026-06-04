@@ -5,6 +5,7 @@ import {
   compareDeliveryContexts,
   runContextRenderPipeline,
 } from "@memory-middleware/context-delivery";
+import { DOMAIN_ENGINE_EVENT_TYPES } from "@memory-middleware/shared-types";
 import { DEFAULT_DELIVERY_MODE, newUlid } from "@memory-middleware/shared-types";
 import type { ContextRenderStageRecord } from "@memory-middleware/shared-types";
 import {
@@ -17,7 +18,9 @@ import {
   resolveContextPackageForRender,
   type StoredContextRenderResult,
 } from "../lib/context-store.js";
+import { buildChunkMetadataLookup } from "../lib/domain-chunk-metadata.js";
 import { captureReplaySnapshotFromTrace } from "../lib/historian-store.js";
+import { getRetrievalTrace } from "../lib/retrieval-store.js";
 
 export async function registerContextRoutes(app: FastifyInstance): Promise<void> {
   app.post("/context/render", async (request, reply) => {
@@ -51,12 +54,21 @@ export async function registerContextRoutes(app: FastifyInstance): Promise<void>
       mode,
     });
 
+    const retrievalTrace = await getRetrievalTrace(app.prisma, resolved.retrievalTraceId);
+    const executionContext = retrievalTrace?.executionContext;
+    const metadataByChunkId =
+      executionContext && !resolved.contextPackage.domainMetadata
+        ? await buildChunkMetadataLookup(app.prisma, resolved.contextPackage)
+        : undefined;
+
     try {
       const result = await runContextRenderPipeline({
         contextPackage: resolved.contextPackage,
         workspaceId: parsed.workspaceId,
         deliveryId,
         mode,
+        ...(executionContext ? { executionContext } : {}),
+        ...(metadataByChunkId ? { metadataByChunkId } : {}),
         events: app.events,
         onStage: async (stages: ContextRenderStageRecord[]) => {
           const existing = await app.prisma.contextRenderOperation.findFirst({
@@ -83,6 +95,20 @@ export async function registerContextRoutes(app: FastifyInstance): Promise<void>
         },
       });
 
+      const preparedPackage = result.preparedContextPackage;
+
+      if (preparedPackage.domainMetadata?.factOverrides.length) {
+        await app.events.emit({
+          event_type: DOMAIN_ENGINE_EVENT_TYPES.FACT_OVERRIDE_APPLIED,
+          trace_id: resolved.retrievalTraceId,
+          workspace_id: parsed.workspaceId,
+          metadata: {
+            override_count: preparedPackage.domainMetadata.factOverrides.length,
+            delivery_id: deliveryId,
+          },
+        });
+      }
+
       const stored: StoredContextRenderResult = {
         retrievalTraceId: resolved.retrievalTraceId,
         ...(resolved.compressionTraceId
@@ -90,7 +116,7 @@ export async function registerContextRoutes(app: FastifyInstance): Promise<void>
           : {}),
         mode,
         stages: result.stages,
-        originalContextPackage: resolved.contextPackage,
+        originalContextPackage: preparedPackage,
         deliveryContext: result.deliveryContext,
         renderingDecisions: result.renderingDecisions,
         ...(result.error ? { error: result.error } : {}),

@@ -1,13 +1,16 @@
 import type { EventEmitter } from "@memory-middleware/observability";
+import type { ChunkMetadataLookup } from "@memory-middleware/domain-engine";
 import type {
   ContextPackageInput,
   ContextRenderRelationshipHint,
   ContextRenderStageRecord,
   DeliveryContext,
   DeliveryMode,
+  DomainExecutionContext,
   RenderingDecisions,
 } from "@memory-middleware/shared-types";
 import { DEFAULT_DELIVERY_MODE, newUlid } from "@memory-middleware/shared-types";
+import { prepareContextPackageForDelivery } from "./domain-preparation.js";
 import { optimizeDelivery } from "./delivery-optimizer.js";
 import {
   emitDeliveryGenerated,
@@ -32,6 +35,9 @@ export interface RunContextRenderInput {
   /** Calibration delivery density (0–1) — higher = more compact output */
   deliveryDensity?: number;
   relationshipHints?: ContextRenderRelationshipHint[];
+  /** Domain Engine — apply fact overrides before render when set */
+  executionContext?: DomainExecutionContext;
+  metadataByChunkId?: Map<string, ChunkMetadataLookup>;
   events: EventEmitter;
   onStage?: (stages: ContextRenderStageRecord[]) => void;
 }
@@ -41,6 +47,8 @@ export interface RunContextRenderResult {
   deliveryContext: DeliveryContext;
   renderingDecisions: RenderingDecisions;
   stages: ContextRenderStageRecord[];
+  /** Context package after fact precedence (for trace persistence) */
+  preparedContextPackage: ContextPackageInput;
   failed: boolean;
   error?: string;
 }
@@ -82,16 +90,41 @@ export async function runContextRenderPipeline(
     await input.onStage?.([...stages]);
   };
 
+  let preparedPackage = input.contextPackage;
+
   try {
     pushStage(stages, "rendering", "started", new Date().toISOString());
     await notify();
     await emitRenderingStarted(input.events, eventCtx);
 
+    let instructionSections: import("@memory-middleware/shared-types").RenderedSection[] = [];
+
+    if (input.executionContext) {
+      pushStage(stages, "fact_precedence", "started", new Date().toISOString());
+      await notify();
+
+      const prepared = prepareContextPackageForDelivery({
+        contextPackage: preparedPackage,
+        executionContext: input.executionContext,
+        ...(input.metadataByChunkId ? { metadataByChunkId: input.metadataByChunkId } : {}),
+      });
+      preparedPackage = prepared.contextPackage;
+      instructionSections = prepared.instructionSections;
+
+      pushStage(stages, "fact_precedence", "completed", new Date().toISOString(), {
+        metadata: {
+          overrideCount: prepared.domainMetadata.factOverrides.length,
+          instructionCount: instructionSections.length,
+        },
+      });
+      await notify();
+    }
+
     pushStage(stages, "contextual_grouping", "started", new Date().toISOString());
     await notify();
 
     const { groups, decisions: groupingDecisions } = groupContext(
-      input.contextPackage,
+      preparedPackage,
       mode,
       input.relationshipHints,
     );
@@ -108,17 +141,21 @@ export async function runContextRenderPipeline(
     pushStage(stages, "hierarchy_formatting", "started", new Date().toISOString());
     await notify();
 
-    const { sections, decision: hierarchyDecision } = formatHierarchy(groups, mode);
+    const { sections: memorySections, decision: hierarchyDecision } = formatHierarchy(groups, mode);
+    const sections = [...instructionSections, ...memorySections];
 
     pushStage(stages, "hierarchy_formatting", "completed", new Date().toISOString(), {
-      metadata: { sectionCount: sections.length },
+      metadata: {
+        sectionCount: sections.length,
+        instructionSectionCount: instructionSections.length,
+      },
     });
     await notify();
 
     pushStage(stages, "trace_stripping", "started", new Date().toISOString());
     await notify();
 
-    const traceStrippingDecision = stripOperationalTraces(input.contextPackage);
+    const traceStrippingDecision = stripOperationalTraces(preparedPackage);
 
     pushStage(stages, "trace_stripping", "completed", new Date().toISOString(), {
       metadata: {
@@ -137,7 +174,7 @@ export async function runContextRenderPipeline(
     pushStage(stages, "delivery_optimization", "started", new Date().toISOString());
     await notify();
 
-    const rawTokenEstimate = estimateMiddlewarePayloadTokens(input.contextPackage);
+    const rawTokenEstimate = estimateMiddlewarePayloadTokens(preparedPackage);
     const optimized = optimizeDelivery(sections, mode, rawTokenEstimate, input.deliveryDensity ?? 0.6);
 
     pushStage(stages, "delivery_optimization", "completed", new Date().toISOString(), {
@@ -190,6 +227,7 @@ export async function runContextRenderPipeline(
       deliveryContext,
       renderingDecisions,
       stages,
+      preparedContextPackage: preparedPackage,
       failed: false,
     };
   } catch (error) {
@@ -216,7 +254,7 @@ export async function runContextRenderPipeline(
       renderingDecisions: {
         grouping: [],
         hierarchy: { preservedHeadings: [], bulletGroups: 0, hierarchyDepth: 0 },
-        traceStripping: stripOperationalTraces(input.contextPackage),
+        traceStripping: stripOperationalTraces(preparedPackage),
         deliveryOptimization: {
           redundancyRemoved: 0,
           tokenDensityScore: 0,
@@ -225,6 +263,7 @@ export async function runContextRenderPipeline(
         deliveryMode: mode,
       },
       stages,
+      preparedContextPackage: preparedPackage,
       failed: true,
       error: message,
     };

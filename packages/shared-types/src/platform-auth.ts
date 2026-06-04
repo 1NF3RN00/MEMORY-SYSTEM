@@ -1,5 +1,9 @@
 /** Platform access & workspace provisioning contracts (V1). */
 
+import type { OperationalRole } from "./domain-engine-contracts.js";
+
+export type { OperationalRole };
+
 export type AccessRequestStatus = "pending" | "approved" | "rejected";
 
 export interface AccessRequest {
@@ -31,6 +35,7 @@ export interface WorkspaceMembership {
   workspaceId: string;
   userId: string;
   role: WorkspaceRole;
+  operationalRole?: OperationalRole;
   createdAt: string;
 }
 

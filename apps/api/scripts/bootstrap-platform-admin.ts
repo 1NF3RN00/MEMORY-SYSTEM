@@ -64,7 +64,7 @@ async function main(): Promise<void> {
   if (existing) {
     await prisma.platformUser.update({
       where: { id: existing.id },
-      data: { isPlatformAdmin: true },
+      data: { isPlatformAdmin: true, isMiddlewareAdmin: true },
     });
     const membership = await prisma.workspaceMembership.findFirst({
       where: { userId: existing.id },
@@ -100,7 +100,7 @@ async function main(): Promise<void> {
 
   await prisma.platformUser.update({
     where: { id: result.userId },
-    data: { isPlatformAdmin: true },
+    data: { isPlatformAdmin: true, isMiddlewareAdmin: true },
   });
 
   await prisma.accessRequest.updateMany({
