@@ -4,6 +4,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -42,22 +43,34 @@ const AuthContext = createContext<AuthState | null>(null);
 
 let lastProfileFetchError: string | null = null;
 
-async function fetchProfile(accessToken: string): Promise<{
-  user: AuthUser;
-  workspace: AuthWorkspace;
-} | null> {
+type ProfileFetchResult =
+  | { ok: true; user: AuthUser; workspace: AuthWorkspace }
+  | { ok: false; error: string; transient: boolean };
+
+function isTransientProfileError(message: string): boolean {
+  if (message === "Failed to fetch") return true;
+  if (/^(502|503|504):/.test(message)) return true;
+  return false;
+}
+
+async function fetchProfile(accessToken: string, attempt = 0): Promise<ProfileFetchResult> {
   try {
     const data = await apiGet<{
       user: AuthUser;
       workspace: AuthWorkspace;
     }>("/auth/me", accessToken);
     lastProfileFetchError = null;
-    return data;
+    return { ok: true, user: data.user, workspace: data.workspace };
   } catch (err) {
-    lastProfileFetchError =
+    const message =
       err instanceof Error ? err.message : "Failed to load workspace profile";
-    console.error("[auth] /auth/me failed:", lastProfileFetchError);
-    return null;
+    if (attempt < 2 && isTransientProfileError(message)) {
+      await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+      return fetchProfile(accessToken, attempt + 1);
+    }
+    lastProfileFetchError = message;
+    console.error("[auth] /auth/me failed:", message);
+    return { ok: false, error: message, transient: isTransientProfileError(message) };
   }
 }
 
@@ -73,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [workspace, setWorkspace] = useState<AuthWorkspace | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
+  const hasProfileRef = useRef(false);
 
   const refreshProfile = useCallback(async (): Promise<{ ok: boolean; error: string | null }> => {
     if (!session?.access_token) {
@@ -103,21 +117,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email: "dev@local",
           isPlatformAdmin: true,
         });
+        hasProfileRef.current = true;
         return { ok: true, error: null };
       }
+      hasProfileRef.current = false;
       setUser(null);
       setWorkspace(null);
       return { ok: false, error: null };
     }
     const profile = await fetchProfile(session.access_token);
-    if (profile) {
+    if (profile.ok) {
+      hasProfileRef.current = true;
       setProfileError(null);
       setUser(profile.user);
       setWorkspace(profile.workspace);
       return { ok: true, error: null };
     }
-    const err = consumeLastProfileFetchError();
+    const err = consumeLastProfileFetchError() ?? profile.error;
     setProfileError(err);
+    if (profile.transient && hasProfileRef.current) {
+      return { ok: true, error: err };
+    }
+    hasProfileRef.current = false;
     setUser(null);
     setWorkspace(null);
     return { ok: false, error: err };
@@ -150,6 +171,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void refreshProfile();
   }, [loading, session, refreshProfile]);
 
+  useEffect(() => {
+    if (!session?.access_token) return;
+    const retryOnVisible = () => {
+      if (document.visibilityState === "visible") {
+        void refreshProfile();
+      }
+    };
+    document.addEventListener("visibilitychange", retryOnVisible);
+    return () => document.removeEventListener("visibilitychange", retryOnVisible);
+  }, [session?.access_token, refreshProfile]);
+
   const signIn = useCallback(async (email: string, password: string) => {
     if (!supabase) throw new Error("Supabase is not configured");
     const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -158,6 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     if (supabase) await supabase.auth.signOut();
+    hasProfileRef.current = false;
     setSession(null);
     setUser(null);
     setWorkspace(null);
