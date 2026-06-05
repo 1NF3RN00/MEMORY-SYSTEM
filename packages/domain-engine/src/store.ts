@@ -3,6 +3,7 @@ import type {
   Fact,
   Instruction,
   InstalledPackage,
+  ObservationFilter,
   PackageDefinitionRecord,
   PackageManifest,
   RelationshipNeighborhoodConstraint,
@@ -40,6 +41,7 @@ export interface CreateDomainInput {
   name: string;
   description?: string;
   metadataFilters?: string[];
+  observationFilters?: ObservationFilter[];
   relationshipConstraints?: RelationshipNeighborhoodConstraint;
   retrievalRules?: Omit<RetrievalRule, "ruleId" | "domainId">[];
   sourcePackageId?: string;
@@ -49,6 +51,7 @@ export interface UpdateDomainInput {
   name?: string;
   description?: string;
   metadataFilters?: string[];
+  observationFilters?: ObservationFilter[];
   relationshipConstraints?: RelationshipNeighborhoodConstraint;
   retrievalRules?: Omit<RetrievalRule, "ruleId" | "domainId">[];
 }
@@ -111,6 +114,7 @@ export interface ListOperationalObjectsQuery {
 
 export interface CreateWorkflowInput {
   workspaceId: string;
+  workflowKey?: string;
   name: string;
   description?: string;
   domains?: string[];
@@ -118,9 +122,11 @@ export interface CreateWorkflowInput {
   instructionRefs?: WorkflowInstructionRef[];
   outputTypes?: string[];
   objectTypeFilters?: string[];
+  analysisSpecKey?: string;
 }
 
 export interface UpdateWorkflowInput {
+  workflowKey?: string;
   name?: string;
   description?: string;
   domains?: string[];
@@ -128,6 +134,7 @@ export interface UpdateWorkflowInput {
   instructionRefs?: WorkflowInstructionRef[];
   outputTypes?: string[];
   objectTypeFilters?: string[];
+  analysisSpecKey?: string;
   active?: boolean;
 }
 
@@ -185,6 +192,7 @@ export interface InstallPackageInput {
   workspaceId: string;
   manifest?: PackageManifest;
   packageDefinitionId?: string;
+  packageKey?: string;
   installedByUserId?: string;
   failOnConflict?: boolean;
 }

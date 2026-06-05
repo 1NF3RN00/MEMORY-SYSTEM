@@ -67,3 +67,11 @@ export {
   resolveCalibratedRetrievalParams,
   type CalibratedRetrievalParams,
 } from "./threshold-calibration.js";
+export {
+  applyObservationFilters,
+  matchesObservationFilter,
+  recordToNormalizedObservation,
+  retrieveObservations,
+  type ObservationMemoryRecord,
+  type ObservationRetrievalStore,
+} from "./observation-retrieval.js";

@@ -38,6 +38,10 @@ function instructionKeys(domain: PackageManifestDomain): string[] {
   return (domain.instructions ?? []).map((i) => i.actionKey);
 }
 
+function workflowKeys(manifest: PackageManifest): string[] {
+  return (manifest.workflows ?? []).map((workflow) => workflow.workflowKey);
+}
+
 export function comparePackageManifests(
   current: PackageManifest,
   candidate: PackageManifest,
@@ -97,6 +101,9 @@ export function comparePackageManifests(
   const curGlobal = new Map((current.globalFacts ?? []).map((f) => [f.key, f]));
   const candGlobal = new Map((candidate.globalFacts ?? []).map((f) => [f.key, f]));
 
+  const curWorkflows = new Map((current.workflows ?? []).map((w) => [w.workflowKey, w]));
+  const candWorkflows = new Map((candidate.workflows ?? []).map((w) => [w.workflowKey, w]));
+
   return {
     packageKey: current.packageKey,
     versionChanged:
@@ -113,5 +120,10 @@ export function comparePackageManifests(
       removed: domainRemoved,
       changed: changedDomains,
     },
+    workflows: entityDiff(workflowKeys(current), workflowKeys(candidate), (key) => {
+      const a = curWorkflows.get(key);
+      const b = candWorkflows.get(key);
+      return stableJson(a) !== stableJson(b);
+    }),
   };
 }

@@ -1,8 +1,21 @@
-# Creating Domains and Packages — Operator Guide
+# Operational Intelligence Setup — Operator Guide
 
-This guide explains how to **design, create, install, and maintain** domains and packages in a workspace. It is written for workspace admins and platform operators using the dashboard or API.
+This guide explains how to **design, create, install, execute, and maintain** everything in a workspace’s operational intelligence layer:
 
-For HTTP route reference, see [API_SURFACE.md](./API_SURFACE.md). For type shapes, see [CONTRACTS.md](./CONTRACTS.md). For product architecture, see [DOMAIN_ENGINE_AND_PACKAGE_SYSTEM.md](../DOMAIN_ENGINE_AND_PACKAGE_SYSTEM.md). For workflows and operational objects, see [WORKFLOW_ENGINE_AND_OPERATIONAL_OBJECTS.md](../WORKFLOW_ENGINE_AND_OPERATIONAL_OBJECTS.md).
+- **Operational objects** — organize real-world entities
+- **Domains, facts, and instructions** — task-scoped retrieval
+- **Packages** — reusable retrieval bundles
+- **Workflows** — executable intelligence processes with runs, outputs, and Historian replay
+
+It is written for workspace admins and integrators using the **dashboard** or **HTTP API**. Every dashboard action maps to an API route documented in [API_SURFACE.md](./API_SURFACE.md).
+
+| Doc | Use for |
+|-----|---------|
+| [API_SURFACE.md](./API_SURFACE.md) | Exact routes, bodies, RBAC |
+| [CONTRACTS.md](./CONTRACTS.md) | TypeScript / Prisma shapes |
+| [RBAC.md](./RBAC.md) | Who can do what |
+| [DOMAIN_ENGINE_AND_PACKAGE_SYSTEM.md](../DOMAIN_ENGINE_AND_PACKAGE_SYSTEM.md) | Domain retrieval architecture |
+| [WORKFLOW_ENGINE_AND_OPERATIONAL_OBJECTS.md](../WORKFLOW_ENGINE_AND_OPERATIONAL_OBJECTS.md) | Workflow + object product spec |
 
 ---
 
@@ -11,15 +24,18 @@ For HTTP route reference, see [API_SURFACE.md](./API_SURFACE.md). For type shape
 | Concept | What it is | When to use it |
 |---------|------------|----------------|
 | **Workspace** | One client / intelligence environment | Already exists after provisioning |
-| **Operational object** | Metadata-driven entity (customer, competitor, campaign, …) | Organize real-world things; augment retrieval — not a memory |
+| **Operational object** | Metadata-driven entity (customer, competitor, campaign, …) | Organize real-world things; augment workflow context — not a memory |
 | **Global fact** | Truth for the whole workspace (service area, policy) | Always wins over domain facts and retrieved text |
 | **Domain** | Task-scoped retrieval operator | SEO audit, inbox triage, competitor scan — each is a **domain**, not a “category” |
 | **Domain fact** | Truth that applies only inside one domain | Target keyword, escalation rule |
 | **Instruction** | Versioned behavior for `domainKey` + `actionKey` | “How to run an audit” vs “how to write a report” |
-| **Package** | Installable bundle of domains + facts + instructions | Reuse the same retrieval setup across workspaces — no execution logic |
-| **Workflow** | Executable intelligence process | Consumes domains/packages/objects; produces outputs and workflow runs — see workflow spec |
+| **Package** | Installable bundle of domains + facts + instructions | Reuse the same retrieval setup across workspaces — **no execution logic** |
+| **Workflow** | Executable intelligence process | Links domains/packages/objects; runs retrieval; produces **outputs** and **workflow runs** |
+| **Workflow run** | Observable, replayable execution record | One execution of a workflow with a query; chains prior runs into context |
 
-**Middleware stays domain-agnostic.** You never hardcode “SEO” in retrieval core code. You express SEO (or anything else) as domain configuration and optional packages.
+**Middleware stays domain-agnostic.** You never hardcode “SEO” in retrieval core code. You express SEO (or anything else) as configuration, packages, and workflows.
+
+**Domains retrieve. Workflows execute. Packages bundle retrieval — they do not run jobs.**
 
 ---
 
@@ -30,29 +46,52 @@ Workspace
 ├── Operational objects   (organize entities; status + metadata)
 ├── Global facts          (highest precedence)
 ├── Installed packages    (optional; snapshot + version pin; retrieval bundles only)
-└── Domains               (retrieval operators — do not own data)
-    ├── domainKey         (stable slug, e.g. seo)
-    ├── metadataFilters   (which tagged memories are eligible)
-    ├── retrievalRules    (how to filter / boost during retrieve)
-    ├── relationshipConstraints
-    ├── Domain facts
-    └── Instructions      (per actionKey: audit, report, …)
+├── Domains               (retrieval operators — do not own data)
+│   ├── domainKey
+│   ├── metadataFilters, retrievalRules, relationshipConstraints
+│   ├── Domain facts
+│   └── Instructions (per actionKey)
+└── Workflows             (executable intelligence — do not own data)
+    ├── links domains[] + packages[] (packageKey slugs)
+    ├── instructionRefs[] (optional; else all active instructions from linked domains)
+    ├── objectTypeFilters[] (optional; else all object types, capped)
+    ├── outputTypes[] (report, insight, …)
+    └── Workflow runs → outputs → Historian replay
 ```
 
-When a client calls `POST /retrieve` **without** `domainKey`, behavior is unchanged — workspace-wide retrieval. Domains are **optional add-ons** that shape a task when requested.
+### Precedence chains
 
-When `domainKey` and optional `domainAction` are set:
-
-1. **Retrieval phase** — global + domain facts and rules influence scope (metadata filters, memory eligibility, relationship neighborhood).
-2. **Assembly phase** — facts replace conflicting chunk text; instructions appear in the context hierarchy. Overrides show up in diagnostics traces.
-
-**Fact precedence for domain-scoped retrieval (mandatory):**
+**Domain-scoped retrieval** (`POST /retrieve` with `domainKey`):
 
 ```txt
 Global facts → Domain facts → Instructions → Retrieved context
 ```
 
-**Workflow execution** extends this chain with operational objects and previous workflow runs. See [WORKFLOW_ENGINE_AND_OPERATIONAL_OBJECTS.md](../WORKFLOW_ENGINE_AND_OPERATIONAL_OBJECTS.md).
+**Workflow execution** (`POST /workflows/:id/execute`) extends that chain:
+
+```txt
+Global facts → Domain facts → Instructions → Operational objects → Retrieved context → Previous workflow runs
+```
+
+When a client calls `POST /retrieve` **without** `domainKey`, behavior is unchanged — workspace-wide retrieval. Domains and workflows are **optional add-ons**.
+
+---
+
+## Recommended build order
+
+For a new workspace, configure in this order so workflows have something to consume:
+
+| Step | What | Why |
+|------|------|-----|
+| 1 | Ingest memories with consistent metadata | Domains filter on metadata tags |
+| 2 | Global facts | Workspace-wide truths |
+| 3 | Domains + domain facts + instructions | Task-scoped retrieval |
+| 4 | Package (optional) | Reuse bundle across workspaces |
+| 5 | Operational objects | Entities workflows and retrieval can reference |
+| 6 | Workflow | Link domains/packages; define output types |
+| 7 | Execute workflow → inspect run → replay | Verify end-to-end |
+
+You can skip packages and create domains manually. You can skip objects if your workflow only needs facts + retrieval. Workflows **fail at execute time** if linked `domainKey` or `packageKey` refs are missing in the workspace.
 
 ---
 
@@ -60,28 +99,35 @@ Global facts → Domain facts → Instructions → Retrieved context
 
 | Requirement | Notes |
 |-------------|--------|
-| Workspace provisioned | User has session or API key scoped to `workspaceId` |
-| Role | **Workspace admin** (or higher) for create/install/archive via dashboard |
+| Workspace provisioned | Session or API key scoped to `workspaceId` |
+| Role | **Workspace admin+** for create/install/archive; **workspace user+** for execute and read |
 | Database migrations | `npm run db:migrate:deploy` from repo root (not run on Vercel build) |
 | Memories tagged consistently | Domains filter on **metadata**; ingest must set keys your rules expect |
 
-**Dashboard paths** (Operational Intelligence nav):
+Every API call requires `workspaceId` (query param for GET, body field for POST/PATCH). Authenticate with `Authorization: Bearer <token>`.
 
-| Manager | Path | Phase |
-|---------|------|-------|
-| Domains | `/domains` | 7 ✅ |
-| Global facts | `/global-facts` | 7 ✅ |
-| Domain facts | `/domains/:domainId/facts` | 7 ✅ |
-| Instructions | `/domains/:id/instructions` | 7 ✅ |
-| Packages | `/packages` | 7 ✅ |
-| Operational objects | `/objects` | 8 ✅ |
-| Workflows | `/workflows` | 9 ✅ |
+### Dashboard paths (Operational Intelligence)
+
+| Manager | Path | Purpose |
+|---------|------|---------|
+| Domain Manager | `/domains` | Create/edit/archive domains |
+| Global Facts | `/global-facts` | Workspace-wide truths |
+| Domain facts | `/domains/:domainId/facts` | Per-domain truths |
+| Instructions | `/domains/:domainId/instructions` | Versioned actions |
+| Package Manager | `/packages` | Install / export / compare |
+| Object Manager | `/objects` | Operational entities |
+| Workflow Manager | `/workflows` | Registry CRUD |
+| Workflow runs | `/workflows/:workflowId/runs` | Execute + run history |
+| Workflow outputs | `/workflows/:workflowId/outputs` | Output browser |
+| Workflow replay | `/workflows/runs/:runId/replay` | Historian snapshot view |
+
+Historian: `/historian/:traceId` — workflow runs use `workflowRunId` as `retrievalTraceId`.
 
 ---
 
 ## Slugs and keys (naming rules)
 
-All of these must match `^[a-z][a-z0-9-]*$` (lowercase, hyphens allowed):
+All slugs must match `^[a-z][a-z0-9-]*$` (lowercase, hyphens allowed):
 
 | Field | Scope | Example |
 |-------|--------|---------|
@@ -89,12 +135,15 @@ All of these must match `^[a-z][a-z0-9-]*$` (lowercase, hyphens allowed):
 | `actionKey` | Unique per domain | `audit`, `report`, `draft-reply` |
 | Fact `key` | Unique per scope (global or per domain) | `service-area-primary` |
 | `packageKey` | Unique per catalog / install | `hvac-growth-kit` |
+| `objectType` | Operator-defined | `customer`, `competitor`, `campaign` |
 
-`domainKey` is **immutable** after creation (create a new domain if you need a new key). Instructions are versioned per `(domainId, actionKey)` — the `actionKey` stays stable; content gets new versions.
+`domainKey` is **immutable** after creation. Instructions are versioned per `(domainId, actionKey)`. Object **status** is free-form metadata — the middleware never enforces status enums.
 
 ---
 
-## Part 1 — Creating a domain manually
+## Part 1 — Domains, facts, and instructions
+
+Domains are retrieval operators. Configure them before workflows that link to them.
 
 ### 1.1 Plan the domain
 
@@ -102,22 +151,15 @@ Answer these before you touch the UI or API:
 
 1. **Task identity** — What single job does this domain represent? (e.g. “SEO content audit”, not “marketing”.)
 2. **Memories** — What metadata will ingested content carry? (`domain`, `source`, `seo`, `website`, etc.)
-3. **Boundaries** — Which memories should *never* appear in this task? (handled via `metadataFilters` + `retrievalRules`.)
+3. **Boundaries** — Which memories should *never* appear in this task? (`metadataFilters` + `retrievalRules`.)
 4. **Actions** — Which instruction `actionKey`s do callers need? (`audit`, `report`, …)
 5. **Facts** — What must always be true for this task vs the whole workspace?
 
 ### 1.2 Create the domain (dashboard)
 
 1. Open **Domain Manager** → **Create domain**.
-2. Fill in:
-   - **Domain key** — e.g. `seo`
-   - **Name** — display label, e.g. `SEO`
-   - **Description** — optional operator note
-   - **Metadata filters** — comma-separated tags; memories must match these tags/keys to be eligible when `domainKey` is used on retrieve
-   - **Retrieval rules** — JSON array (see §1.4)
-   - **Relationship constraints** — JSON object (see §1.5)
-
-3. Save. Link to **Facts** and **Instructions** from the domain row.
+2. Fill in domain key, name, description, metadata filters, retrieval rules (JSON), relationship constraints (JSON).
+3. Save. Use row links for **Facts** and **Instructions**.
 
 ### 1.3 Create the domain (API)
 
@@ -150,6 +192,15 @@ Content-Type: application/json
 }
 ```
 
+**List / get / update / archive:**
+
+| Action | Method | Path |
+|--------|--------|------|
+| List | GET | `/domains?workspaceId=` |
+| Get | GET | `/domains/:domainId?workspaceId=` |
+| Update | PATCH | `/domains/:domainId` |
+| Archive | POST | `/domains/:domainId/archive` |
+
 ### 1.4 Retrieval rules (field reference)
 
 Each rule is a named policy applied during domain-scoped retrieval:
@@ -163,23 +214,11 @@ Each rule is a named policy applied during domain-scoped retrieval:
 | `rankingTagBoosts` | Additive score boosts by tag |
 | `maxExpansionDepth` | Relationship expansion depth for this rule |
 | `tokenBudgetOverride` | Optional cap for this rule’s contribution |
+| `objectTypeFilter` | Optional object types pulled into workflow context when domain is linked |
 
-**Example — competitor pages only:**
-
-```json
-{
-  "name": "competitor-crawl",
-  "memoryTypes": ["semantic"],
-  "metadataMatch": { "domain": "competitor" },
-  "requiredMetadataKeys": ["competitor-id"]
-}
-```
-
-Start with **one simple rule**, verify retrieve traces, then add rules. Overlapping rules are combined during scope resolution — prefer clarity over many redundant rules.
+Start with **one simple rule**, verify retrieve traces, then add rules.
 
 ### 1.5 Relationship constraints
-
-Used when retrieval augments results with related memories:
 
 ```json
 {
@@ -199,7 +238,13 @@ Used when retrieval augments results with related memories:
 
 ### 1.6 Global facts
 
-Create under **Global Facts** (or `POST /global-facts`). Use for truths that apply to **every** domain:
+**Dashboard:** Global Facts → Add fact.
+
+**API:**
+
+```http
+POST /global-facts
+```
 
 ```json
 {
@@ -216,7 +261,9 @@ Higher `priority` wins within the same scope. `appliesToMetadataKeys` limits **t
 
 ### 1.7 Domain facts
 
-From the domain row → **Facts**, or `POST /domains/:domainId/facts`:
+**Dashboard:** Domain Manager → domain row → Facts.
+
+**API:** `POST /domains/:domainId/facts`
 
 ```json
 {
@@ -235,7 +282,7 @@ Domain facts override instructions and retrieved text but **never** global facts
 
 One domain supports **multiple** instructions via `actionKey`.
 
-**Create** (`POST /domains/:domainId/instructions`):
+**Create** — `POST /domains/:domainId/instructions`:
 
 ```json
 {
@@ -246,7 +293,7 @@ One domain supports **multiple** instructions via `actionKey`.
 }
 ```
 
-**New version** (`POST /domains/:domainId/instructions/audit/version`):
+**New version** — `POST /domains/:domainId/instructions/audit/version`:
 
 ```json
 {
@@ -256,7 +303,7 @@ One domain supports **multiple** instructions via `actionKey`.
 }
 ```
 
-Only one version is **active** per `(domainId, actionKey)`. Older versions remain for history; archive when retired.
+Only one version is **active** per `(domainId, actionKey)`.
 
 ### 1.9 Verify domain-scoped retrieval
 
@@ -274,24 +321,22 @@ POST /retrieve
 }
 ```
 
-**Check:**
-
 | Check | Where |
 |-------|--------|
-| `executionContext` populated | Retrieval trace / response `result` |
+| `executionContext` populated | Retrieval trace / response |
 | Memories respect metadata scope | Trace memory list |
-| `factOverrides` when facts apply | Retrieval diagnostics → fact override panel |
+| `factOverrides` when facts apply | Retrieval diagnostics |
 | 404 + `availableActions` | Wrong `domainAction` |
 
 Omit `domainKey` to confirm workspace-wide retrieval still works unchanged.
 
 ---
 
-## Part 2 — Creating packages
+## Part 2 — Packages
 
-A **package** is a versioned JSON **manifest** you can install in one transaction. Installing creates (or updates) domains, global facts, domain facts, and instructions, and records an `InstalledPackage` row with a **snapshot** for rollback.
+A **package** is a versioned JSON **manifest** installed in one transaction. Installing creates (or updates) domains, global facts, domain facts, and instructions, and records an `InstalledPackage` row with a **snapshot** for rollback.
 
-Packages are **never auto-updated**. Workspace admins: **export → compare → install** (or `POST /packages/update`).
+Packages contain **retrieval configuration only** — no workflow or execution logic.
 
 There are **no seed packages** in the repo — you author manifests for your product.
 
@@ -311,28 +356,14 @@ Top-level `PackageManifest`:
 
 | Field | Required | Description |
 |-------|----------|-------------|
-| `packageKey` | yes | Stable slug for the bundle |
+| `packageKey` | yes | Stable slug — referenced by workflows as `packages[]` |
 | `name` | yes | Display name |
-| `version` | yes | Opaque label (`1.0.0`, `2026-06-03`) — not enforced semver |
+| `version` | yes | Opaque label (`1.0.0`) — not enforced semver |
 | `description` | no | Operator / catalog text |
 | `domains` | yes | Array of domain definitions |
 | `globalFacts` | no | Facts installed at workspace scope |
-| `archiveRules` | no | Reserved for future archive policy |
-| `metadataConfigs` | no | Reserved for future metadata templates |
 
-Each **domain entry** in `domains[]`:
-
-| Field | Required |
-|-------|----------|
-| `domainKey`, `name` | yes |
-| `metadataFilters` | yes (can be `[]`) |
-| `relationshipConstraints` | yes |
-| `retrievalRules` | yes (can be `[]`) |
-| `description` | no |
-| `facts` | no — domain-scoped fact payloads (no ids) |
-| `instructions` | no — include `actionKey`, `title`, `content`, `status` |
-
-Manifest facts/instructions omit runtime fields (`factId`, `workspaceId`, `version`, timestamps). The install transaction assigns those.
+Each **domain entry** in `domains[]`: `domainKey`, `name`, `metadataFilters`, `relationshipConstraints`, `retrievalRules` required; optional `facts`, `instructions`.
 
 ### 2.3 Full example manifest
 
@@ -418,11 +449,11 @@ Save as `hvac-growth-kit.json` and install via dashboard **Install from manifest
 }
 ```
 
-**Before install:** ensure ingested memories use metadata your rules expect (`domain: website`, tags `seo`, etc.). Otherwise domain-scoped retrieve will return empty or thin results — that is a **data** issue, not a package bug.
+**Before install:** ensure ingested memories use metadata your rules expect. Empty domain-scoped retrieve is usually a **data** issue, not a package bug.
 
 ### 2.4 Install a package
 
-**Dashboard:** Package Manager → **Install from manifest** → select JSON file.
+**Dashboard:** Package Manager → **Install from manifest**.
 
 **API:**
 
@@ -441,86 +472,369 @@ POST /packages/install
 | Option | Behavior |
 |--------|----------|
 | `failOnConflict: true` (default) | Abort if a `domainKey`, fact `key`, or conflicting entity already exists |
-| `failOnConflict: false` | Skip or merge where the engine allows — use only when you understand overlap |
-| `packageDefinitionId` | Install from **middleware catalog** instead of inline manifest (MiddlewareAdmin publishes catalog entries) |
+| `failOnConflict: false` | Skip or merge where the engine allows |
+| `packageDefinitionId` | Install from middleware catalog instead of inline manifest |
 
 On success you receive `installed` with `installedPackageId`, `packageKey`, `installedVersion`, `snapshotVersion`.
 
-### 2.5 Publish to catalog (optional, MiddlewareAdmin)
-
-For reusable definitions across customers:
-
-```http
-POST /platform/packages
-```
-
-```json
-{
-  "manifest": { },
-  "published": true
-}
-```
-
-Workspace installs then reference `packageDefinitionId` from `GET /platform/packages`.
-
-### 2.6 Export, compare, update, rollback
-
-**Workflow for safe updates:**
+### 2.5 Export, compare, update, rollback
 
 ```txt
 1. POST /packages/export     → download current manifest
 2. Edit version + content offline
 3. POST /packages/compare    → structural diff vs installed
-4. POST /packages/update       → apply (or install on another workspace)
+4. POST /packages/update       → apply
 5. If needed: POST /packages/rollback with snapshotVersion
 ```
 
-**Export:**
+**Archive** (soft uninstall): `POST /packages/installed/:id/archive`.
+
+**Clone** to another workspace: `POST /packages/clone` (platform/agency admins).
+
+---
+
+## Part 3 — Operational objects
+
+Operational objects organize real-world entities. They are **not** memories — they carry `objectType`, `name`, free-form `status`, and arbitrary `metadata`.
+
+Workflows load objects into execution context (filtered by `objectTypeFilters` on the workflow, or all types up to a cap when unset).
+
+### 3.1 When to create objects
+
+| Use case | Example |
+|----------|---------|
+| Track customers, competitors, campaigns | `objectType: customer`, `status: client` |
+| Scope workflow context | Workflow `objectTypeFilters: ["competitor"]` |
+| Augment retrieval over time | Metadata keys referenced by domain rules |
+
+Status belongs to **objects**, not workflows or domains. The middleware never validates status values.
+
+### 3.2 Create an object (dashboard)
+
+1. Open **Object Manager** → **Add object**.
+2. Set **object type** (slug), **name**, **status**, **metadata** (JSON object).
+3. Save.
+
+### 3.3 Create an object (API)
+
+```http
+POST /objects
+```
 
 ```json
 {
   "workspaceId": "01KT7D64WDCDGTHEYK93KEXAPH",
-  "installedPackageId": "01J..."
+  "objectType": "competitor",
+  "name": "CoolAir HVAC",
+  "status": "active",
+  "metadata": {
+    "region": "Connecticut",
+    "website": "https://example.com",
+    "tier": "primary"
+  }
 }
 ```
 
-**Compare** returns `PackageManifestDiff`: added/removed/changed domain keys, facts, instructions, and flags for metadata/rule/constraint changes.
+**List / get / update / archive:**
 
-**Rollback** requires the `snapshotVersion` from the installed package history (set at install/update time).
+| Action | Method | Path |
+|--------|--------|------|
+| List | GET | `/objects?workspaceId=&objectType=&status=` |
+| Get | GET | `/objects/:objectId?workspaceId=` |
+| Update | PATCH | `/objects/:objectId` |
+| Archive | POST | `/objects/:objectId/archive` |
 
-**Archive** (soft uninstall): `POST /packages/installed/:id/archive` — entities remain in DB but package is marked archived.
-
-### 2.7 Clone to another workspace
-
-Platform/agency admins can clone an installation to another workspace (`POST /packages/clone`) — useful for templated client onboarding. Workspace admins use export + install on the target workspace.
+Optional list filters: `metadataMatch` (JSON-encoded), `includeArchived`, `limit`, `cursor`.
 
 ---
 
-## Part 3 — End-to-end operator checklist
+## Part 4 — Workflows
 
-### New workspace, single domain (manual)
+Workflows are the **execution layer**. They:
+
+1. Resolve execution context (facts, instructions, objects, prior runs)
+2. Run **domain-scoped retrieval** per linked domain (using `instructionRefs` for `domainAction` when set)
+3. Produce deterministic **outputs** (reports / insights today; LLM-generated facts/memories in a future phase)
+4. Persist **workflow runs** with Historian **replay** snapshots
+
+Workflows never maintain hidden state — persistence is only through facts, memories, objects, and workflow runs.
+
+### 4.1 Plan the workflow
+
+Before creating a workflow:
+
+1. **Domains exist** — either listed in `domains[]` or provided via an installed `packageKey` in `packages[]`.
+2. **Instructions** — either explicit `instructionRefs[]` or rely on all active instructions from linked domains.
+3. **Objects** — optional; set `objectTypeFilters[]` to limit which object types load into context.
+4. **Output types** — e.g. `report`, `insight` (defaults to `report` if empty).
+5. **Query pattern** — what the caller passes to `execute` (e.g. “Analyze competitor pricing since last run”).
+
+Linking a **package** expands the domain set: every `domainKey` in that package’s manifest is included at execution time, in addition to explicit `domains[]`.
+
+### 4.2 Create a workflow (dashboard)
+
+1. Open **Workflow Manager** → **Add workflow**.
+2. Fill in name, description, comma-separated domains and packages (`packageKey` slugs), instruction refs JSON, output types, object type filters.
+3. Save. Use **Runs** / **Outputs** links from the row.
+
+### 4.3 Create a workflow (API)
+
+```http
+POST /workflows
+Authorization: Bearer <session-token>
+Content-Type: application/json
+```
+
+```json
+{
+  "workspaceId": "01KT7D64WDCDGTHEYK93KEXAPH",
+  "name": "Competitor Analysis",
+  "description": "Periodic competitor scan and delta report",
+  "domains": ["competitor"],
+  "packages": ["hvac-growth-kit"],
+  "instructionRefs": [
+    { "domainKey": "competitor", "actionKey": "scan" }
+  ],
+  "outputTypes": ["report", "insight"],
+  "objectTypeFilters": ["competitor"]
+}
+```
+
+| Field | Type | Notes |
+|-------|------|-------|
+| `domains` | `string[]` | `domainKey` slugs — must exist and be active |
+| `packages` | `string[]` | `packageKey` slugs — must be installed and active |
+| `instructionRefs` | `{ domainKey, actionKey }[]` | Optional; omit to load all active instructions from linked domains |
+| `outputTypes` | `string[]` | Default `["report"]` if omitted |
+| `objectTypeFilters` | `string[]` | Optional; omit to load all object types (limit 100) |
+
+**Registry CRUD:**
+
+| Action | Method | Path | Role |
+|--------|--------|------|------|
+| List | GET | `/workflows?workspaceId=` | user+ |
+| Get | GET | `/workflows/:workflowId?workspaceId=` | user+ |
+| Create | POST | `/workflows` | admin+ |
+| Update | PATCH | `/workflows/:workflowId` | admin+ |
+| Archive | POST | `/workflows/:workflowId/archive` | admin+ |
+| Delete | DELETE | `/workflows/:workflowId?workspaceId=` | middleware admin |
+
+Set `"active": false` via PATCH to disable execution without archiving.
+
+### 4.4 Preview execution context (optional)
+
+Inspect what a run **would** load — without executing:
+
+```http
+GET /workflows/:workflowId/execution-context?workspaceId=&previousRunLimit=10
+```
+
+Response: `executionContext` with `globalFacts`, `domainFacts`, `instructions`, `objects`, `previousWorkflowRuns`, empty `retrievedContext` (retrieval happens only on execute).
+
+Use this to debug missing domains, facts, or prior runs before calling execute.
+
+### 4.5 Execute a workflow
+
+**Dashboard:** Workflow → **Runs** → **Execute workflow** → enter query.
+
+**API:**
+
+```http
+POST /workflows/:workflowId/execute
+```
+
+```json
+{
+  "workspaceId": "01KT7D64WDCDGTHEYK93KEXAPH",
+  "query": "Analyze competitor pricing changes since last run",
+  "tokenBudget": 8000,
+  "previousRunLimit": 10
+}
+```
+
+| Field | Required | Default | Meaning |
+|-------|----------|---------|---------|
+| `query` | yes | — | Drives retrieval per linked domain and output content |
+| `tokenBudget` | no | `4000` | Per-domain retrieval token budget |
+| `previousRunLimit` | no | `10` | Max prior **completed** runs included in context |
+
+**Execute response** (synchronous today):
+
+```json
+{
+  "workflowRunId": "01J...",
+  "status": "completed",
+  "outputs": [
+    {
+      "outputId": "01J...",
+      "workflowRunId": "01J...",
+      "workspaceId": "01KT7D64WDCDGTHEYK93KEXAPH",
+      "outputType": "report",
+      "title": "Competitor Analysis — report",
+      "content": "# Competitor Analysis\n\nQuery: Analyze competitor pricing…",
+      "data": { "query": "...", "workflowId": "...", "layers": [], "retrievedPackageCount": 1 },
+      "createdAt": "2026-06-04T12:00:00.000Z"
+    }
+  ],
+  "generatedFactIds": [],
+  "generatedMemoryIds": [],
+  "generatedObjectIds": [],
+  "executionContext": { }
+}
+```
+
+Outputs are **deterministic** today (structured report from context layers). `generatedFactIds` / memory / object IDs are reserved for future LLM write-back.
+
+**Errors:**
+
+| Code | When |
+|------|------|
+| 409 | Another run for this workflow is already `running` (single-flight) |
+| 404 | Workflow inactive or missing refs — body may include `missingRefs: ["domain:foo", "package:bar"]` |
+| 400 | Empty `query` or workflow not active |
+
+### 4.6 Inspect runs and outputs
+
+**List runs:**
+
+```http
+GET /workflows/:workflowId/runs?workspaceId=&limit=50
+```
+
+**Run detail** (outputs + full execution context):
+
+```http
+GET /workflow-runs/:workflowRunId?workspaceId=
+```
+
+**Archive a run:** `POST /workflow-runs/:workflowRunId/archive` with `{ "workspaceId": "..." }`.
+
+**Dashboard:** `/workflows/:workflowId/outputs` — searchable browser across run outputs.
+
+### 4.7 Sequential runs and context chaining
+
+Each **completed** run is eligible for inclusion in the next run’s `executionContext.previousWorkflowRuns` (up to `previousRunLimit`).
+
+Verify chaining:
+
+1. Execute workflow with query A → note `workflowRunId`.
+2. Execute again with query B.
+3. `GET /workflow-runs/:secondRunId` → `executionContext.previousWorkflowRuns` should include the first run.
+
+This is how workflows accumulate operational history without hidden state.
+
+### 4.8 Historian replay
+
+Every successful execute captures a `ReplaySnapshot` keyed by `workflowRunId` as `retrievalTraceId`.
+
+**Fetch replay:**
+
+```http
+GET /workflow-runs/:workflowRunId/replay?workspaceId=
+```
+
+Response includes standard Historian snapshot fields plus `workflowReplay`:
+
+```json
+{
+  "replay": {
+    "replayId": "01J...",
+    "retrievalTraceId": "01J...",
+    "workspaceId": "01KT7D64WDCDGTHEYK93KEXAPH",
+    "originalQuery": "Analyze competitor pricing changes since last run",
+    "integrityHash": "...",
+    "workflowReplay": {
+      "workflowId": "01J...",
+      "workflowRunId": "01J...",
+      "workspaceId": "01KT7D64WDCDGTHEYK93KEXAPH",
+      "executionContext": { },
+      "outputs": [],
+      "generatedFactIds": [],
+      "generatedMemoryIds": [],
+      "generatedObjectIds": []
+    }
+  }
+}
+```
+
+**Dashboard:** `/workflows/runs/:runId/replay` — layer counts, outputs, link to `/historian/:traceId`.
+
+If no snapshot exists yet, the replay endpoint lazily captures one from the stored run detail.
+
+---
+
+## Part 5 — End-to-end examples
+
+### Example A — Manual domain → workflow (API)
+
+```txt
+1. POST /global-facts          → service area
+2. POST /domains               → domainKey: competitor
+3. POST /domains/:id/facts     → domain fact
+4. POST /domains/:id/instructions → actionKey: scan
+5. POST /objects               → objectType: competitor
+6. POST /workflows             → domains: [competitor], instructionRefs, outputTypes
+7. GET  /workflows/:id/execution-context → verify layers
+8. POST /workflows/:id/execute → query + inspect outputs
+9. GET  /workflow-runs/:id/replay → verify Historian payload
+10. POST /workflows/:id/execute again → confirm prior run in context
+```
+
+### Example B — Package → workflow (productized)
+
+```txt
+1. POST /packages/install      → hvac-growth-kit manifest
+2. Ingest memories with expected metadata tags
+3. POST /objects               → customers / competitors as needed
+4. POST /workflows             → packages: [hvac-growth-kit], domains: [seo]
+5. POST /workflows/:id/execute
+6. Export / compare / update package on pilot before rolling to other workspaces
+```
+
+### Example C — Integrator loop (no dashboard)
+
+Use the same routes from any HTTP client. Typical automation:
+
+- Poll `GET /workflows?workspaceId=` for registry
+- `POST .../execute` on a schedule or webhook
+- Store `workflowRunId` + outputs in your app
+- `GET .../replay` for audit exports
+
+---
+
+## Part 6 — Operator checklists
+
+### New workspace (full stack)
 
 - [ ] Ingest memories with consistent metadata tags
 - [ ] Add global facts (service area, policies)
-- [ ] Create domain with `domainKey`, filters, rules
-- [ ] Add domain facts and at least one instruction (`actionKey`)
+- [ ] Create domains OR install a package
+- [ ] Add domain facts and instructions (`actionKey`s)
 - [ ] Test `POST /retrieve` with `domainKey` + `domainAction`
-- [ ] Review diagnostics for `factOverrides`
+- [ ] Create operational objects for entities you track
+- [ ] Create workflow linking domains/packages/objects
+- [ ] Preview `GET .../execution-context`
+- [ ] Execute twice; confirm second run sees first in `previousWorkflowRuns`
+- [ ] Fetch replay; open Historian trace
 
-### Productized bundle (package)
+### Productized bundle
 
-- [ ] Author manifest JSON (start from export of a pilot workspace if possible)
+- [ ] Author manifest JSON (export from pilot workspace if possible)
 - [ ] Bump `version` on every publish
-- [ ] Install on pilot workspace with `failOnConflict: true`
+- [ ] Install with `failOnConflict: true`
 - [ ] Compare before rolling to production workspaces
 - [ ] Document required ingest metadata for customers
+- [ ] Ship matching workflow(s) that reference `packageKey`
 
 ### Ongoing changes
 
 - [ ] **Instructions:** new version, never edit history in place
 - [ ] **Facts:** patch content or archive obsolete keys
 - [ ] **Domains:** archive unused domains; avoid reusing `domainKey`
-- [ ] **Packages:** never rely on auto-update — export/compare/install
+- [ ] **Packages:** export → compare → update — never rely on auto-update
+- [ ] **Objects:** update metadata/status; archive when retired
+- [ ] **Workflows:** PATCH to change links; archive when retired
+- [ ] **Runs:** archive old runs if you need to trim `previousWorkflowRuns` context
 
 ---
 
@@ -528,13 +842,18 @@ Platform/agency admins can clone an installation to another workspace (`POST /pa
 
 | Mistake | Symptom | Fix |
 |---------|---------|-----|
-| No metadata on memories | Empty domain-scoped retrieve | Tag at ingest; align `metadataFilters` / `metadataMatch` |
-| `domainKey` typo in API | 404 domain not found | List domains; use exact slug |
+| No metadata on memories | Empty domain-scoped retrieve | Tag at ingest; align filters / `metadataMatch` |
+| `domainKey` typo | 404 domain not found | List domains; use exact slug |
 | Wrong `domainAction` | 404 with `availableActions` | Create instruction or fix action key |
-| Duplicate keys on install | 409 conflict | Export existing state; bump keys or archive old facts |
-| Expecting instructions to override global facts | Wrong precedence in output | Move truth to global fact or domain fact |
-| Editing package in production without compare | Surprising removals | Always run compare diff first |
-| Running migrations only on Vercel deploy | Build fails or schema drift | `npm run db:migrate:deploy` locally / CI |
+| Workflow `packages: ["foo"]` but not installed | 404 `missingRefs: ["package:foo"]` | Install package first |
+| Workflow links domain not in workspace | 404 `missingRefs: ["domain:bar"]` | Create domain or add via package |
+| Duplicate keys on install | 409 conflict | Export existing state; bump keys or archive |
+| Expecting instructions to override global facts | Wrong precedence | Move truth to global or domain fact |
+| Editing package without compare | Surprising removals | Always run compare diff first |
+| Empty workflow objects | No `objectTypeFilters` and no objects created | Create objects or set filters |
+| Second run missing first run | First run not `completed` or archived | Complete first run; check `previousRunLimit` |
+| Execute while prior run running | 409 conflict | Wait or archive stuck run |
+| Migrations only on Vercel deploy | Schema drift | `npm run db:migrate:deploy` locally / CI |
 
 ---
 
@@ -542,11 +861,48 @@ Platform/agency admins can clone an installation to another workspace (`POST /pa
 
 | Operation | Who | Effect |
 |-----------|-----|--------|
-| Create / update domain, facts, instructions | Workspace admin+ | Active in execution |
-| Archive | Workspace admin+ | Hidden from execution; row kept |
+| Create / update domain, facts, instructions | Workspace admin+ | Active in retrieval |
+| Create / update objects, workflows | Workspace admin+ | Active in workflow context |
+| Execute workflow | Workspace user+ | Creates run + outputs + replay snapshot |
+| Archive domain, fact, instruction, object, workflow, run | Workspace admin+ | Hidden from active use; row kept |
 | Hard delete | Middleware admin only | Permanent removal |
-| Install package | Workspace admin+ | Transactional create + snapshot |
-| Archive installed package | Workspace admin+ | Soft uninstall |
+| Install / update package | Workspace admin+ | Transactional create + snapshot |
+
+---
+
+## Quick reference — dashboard map
+
+```txt
+Operational Intelligence
+├── Domain Manager        → domains
+├── Global Facts          → workspace truths
+├── Object Manager        → operational objects
+├── Workflow Manager      → registry; links to Runs / Outputs
+└── Package Manager       → install / export / compare
+
+Per domain (from Domain Manager)
+├── …/facts               → domain-scoped facts
+└── …/instructions        → actions + version history
+
+Per workflow (from Workflow Manager)
+├── …/runs                → execute, inspect runs, replay link
+├── …/outputs             → searchable output browser
+└── …/runs/:runId/replay  → Historian reconstruction
+
+Retrieval → Diagnostics   → fact override panel when domain-scoped
+Operations → Historian    → `/historian/:workflowRunId` for workflow traces
+```
+
+**Intended operator loop:**
+
+```txt
+Configure retrieval (domains + facts + packages)
+  → organize entities (objects)
+  → define workflow (links + output types)
+  → execute → inspect runs/outputs
+  → replay for audit
+  → repeat (prior runs chain automatically)
+```
 
 ---
 
@@ -556,25 +912,7 @@ Platform/agency admins can clone an installation to another workspace (`POST /pa
 |-----|---------|
 | [API_SURFACE.md](./API_SURFACE.md) | Exact routes and bodies |
 | [CONTRACTS.md](./CONTRACTS.md) | Types and Prisma models |
-| [RBAC.md](./RBAC.md) | Who can do what |
+| [RBAC.md](./RBAC.md) | Role matrix |
 | [IMPLEMENTATION_INSTRUCTIONS.md](./IMPLEMENTATION_INSTRUCTIONS.md) | Locked product decisions |
-| [RETRIEVAL_ARCHITECTURE.md](../RETRIEVAL_ARCHITECTURE.md) | How middleware retrieve works underneath |
-
----
-
-## Quick reference — dashboard map
-
-```txt
-Operational Intelligence
-├── Domain Manager      → create/edit/archive domains
-├── Global Facts        → workspace-wide truths
-└── Package Manager     → install / export / compare
-
-Per domain (from Domain Manager links)
-├── …/facts             → domain-scoped facts
-└── …/instructions      → actions + version history
-
-Retrieval → Diagnostics   → fact override panel when domain-scoped
-```
-
-This is the intended operator loop: **configure domains → attach facts/instructions → optionally package for reuse → verify via retrieve traces.**
+| [RETRIEVAL_ARCHITECTURE.md](../RETRIEVAL_ARCHITECTURE.md) | Middleware retrieve internals |
+| [OPERATIONAL_HISTORIAN_REPLAY_SYSTEM.md](../OPERATIONAL_HISTORIAN_REPLAY_SYSTEM.md) | Replay requirements |

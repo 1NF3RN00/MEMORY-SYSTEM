@@ -3,6 +3,7 @@ import {
   NORMALIZATION_VERSION_V1,
   newUlid,
   type CanonicalMemoryChunk,
+  type CanonicalMemoryMetadata,
   type CanonicalMemoryObject,
   type MemoryType,
   type PersistenceMode,
@@ -36,11 +37,14 @@ export interface BuildMemoryInput {
     fallbackUsed: boolean;
     fallbackReason?: string;
   };
+  /** When set, uses this ID instead of generating a new ULID (observation memories). */
+  memoryId?: string;
+  metadataPatch?: Partial<CanonicalMemoryMetadata>;
 }
 
 export function buildCanonicalMemory(input: BuildMemoryInput): CanonicalMemoryObject {
   const now = new Date().toISOString();
-  const memoryId = newUlid();
+  const memoryId = input.memoryId ?? newUlid();
   const tokenCount = estimateTokens(input.normalizedContent);
 
   const chunks = input.chunks.map((chunk, index) => ({
@@ -80,6 +84,7 @@ export function buildCanonicalMemory(input: BuildMemoryInput): CanonicalMemoryOb
             structural: input.structuralMeta,
           }
         : {}),
+      ...(input.metadataPatch ?? {}),
     },
     scoring: {
       importanceScore: 1,

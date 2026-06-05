@@ -19,6 +19,7 @@ import { PlatformAdminPage } from "./pages/PlatformAdminPage.js";
 import { PlatformApiKeysPage } from "./pages/PlatformApiKeysPage.js";
 import { PlatformSecurityPage } from "./pages/PlatformSecurityPage.js";
 import { DomainManagerPage } from "./pages/DomainManagerPage.js";
+import { ObservationExplorerPage } from "./pages/ObservationExplorerPage.js";
 import { GlobalFactManagerPage } from "./pages/GlobalFactManagerPage.js";
 import { ObjectManagerPage } from "./pages/ObjectManagerPage.js";
 import { DomainFactManagerPage } from "./pages/DomainFactManagerPage.js";
@@ -69,6 +70,7 @@ function OperationalRoutes() {
         <Route path="/workflows/:workflowId/outputs" element={<WorkflowOutputsPage />} />
         <Route path="/workflows/runs/:runId/replay" element={<WorkflowReplayPage />} />
         <Route path="/packages" element={<PackageManagerPage />} />
+        <Route path="/observations" element={<ObservationExplorerPage />} />
         <Route path="/admin/provisioning" element={<PlatformAdminPage />} />
         <Route path="/admin/api-keys" element={<PlatformApiKeysPage />} />
         <Route path="/admin/security" element={<PlatformSecurityPage />} />

@@ -347,5 +347,12 @@ export function parseRetrievalBody(body: unknown): RetrievalQuery | { error: str
     parsed.domainAction = domainAction;
   }
 
+  const observationFilters = b.observationFilters ?? b.observation_filters;
+  if (Array.isArray(observationFilters) && observationFilters.length > 0) {
+    parsed.observationFilters = observationFilters as NonNullable<
+      RetrievalQuery["observationFilters"]
+    >;
+  }
+
   return parsed;
 }

@@ -1,0 +1,129 @@
+{
+  "packageKey": "competitive-intelligence",
+  "name": "Competitive Intelligence",
+  "version": "1.0.0",
+  "description": "Competitor benchmarking domains with gap analysis workflow",
+  "domains": [
+    {
+      "domainKey": "competitor",
+      "name": "Competitor",
+      "retrievalRules": [],
+      "metadataFilters": [],
+      "observationFilters": [
+        {
+          "categories": ["website", "reputation", "visibility", "social"],
+          "metrics": [
+            "competitor_page_count",
+            "competitor_speed_score",
+            "competitor_review_count",
+            "competitor_rating",
+            "competitor_rankings",
+            "competitor_engagement_rate"
+          ]
+        }
+      ],
+      "relationshipConstraints": {
+        "enabled": false,
+        "maxHops": 1,
+        "relationshipTypes": [],
+        "minConfidence": 0.5
+      },
+      "instructions": [
+        {
+          "actionKey": "analyze",
+          "title": "Competitor Analysis Instructions",
+          "content": "Compare subject metrics against competitor observations with matching competitorId.",
+          "status": "active"
+        }
+      ]
+    },
+    {
+      "domainKey": "website",
+      "name": "Website",
+      "retrievalRules": [],
+      "metadataFilters": [],
+      "observationFilters": [
+        {
+          "providers": ["website", "pagespeed"],
+          "categories": ["site_structure", "performance", "core_web_vitals"]
+        }
+      ],
+      "relationshipConstraints": {
+        "enabled": false,
+        "maxHops": 1,
+        "relationshipTypes": [],
+        "minConfidence": 0.5
+      },
+      "instructions": [
+        {
+          "actionKey": "audit",
+          "title": "Website Benchmark Instructions",
+          "content": "Collect subject website metrics for competitor comparison.",
+          "status": "active"
+        }
+      ]
+    },
+    {
+      "domainKey": "reputation",
+      "name": "Reputation",
+      "retrievalRules": [],
+      "metadataFilters": [],
+      "observationFilters": [
+        {
+          "providers": ["google_business"],
+          "categories": ["profile_quality", "reputation"]
+        }
+      ],
+      "relationshipConstraints": {
+        "enabled": false,
+        "maxHops": 1,
+        "relationshipTypes": [],
+        "minConfidence": 0.5
+      },
+      "instructions": [
+        {
+          "actionKey": "review",
+          "title": "Reputation Review Instructions",
+          "content": "Assess review volume and rating against competitors.",
+          "status": "active"
+        }
+      ]
+    },
+    {
+      "domainKey": "social",
+      "name": "Social",
+      "retrievalRules": [],
+      "metadataFilters": [],
+      "observationFilters": [
+        {
+          "providers": ["facebook", "instagram", "tiktok"],
+          "categories": ["engagement"]
+        }
+      ],
+      "relationshipConstraints": {
+        "enabled": false,
+        "maxHops": 1,
+        "relationshipTypes": [],
+        "minConfidence": 0.5
+      },
+      "instructions": [
+        {
+          "actionKey": "review",
+          "title": "Social Benchmark Instructions",
+          "content": "Compare engagement rates across platforms.",
+          "status": "active"
+        }
+      ]
+    }
+  ],
+  "workflows": [
+    {
+      "workflowKey": "competitive-gap-analysis",
+      "name": "Competitive Gap Analysis",
+      "description": "Numeric gaps between subject business and competitors",
+      "domains": ["competitor", "website", "reputation", "social"],
+      "outputTypes": ["report"],
+      "analysisSpecKey": "competitive_gap_v1"
+    }
+  ]
+}

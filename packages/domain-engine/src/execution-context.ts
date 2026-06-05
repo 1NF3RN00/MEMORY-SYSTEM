@@ -61,6 +61,7 @@ export async function resolveDomainExecutionContext(
     instructions: loaded.instructions,
     retrievalRules: domain?.retrievalRules ?? [],
     metadataFilters: domain?.metadataFilters ?? [],
+    observationFilters: domain?.observationFilters ?? [],
     relationshipConstraints:
       domain?.relationshipConstraints ?? DEFAULT_RELATIONSHIP_NEIGHBORHOOD_CONSTRAINT,
     resolvedAt: new Date().toISOString(),

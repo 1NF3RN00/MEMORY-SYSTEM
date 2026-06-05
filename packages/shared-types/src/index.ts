@@ -343,6 +343,7 @@ export type {
   PackageManifestDomainDiff,
   PackageManifestEntityDiff,
   PackageManifestDomain,
+  PackageWorkflowRef,
   PackageSnapshotRecord,
   RelationshipNeighborhoodConstraint,
   RetrievalRule,
@@ -369,6 +370,50 @@ export type {
   CreateWorkflowOutputInput,
   WorkflowEngineEventType,
 } from "./domain-engine-contracts.js";
+export type {
+  Observation,
+  ObservationMetadata,
+  ObservationValue,
+  ObservationFilter,
+  NormalizedObservation,
+  ObservationMetricDefinition,
+  ObservationMetricValueType,
+  ObservationProviderDefinition,
+  ObservationValidationResult,
+  CollectInput,
+  CollectResult,
+  ObservationProvider,
+  ObservationEventType,
+} from "./observation-contracts.js";
+export {
+  normalizeObservationForContext,
+  OBSERVATION_EVENT_TYPES,
+  OBSERVATION_SLUG_REGEX,
+  isObservationSlug,
+} from "./observation-contracts.js";
+export type {
+  AnalysisSpecKey,
+  AnalysisSeverity,
+  AnalysisTaskStatus,
+  WorkflowAnalysisFactInput,
+  WorkflowAnalysisDomainFactInput,
+  WorkflowAnalysisInstructionInput,
+  WorkflowAnalysisObjectInput,
+  WorkflowAnalysisPreviousOutputInput,
+  WorkflowAnalysisInput,
+  AnalysisFinding,
+  AnalysisGap,
+  AnalysisRecommendation,
+  WorkflowAnalysisOutputMetadata,
+  WorkflowAnalysisOutput,
+  RunWorkflowAnalysisConfig,
+  WorkflowAnalysisEventType,
+} from "./workflow-analysis-contracts.js";
+export {
+  ANALYSIS_SPEC_KEYS,
+  WORKFLOW_ANALYSIS_SYSTEM_PROMPT,
+  WORKFLOW_ANALYSIS_EVENT_TYPES,
+} from "./workflow-analysis-contracts.js";
 export {
   DEFAULT_RELATIONSHIP_NEIGHBORHOOD_CONSTRAINT,
   DOMAIN_ENGINE_EVENT_TYPES,

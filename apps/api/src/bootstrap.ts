@@ -11,6 +11,8 @@ import {
   type EventEmitter,
   type Logger,
 } from "@memory-middleware/observability";
+import { bootstrapBuiltInProviders } from "@memory-middleware/observation-providers";
+import { bootstrapDefaultRegistry } from "@memory-middleware/observation-registry";
 import type { PrismaClient } from "@prisma/client";
 
 export interface ApiRuntime {
@@ -30,6 +32,14 @@ export async function createApiRuntime(): Promise<ApiRuntime> {
   });
 
   const prisma = await connectDatabase(logger);
+  bootstrapDefaultRegistry();
+  const providerConfig: {
+    pagespeedApiKey?: string;
+    apifyApiToken?: string;
+  } = {};
+  if (env.PAGESPEED_API_KEY) providerConfig.pagespeedApiKey = env.PAGESPEED_API_KEY;
+  if (env.APIFY_API_TOKEN) providerConfig.apifyApiToken = env.APIFY_API_TOKEN;
+  bootstrapBuiltInProviders(providerConfig);
   const events = createLoggingEventEmitter({
     logger,
     sink: createPrismaEventSink(prisma),

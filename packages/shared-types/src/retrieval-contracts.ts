@@ -24,6 +24,8 @@ export interface RetrievalQuery {
   domainKey?: string;
   /** Maps to instruction actionKey when domainKey is set */
   domainAction?: string;
+  /** Optional observation filter overrides when domain-scoped */
+  observationFilters?: import("./observation-contracts.js").ObservationFilter[];
 }
 
 export interface RetrievalTokenBudget {
@@ -135,6 +137,8 @@ export interface ContextPackage {
   generatedAt: string;
   /** Domain Engine — execution context and fact override trace (Phase 4) */
   domainMetadata?: import("./domain-engine-contracts.js").DomainContextMetadata;
+  /** Observation System — normalized metrics scoped by domain observationFilters */
+  observations?: import("./observation-contracts.js").NormalizedObservation[];
 }
 
 export interface RetrievalStageRecord {

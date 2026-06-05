@@ -9,6 +9,9 @@ import type {
   PackageManifest,
   PackageManifestDomain,
   PackageSnapshotRecord,
+  PackageWorkflowRef,
+  Workflow,
+  WorkflowInstructionRef,
 } from "@memory-middleware/shared-types";
 import { DEFAULT_RELATIONSHIP_NEIGHBORHOOD_CONSTRAINT } from "@memory-middleware/shared-types";
 import type { Prisma, PrismaClient } from "@prisma/client";
@@ -17,6 +20,7 @@ import {
   mapDomainFact,
   mapGlobalFact,
   mapInstruction,
+  mapWorkflow,
   parseRetrievalRuleConfig,
   retrievalRuleToConfig,
 } from "./mappers.js";
@@ -66,6 +70,104 @@ function ruleToManifest(
 ): ManifestRetrievalRule {
   const { ruleId: _ruleId, domainId: _domainId, ...rest } = rule;
   return rest;
+}
+
+function workflowToManifest(workflow: Workflow): PackageWorkflowRef {
+  return {
+    workflowKey: workflow.workflowKey ?? workflow.workflowId,
+    name: workflow.name,
+    ...(workflow.description ? { description: workflow.description } : {}),
+    domains: workflow.domains,
+    outputTypes: workflow.outputTypes,
+    analysisSpecKey: workflow.analysisSpecKey ?? "",
+  };
+}
+
+function buildInstructionRefsForWorkflow(
+  workflow: PackageWorkflowRef,
+  manifest: PackageManifest,
+): WorkflowInstructionRef[] {
+  const refs: WorkflowInstructionRef[] = [];
+  for (const domainKey of workflow.domains) {
+    const domain = manifest.domains.find((entry) => entry.domainKey === domainKey);
+    const instruction = domain?.instructions?.[0];
+    if (instruction) {
+      refs.push({ domainKey, actionKey: instruction.actionKey });
+    }
+  }
+  return refs;
+}
+
+export async function applyWorkflowsFromManifest(
+  tx: Prisma.TransactionClient,
+  input: {
+    workspaceId: string;
+    manifest: PackageManifest;
+    sourcePackageId: string;
+    failOnConflict?: boolean;
+  },
+): Promise<void> {
+  const { workspaceId, manifest, sourcePackageId, failOnConflict = true } = input;
+
+  for (const workflowRef of manifest.workflows ?? []) {
+    if (!workflowRef.workflowKey.trim()) {
+      throw new DomainEngineError("workflowKey is required in package workflows", "validation");
+    }
+    if (!workflowRef.analysisSpecKey.trim()) {
+      throw new DomainEngineError(
+        `analysisSpecKey is required for workflow ${workflowRef.workflowKey}`,
+        "validation",
+      );
+    }
+
+    const instructionRefs = buildInstructionRefsForWorkflow(workflowRef, manifest);
+    const existing = await tx.workflow.findFirst({
+      where: {
+        workspaceId,
+        workflowKey: workflowRef.workflowKey,
+      },
+    });
+
+    const workflowData = {
+      name: workflowRef.name,
+      description: workflowRef.description?.trim() ?? "",
+      workflowKey: workflowRef.workflowKey,
+      analysisSpecKey: workflowRef.analysisSpecKey,
+      domains: workflowRef.domains as Prisma.InputJsonValue,
+      packages: [manifest.packageKey] as Prisma.InputJsonValue,
+      instructionRefs: instructionRefs as unknown as Prisma.InputJsonValue,
+      outputTypes: workflowRef.outputTypes as Prisma.InputJsonValue,
+      sourcePackageId,
+      active: true,
+      archivedAt: null,
+    };
+
+    if (existing) {
+      if (
+        failOnConflict &&
+        existing.sourcePackageId &&
+        existing.sourcePackageId !== sourcePackageId
+      ) {
+        throw new DomainEngineError(
+          `Workflow key conflict: ${workflowRef.workflowKey}`,
+          "conflict",
+        );
+      }
+      await tx.workflow.update({
+        where: { id: existing.id },
+        data: workflowData,
+      });
+      continue;
+    }
+
+    await tx.workflow.create({
+      data: {
+        id: newUlid(),
+        workspaceId,
+        ...workflowData,
+      },
+    });
+  }
 }
 
 export function parseSnapshotHistory(value: unknown): PackageSnapshotRecord[] {
@@ -125,6 +227,9 @@ export async function buildManifestFromInstalledPackage(
       name: domain.name,
       retrievalRules: domain.retrievalRules.map(ruleToManifest),
       metadataFilters: domain.metadataFilters,
+      ...(domain.observationFilters.length > 0
+        ? { observationFilters: domain.observationFilters }
+        : {}),
       relationshipConstraints: domain.relationshipConstraints,
       ...(domain.description ? { description: domain.description } : {}),
       ...(factRows.length > 0
@@ -141,6 +246,11 @@ export async function buildManifestFromInstalledPackage(
     domains.push(domainManifest);
   }
 
+  const workflowRows = await prisma.workflow.findMany({
+    where: { workspaceId, sourcePackageId: installedPackageId, active: true },
+    orderBy: { workflowKey: "asc" },
+  });
+
   const manifest: PackageManifest = {
     packageKey: installed.packageKey,
     name: installed.packageKey,
@@ -148,6 +258,14 @@ export async function buildManifestFromInstalledPackage(
     domains,
     ...(globalRows.length > 0
       ? { globalFacts: globalRows.map((r) => factToManifestGlobal(mapGlobalFact(r))) }
+      : {}),
+    ...(workflowRows.length > 0
+      ? {
+          workflows: workflowRows
+            .map((row) => mapWorkflow(row))
+            .filter((workflow) => Boolean(workflow.analysisSpecKey))
+            .map((workflow) => workflowToManifest(workflow)),
+        }
       : {}),
   };
 
@@ -211,6 +329,15 @@ export async function applyManifestToWorkspace(
   for (const md of manifest.domains) {
     await upsertDomainFromManifest(tx, workspaceId, md, sourcePackageId, failOnConflict);
   }
+
+  if (manifest.workflows?.length) {
+    await applyWorkflowsFromManifest(tx, {
+      workspaceId,
+      manifest,
+      sourcePackageId,
+      failOnConflict,
+    });
+  }
 }
 
 export async function upsertDomainFromManifest(
@@ -233,6 +360,7 @@ export async function upsertDomainFromManifest(
         name: md.name,
         ...(md.description !== undefined ? { description: md.description } : {}),
         metadataFilters: md.metadataFilters as Prisma.InputJsonValue,
+        observationFilters: (md.observationFilters ?? []) as unknown as Prisma.InputJsonValue,
         relationshipConstraints: (md.relationshipConstraints ??
           DEFAULT_RELATIONSHIP_NEIGHBORHOOD_CONSTRAINT) as unknown as Prisma.InputJsonValue,
         sourcePackageId,
@@ -251,6 +379,7 @@ export async function upsertDomainFromManifest(
         name: md.name,
         ...(md.description ? { description: md.description } : {}),
         metadataFilters: md.metadataFilters as Prisma.InputJsonValue,
+        observationFilters: (md.observationFilters ?? []) as unknown as Prisma.InputJsonValue,
         relationshipConstraints: (md.relationshipConstraints ??
           DEFAULT_RELATIONSHIP_NEIGHBORHOOD_CONSTRAINT) as unknown as Prisma.InputJsonValue,
         sourcePackageId,

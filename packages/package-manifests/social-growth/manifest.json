@@ -1,0 +1,106 @@
+{
+  "packageKey": "social-growth",
+  "name": "Social Growth",
+  "version": "1.0.0",
+  "description": "Social and brand domains with monthly marketing review workflow",
+  "domains": [
+    {
+      "domainKey": "social",
+      "name": "Social",
+      "retrievalRules": [],
+      "metadataFilters": [],
+      "observationFilters": [
+        {
+          "providers": ["facebook", "instagram", "tiktok"],
+          "categories": ["presence", "activity", "engagement", "growth"]
+        }
+      ],
+      "relationshipConstraints": {
+        "enabled": false,
+        "maxHops": 1,
+        "relationshipTypes": [],
+        "minConfidence": 0.5
+      },
+      "instructions": [
+        {
+          "actionKey": "review",
+          "title": "Social Review Instructions",
+          "content": "Compare follower growth, posting cadence, and engagement by platform.",
+          "status": "active"
+        }
+      ]
+    },
+    {
+      "domainKey": "brand",
+      "name": "Brand",
+      "retrievalRules": [],
+      "metadataFilters": [],
+      "observationFilters": [],
+      "relationshipConstraints": {
+        "enabled": false,
+        "maxHops": 1,
+        "relationshipTypes": [],
+        "minConfidence": 0.5
+      },
+      "facts": [
+        {
+          "scope": "domain",
+          "key": "posting-cadence-target",
+          "title": "Posting Cadence Target",
+          "content": "Publish at least 12 social posts per month across active platforms.",
+          "priority": 5,
+          "status": "active"
+        }
+      ],
+      "instructions": [
+        {
+          "actionKey": "align",
+          "title": "Brand Alignment Instructions",
+          "content": "Evaluate whether observed social activity aligns with brand cadence targets.",
+          "status": "active"
+        }
+      ]
+    },
+    {
+      "domainKey": "strategy",
+      "name": "Strategy",
+      "retrievalRules": [],
+      "metadataFilters": [],
+      "observationFilters": [],
+      "relationshipConstraints": {
+        "enabled": false,
+        "maxHops": 1,
+        "relationshipTypes": [],
+        "minConfidence": 0.5
+      },
+      "facts": [
+        {
+          "scope": "domain",
+          "key": "primary-growth-goal",
+          "title": "Primary Growth Goal",
+          "content": "Increase qualified leads from organic search by 20% year over year.",
+          "priority": 10,
+          "status": "active"
+        }
+      ],
+      "instructions": [
+        {
+          "actionKey": "plan",
+          "title": "Strategy Planning Instructions",
+          "content": "Align social findings with growth goals.",
+          "status": "active"
+        }
+      ]
+    }
+  ],
+  "workflows": [
+    {
+      "workflowKey": "monthly-marketing-review",
+      "name": "Monthly Marketing Review",
+      "description": "Social and brand marketing health review",
+      "domains": ["brand", "strategy", "social"],
+      "outputTypes": ["report", "recommendations"],
+      "analysisSpecKey": "monthly_marketing_review_v1"
+    }
+  ]
+}

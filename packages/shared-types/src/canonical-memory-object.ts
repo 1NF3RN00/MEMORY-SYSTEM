@@ -3,12 +3,15 @@
  * Append-only, versioned, observable, replayable.
  */
 
+import type { ObservationMetadata } from "./observation-contracts.js";
+
 export type MemoryType =
   | "semantic"
   | "episodic"
   | "procedural"
   | "temporal"
-  | "strategic";
+  | "strategic"
+  | "observation";
 
 export type PersistenceMode = "persistent" | "temporary";
 
@@ -45,6 +48,10 @@ export interface CanonicalMemoryMetadata {
   evolution?: import("./structural-contracts.js").MemoryEvolution;
   evolutionState?: unknown;
   evolutionHistory?: import("./structural-contracts.js").EvolutionHistoryEntry[];
+  /** Observation System — metric metadata when memoryType is observation */
+  observation?: ObservationMetadata;
+  /** Fast filter for observation memories without parsing observation block */
+  isObservation?: boolean;
 }
 
 export interface CanonicalMemoryScoring {

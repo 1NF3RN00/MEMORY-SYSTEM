@@ -1,0 +1,233 @@
+{
+  "packageKey": "marketing-intelligence",
+  "name": "Marketing Intelligence",
+  "version": "1.0.0",
+  "description": "SEO, social, reputation, and competitor observation domains with audit workflows",
+  "globalFacts": [
+    {
+      "scope": "global",
+      "key": "primary-growth-goal",
+      "title": "Primary Growth Goal",
+      "content": "Increase qualified leads from organic search by 20% year over year.",
+      "priority": 10,
+      "status": "active"
+    }
+  ],
+  "domains": [
+    {
+      "domainKey": "website",
+      "name": "Website",
+      "description": "Website structure, metadata, and performance observations",
+      "retrievalRules": [],
+      "metadataFilters": [],
+      "observationFilters": [
+        {
+          "providers": ["website", "pagespeed"],
+          "categories": ["site_structure", "metadata", "technical_seo", "performance", "core_web_vitals"]
+        }
+      ],
+      "relationshipConstraints": {
+        "enabled": false,
+        "maxHops": 1,
+        "relationshipTypes": [],
+        "minConfidence": 0.5
+      },
+      "facts": [
+        {
+          "scope": "domain",
+          "key": "target-word-count",
+          "title": "Target Word Count",
+          "content": "Service pages should exceed 600 words.",
+          "priority": 5,
+          "status": "active"
+        }
+      ],
+      "instructions": [
+        {
+          "actionKey": "audit",
+          "title": "SEO Audit Instructions",
+          "content": "Focus on technical SEO, Core Web Vitals, and title tag coverage.",
+          "status": "active"
+        }
+      ]
+    },
+    {
+      "domainKey": "competitor",
+      "name": "Competitor",
+      "description": "Competitor website, reputation, visibility, and social benchmarks",
+      "retrievalRules": [],
+      "metadataFilters": [],
+      "observationFilters": [
+        {
+          "categories": ["website", "reputation", "visibility", "social"],
+          "metrics": [
+            "competitor_page_count",
+            "competitor_speed_score",
+            "competitor_review_count",
+            "competitor_rating",
+            "competitor_rankings",
+            "competitor_engagement_rate"
+          ]
+        }
+      ],
+      "relationshipConstraints": {
+        "enabled": false,
+        "maxHops": 1,
+        "relationshipTypes": [],
+        "minConfidence": 0.5
+      },
+      "instructions": [
+        {
+          "actionKey": "analyze",
+          "title": "Competitor Analysis Instructions",
+          "content": "Compare subject metrics against competitor observations with matching competitorId.",
+          "status": "active"
+        }
+      ]
+    },
+    {
+      "domainKey": "reputation",
+      "name": "Reputation",
+      "description": "Google Business and review velocity observations",
+      "retrievalRules": [],
+      "metadataFilters": [],
+      "observationFilters": [
+        {
+          "providers": ["google_business"],
+          "categories": ["profile_quality", "reputation", "engagement"]
+        }
+      ],
+      "relationshipConstraints": {
+        "enabled": false,
+        "maxHops": 1,
+        "relationshipTypes": [],
+        "minConfidence": 0.5
+      },
+      "instructions": [
+        {
+          "actionKey": "review",
+          "title": "Reputation Review Instructions",
+          "content": "Assess review volume, rating, and velocity trends.",
+          "status": "active"
+        }
+      ]
+    },
+    {
+      "domainKey": "social",
+      "name": "Social",
+      "description": "Facebook, Instagram, and TikTok presence and engagement",
+      "retrievalRules": [],
+      "metadataFilters": [],
+      "observationFilters": [
+        {
+          "providers": ["facebook", "instagram", "tiktok"],
+          "categories": ["presence", "activity", "engagement", "growth"]
+        }
+      ],
+      "relationshipConstraints": {
+        "enabled": false,
+        "maxHops": 1,
+        "relationshipTypes": [],
+        "minConfidence": 0.5
+      },
+      "instructions": [
+        {
+          "actionKey": "review",
+          "title": "Social Review Instructions",
+          "content": "Compare follower growth, posting cadence, and engagement by platform.",
+          "status": "active"
+        }
+      ]
+    },
+    {
+      "domainKey": "strategy",
+      "name": "Strategy",
+      "description": "Growth strategy facts and planning instructions",
+      "retrievalRules": [],
+      "metadataFilters": [],
+      "observationFilters": [],
+      "relationshipConstraints": {
+        "enabled": false,
+        "maxHops": 1,
+        "relationshipTypes": [],
+        "minConfidence": 0.5
+      },
+      "facts": [
+        {
+          "scope": "domain",
+          "key": "primary-growth-goal",
+          "title": "Primary Growth Goal",
+          "content": "Increase qualified leads from organic search by 20% year over year.",
+          "priority": 10,
+          "status": "active"
+        }
+      ],
+      "instructions": [
+        {
+          "actionKey": "plan",
+          "title": "Strategy Planning Instructions",
+          "content": "Align findings with stated growth goals and prioritize by business impact.",
+          "status": "active"
+        }
+      ]
+    },
+    {
+      "domainKey": "brand",
+      "name": "Brand",
+      "description": "Brand voice and posting cadence targets",
+      "retrievalRules": [],
+      "metadataFilters": [],
+      "observationFilters": [],
+      "relationshipConstraints": {
+        "enabled": false,
+        "maxHops": 1,
+        "relationshipTypes": [],
+        "minConfidence": 0.5
+      },
+      "facts": [
+        {
+          "scope": "domain",
+          "key": "posting-cadence-target",
+          "title": "Posting Cadence Target",
+          "content": "Publish at least 12 social posts per month across active platforms.",
+          "priority": 5,
+          "status": "active"
+        }
+      ],
+      "instructions": [
+        {
+          "actionKey": "align",
+          "title": "Brand Alignment Instructions",
+          "content": "Evaluate whether observed social activity aligns with brand cadence targets.",
+          "status": "active"
+        }
+      ]
+    }
+  ],
+  "workflows": [
+    {
+      "workflowKey": "seo-audit",
+      "name": "SEO Audit",
+      "description": "Technical SEO and performance audit from website and PageSpeed observations",
+      "domains": ["website", "competitor", "strategy"],
+      "outputTypes": ["report"],
+      "analysisSpecKey": "seo_audit_v1"
+    },
+    {
+      "workflowKey": "competitive-gap-analysis",
+      "name": "Competitive Gap Analysis",
+      "description": "Numeric gaps between subject business and competitors",
+      "domains": ["competitor", "website", "reputation", "social"],
+      "outputTypes": ["report"],
+      "analysisSpecKey": "competitive_gap_v1"
+    },
+    {
+      "workflowKey": "monthly-marketing-review",
+      "name": "Monthly Marketing Review",
+      "description": "Month-over-month marketing health across social, reputation, and visibility",
+      "domains": ["brand", "strategy", "social", "website", "reputation"],
+      "outputTypes": ["report", "recommendations"],
+      "analysisSpecKey": "monthly_marketing_review_v1"
+    }
+  ]
+}

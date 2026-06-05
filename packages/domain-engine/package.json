@@ -19,7 +19,8 @@
   },
   "dependencies": {
     "@memory-middleware/observability": "*",
-    "@memory-middleware/shared-types": "*"
+    "@memory-middleware/shared-types": "*",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "tsx": "^4.19.4",

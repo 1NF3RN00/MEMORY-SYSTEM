@@ -19,6 +19,8 @@ import { registerPackageRoutes } from "./packages.js";
 import { registerDomainRoutes } from "./domains.js";
 import { registerObjectRoutes } from "./objects.js";
 import { registerWorkflowRoutes } from "./workflows.js";
+import { registerObservationRoutes } from "./observations.js";
+import { registerObservationProviderRoutes } from "./observation-providers.js";
 
 export async function registerRoutes(app: FastifyInstance): Promise<void> {
   await registerHealthRoutes(app);
@@ -28,6 +30,8 @@ export async function registerRoutes(app: FastifyInstance): Promise<void> {
   await registerWorkspaceRoutes(app);
   await registerSearchRoutes(app);
   await registerIngestRoutes(app);
+  await registerObservationRoutes(app);
+  await registerObservationProviderRoutes(app);
   await registerMemoryRoutes(app);
   await registerIngestionRoutes(app);
   await registerRetrievalRoutes(app);

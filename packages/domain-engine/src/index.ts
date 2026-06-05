@@ -25,7 +25,30 @@ export {
   archiveWorkflowRun,
   type WorkflowRetrievalInput,
   type WorkflowRetrievalPort,
+  type WorkflowObservationPort,
+  type WorkflowAnalysisPort,
 } from "./workflow-execution.js";
+export { buildWorkflowAnalysisInput } from "./workflow-analysis-input.js";
+export {
+  runWorkflowAnalysis,
+  buildRunWorkflowAnalysisConfig,
+  type StructuredJsonCaller,
+  type StructuredJsonCallInput,
+} from "./workflow-analysis.js";
+export { validateWorkflowAnalysisOutput } from "./workflow-analysis-validate.js";
+export {
+  renderWorkflowAnalysisMarkdown,
+  buildOutputsFromAnalysis,
+} from "./workflow-analysis-render.js";
+export {
+  getWorkflowAnalysisOutputSchema,
+  getWorkflowAnalysisJsonSchema,
+  isAnalysisSpecKey,
+} from "./workflow-analysis-schemas.js";
+export {
+  collectWorkflowObservationFilters,
+  loadWorkflowObservations,
+} from "./workflow-context-builder.js";
 export { addGlobalFact, updateGlobalFact, archiveGlobalFact, deleteGlobalFact } from "./global-facts.js";
 export { createDomain, updateDomain, archiveDomain, deleteDomain } from "./domains.js";
 export { addFact, updateFact, archiveFact, deleteFact } from "./domain-facts.js";

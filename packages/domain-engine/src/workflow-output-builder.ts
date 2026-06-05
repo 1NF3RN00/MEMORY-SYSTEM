@@ -27,6 +27,17 @@ function formatObjectLines(objects: WorkflowExecutionContext["objects"]): string
     .join("\n");
 }
 
+function formatObservationLines(observations: WorkflowExecutionContext["observations"]): string {
+  if (observations.length === 0) return "None";
+  return observations
+    .map((observation) => {
+      const unit = observation.unit ? ` ${observation.unit}` : "";
+      const source = observation.sourceLabel ?? observation.source;
+      return `- ${observation.provider}/${observation.category}/${observation.metric}: ${JSON.stringify(observation.value)}${unit} (source=${source}, collected=${observation.collectedAt})`;
+    })
+    .join("\n");
+}
+
 function formatPreviousRunLines(runs: WorkflowExecutionContext["previousWorkflowRuns"]): string {
   if (runs.length === 0) return "None";
   return runs
@@ -67,6 +78,9 @@ export function buildWorkflowReportContent(
     "",
     "## Operational objects",
     formatObjectLines(context.objects),
+    "",
+    "## Observations",
+    formatObservationLines(context.observations),
     "",
     "## Retrieved context",
     `${context.retrievedContext.length} package(s), ${retrievedMemoryCount} memory(ies)`,

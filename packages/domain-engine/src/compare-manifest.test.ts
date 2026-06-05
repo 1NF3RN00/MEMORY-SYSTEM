@@ -58,5 +58,26 @@ describe("comparePackageManifests", () => {
     assert.deepEqual(diff.globalFacts.changed, ["hours"]);
     assert.deepEqual(diff.domains.added, ["inbox"]);
     assert.equal(diff.domains.changed.length, 0);
+    assert.deepEqual(diff.workflows.added, []);
+    assert.deepEqual(diff.workflows.removed, []);
+    assert.deepEqual(diff.workflows.changed, []);
+  });
+
+  it("detects added workflows", () => {
+    const candidate: PackageManifest = {
+      ...base,
+      workflows: [
+        {
+          workflowKey: "seo-audit",
+          name: "SEO Audit",
+          domains: ["seo"],
+          outputTypes: ["report"],
+          analysisSpecKey: "seo_audit_v1",
+        },
+      ],
+    };
+
+    const diff = comparePackageManifests(base, candidate);
+    assert.deepEqual(diff.workflows.added, ["seo-audit"]);
   });
 });

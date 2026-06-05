@@ -2,6 +2,8 @@ import type { EventEmitter } from "@memory-middleware/observability";
 import { normalizeContent } from "@memory-middleware/normalization";
 import { newUlid } from "@memory-middleware/shared-types";
 import type {
+  CanonicalMemoryChunk,
+  CanonicalMemoryMetadata,
   CanonicalMemoryObject,
   IngestionStageRecord,
   IngestionState,
@@ -45,6 +47,11 @@ export interface PipelineJobInput {
   sourceLabel?: string;
   tags?: string[];
   useLlmStructuring?: boolean;
+  /** Observation ingestion — stable memory ID aligned with observationId */
+  memoryId?: string;
+  metadataPatch?: Partial<CanonicalMemoryMetadata>;
+  /** When set, skips structural chunking (single-chunk observations). */
+  fixedChunks?: CanonicalMemoryChunk[];
 }
 
 export interface PipelineStore {
@@ -178,59 +185,87 @@ export async function runIngestionPipeline(
     const chunkStageStart = new Date().toISOString();
     const chunkStarted = Date.now();
 
-    const structuralResult = structureAwareChunk({
-      memoryId: "pending",
-      normalizedContent: normalized.normalizedContent,
-      sourceType: input.sourceType === "website" ? "markdown" : input.sourceType,
-    });
+    const pendingMemoryId = input.memoryId ?? "pending";
+    let preChunks: CanonicalMemoryObject["chunks"];
+    let avgDensity = 0;
+    let structuralMeta: {
+      chunkingStrategy: string;
+      fallbackUsed: boolean;
+      fallbackReason?: string;
+    };
 
-    await emitStructureParsingCompleted(options.events, {
-      traceId: input.traceId,
-      workspaceId: input.workspaceId,
-      latencyMs: structuralResult.structureParseLatencyMs,
-      extra: {
-        strategy: structuralResult.strategy,
-        fallback_used: structuralResult.fallbackUsed,
-        section_count: structuralResult.segmentationReasons.length,
-      },
-    });
-
-    if (structuralResult.fallbackUsed && structuralResult.fallbackReason) {
-      await emitStructuralFallback(options.events, {
-        traceId: input.traceId,
-        workspaceId: input.workspaceId,
-        reason: structuralResult.fallbackReason,
-        extra: { chunk_count: structuralResult.chunks.length },
-      });
+    if (input.fixedChunks?.length) {
+      preChunks = input.fixedChunks.map((chunk, index) => ({
+        ...chunk,
+        memoryId: pendingMemoryId,
+        chunkIndex: index,
+      }));
+      structuralMeta = {
+        chunkingStrategy: "observation-v1",
+        fallbackUsed: false,
+      };
     } else {
-      await emitSemanticSegmentationCompleted(options.events, {
+      const structuralResult = structureAwareChunk({
+        memoryId: pendingMemoryId,
+        normalizedContent: normalized.normalizedContent,
+        sourceType: input.sourceType === "website" ? "markdown" : input.sourceType,
+      });
+
+      await emitStructureParsingCompleted(options.events, {
         traceId: input.traceId,
         workspaceId: input.workspaceId,
+        latencyMs: structuralResult.structureParseLatencyMs,
         extra: {
-          chunk_count: structuralResult.chunks.length,
-          segmentation_reasons: structuralResult.segmentationReasons.length,
+          strategy: structuralResult.strategy,
+          fallback_used: structuralResult.fallbackUsed,
+          section_count: structuralResult.segmentationReasons.length,
         },
       });
-      await emitAdjacencyGenerationCompleted(options.events, {
+
+      if (structuralResult.fallbackUsed && structuralResult.fallbackReason) {
+        await emitStructuralFallback(options.events, {
+          traceId: input.traceId,
+          workspaceId: input.workspaceId,
+          reason: structuralResult.fallbackReason,
+          extra: { chunk_count: structuralResult.chunks.length },
+        });
+      } else {
+        await emitSemanticSegmentationCompleted(options.events, {
+          traceId: input.traceId,
+          workspaceId: input.workspaceId,
+          extra: {
+            chunk_count: structuralResult.chunks.length,
+            segmentation_reasons: structuralResult.segmentationReasons.length,
+          },
+        });
+        await emitAdjacencyGenerationCompleted(options.events, {
+          traceId: input.traceId,
+          workspaceId: input.workspaceId,
+          extra: { chunk_count: structuralResult.chunks.length },
+        });
+      }
+
+      avgDensity = averageDensityScore(
+        structuralResult.chunks.map((c) => c.densityDetail),
+      );
+      await emitSemanticDensityScored(options.events, {
         traceId: input.traceId,
         workspaceId: input.workspaceId,
-        extra: { chunk_count: structuralResult.chunks.length },
+        extra: { average_density: avgDensity, chunk_count: structuralResult.chunks.length },
       });
+
+      preChunks = toCanonicalChunks(pendingMemoryId, structuralResult, {
+        ...(input.tags ? { tags: input.tags } : {}),
+        memoryType: input.memoryType,
+      });
+      structuralMeta = {
+        chunkingStrategy: structuralResult.strategy,
+        fallbackUsed: structuralResult.fallbackUsed,
+        ...(structuralResult.fallbackReason
+          ? { fallbackReason: structuralResult.fallbackReason }
+          : {}),
+      };
     }
-
-    const avgDensity = averageDensityScore(
-      structuralResult.chunks.map((c) => c.densityDetail),
-    );
-    await emitSemanticDensityScored(options.events, {
-      traceId: input.traceId,
-      workspaceId: input.workspaceId,
-      extra: { average_density: avgDensity, chunk_count: structuralResult.chunks.length },
-    });
-
-    const preChunks = toCanonicalChunks("pending", structuralResult, {
-      ...(input.tags ? { tags: input.tags } : {}),
-      memoryType: input.memoryType,
-    });
 
     stages.push(
       stage("chunked", "completed", chunkStageStart, new Date().toISOString(), Date.now() - chunkStarted),
@@ -242,8 +277,8 @@ export async function runIngestionPipeline(
       latencyMs: Date.now() - chunkStarted,
       extra: {
         chunk_count: preChunks.length,
-        chunking_strategy: structuralResult.strategy,
-        fallback_used: structuralResult.fallbackUsed,
+        chunking_strategy: structuralMeta.chunkingStrategy,
+        fallback_used: structuralMeta.fallbackUsed,
         average_semantic_density: avgDensity,
       },
     });
@@ -255,19 +290,15 @@ export async function runIngestionPipeline(
       memoryType: input.memoryType,
       persistenceMode: input.persistenceMode,
       sourceType: input.sourceType,
-      title: normalized.title,
+      title: input.title ?? normalized.title,
       normalizedContent: normalized.normalizedContent,
       ingestionTraceId: input.traceId,
       normalizationTraceId,
       chunks: preChunks,
       semanticDensityScore: avgDensity,
-      structuralMeta: {
-        chunkingStrategy: structuralResult.strategy,
-        fallbackUsed: structuralResult.fallbackUsed,
-        ...(structuralResult.fallbackReason
-          ? { fallbackReason: structuralResult.fallbackReason }
-          : {}),
-      },
+      structuralMeta,
+      ...(input.memoryId ? { memoryId: input.memoryId } : {}),
+      ...(input.metadataPatch ? { metadataPatch: input.metadataPatch } : {}),
       ...(input.sourceUrl ?? input.url
         ? { sourceUrl: (input.sourceUrl ?? input.url) as string }
         : {}),

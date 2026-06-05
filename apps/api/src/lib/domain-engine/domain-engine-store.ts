@@ -130,6 +130,7 @@ async function buildWorkflowRunDetail(
       domainFacts: [],
       instructions: [],
       objects: [],
+      observations: [],
       retrievedContext: [],
       previousWorkflowRuns: [],
       resolvedAt: run.startedAt,
@@ -215,6 +216,7 @@ export function createPrismaDomainEngineStore(prisma: PrismaClient): DomainEngin
           name: input.name,
           ...(input.description ? { description: input.description } : {}),
           metadataFilters: (input.metadataFilters ?? []) as Prisma.InputJsonValue,
+          observationFilters: (input.observationFilters ?? []) as unknown as Prisma.InputJsonValue,
           relationshipConstraints: constraints as unknown as Prisma.InputJsonValue,
           ...(input.sourcePackageId ? { sourcePackageId: input.sourcePackageId } : {}),
           retrievalRules: {
@@ -242,6 +244,12 @@ export function createPrismaDomainEngineStore(prisma: PrismaClient): DomainEngin
             ...(input.description !== undefined ? { description: input.description } : {}),
             ...(input.metadataFilters != null
               ? { metadataFilters: input.metadataFilters as Prisma.InputJsonValue }
+              : {}),
+            ...(input.observationFilters != null
+              ? {
+                  observationFilters:
+                    input.observationFilters as unknown as Prisma.InputJsonValue,
+                }
               : {}),
             ...(input.relationshipConstraints != null
               ? {
@@ -719,6 +727,8 @@ export function createPrismaDomainEngineStore(prisma: PrismaClient): DomainEngin
           workspaceId: input.workspaceId,
           name: input.name.trim(),
           description: input.description?.trim() ?? "",
+          ...(input.workflowKey ? { workflowKey: input.workflowKey.trim() } : {}),
+          ...(input.analysisSpecKey ? { analysisSpecKey: input.analysisSpecKey.trim() } : {}),
           domains: (input.domains ?? []) as Prisma.InputJsonValue,
           packages: (input.packages ?? []) as Prisma.InputJsonValue,
           instructionRefs: (input.instructionRefs ?? []) as unknown as Prisma.InputJsonValue,
@@ -747,6 +757,10 @@ export function createPrismaDomainEngineStore(prisma: PrismaClient): DomainEngin
             : {}),
           ...(input.objectTypeFilters != null
             ? { objectTypeFilters: input.objectTypeFilters as Prisma.InputJsonValue }
+            : {}),
+          ...(input.workflowKey != null ? { workflowKey: input.workflowKey.trim() } : {}),
+          ...(input.analysisSpecKey != null
+            ? { analysisSpecKey: input.analysisSpecKey.trim() }
             : {}),
           ...(input.active != null ? { active: input.active } : {}),
         },

@@ -980,6 +980,8 @@ model Domain {
 
   metadataFilters         Json      @default("[]") @map("metadata_filters")
 
+  observationFilters      Json      @default("[]") @map("observation_filters")
+
   relationshipConstraints Json      @default("{}") @map("relationship_constraints")
 
   sourcePackageId         String?   @map("source_package_id")
@@ -1294,9 +1296,13 @@ model Workflow {
 
   workspaceId       String    @map("workspace_id")
 
+  workflowKey       String?   @map("workflow_key")
+
   name              String
 
   description       String    @default("")
+
+  analysisSpecKey   String?   @map("analysis_spec_key")
 
   domains           Json      @default("[]")
 
@@ -1307,6 +1313,8 @@ model Workflow {
   outputTypes       Json      @default("[]") @map("output_types")
 
   objectTypeFilters Json      @default("[]") @map("object_type_filters")
+
+  sourcePackageId   String?   @map("source_package_id")
 
   active            Boolean   @default(true)
 
@@ -1324,7 +1332,11 @@ model Workflow {
 
 
 
+  @@unique([workspaceId, workflowKey])
+
   @@index([workspaceId])
+
+  @@index([sourcePackageId])
 
   @@map("workflows")
 

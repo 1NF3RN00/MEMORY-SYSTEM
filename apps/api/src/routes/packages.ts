@@ -80,6 +80,7 @@ export async function registerPackageRoutes(app: FastifyInstance): Promise<void>
     const failOnConflict = body?.failOnConflict !== false;
     const packageDefinitionId =
       typeof body?.packageDefinitionId === "string" ? body.packageDefinitionId : undefined;
+    const packageKey = typeof body?.packageKey === "string" ? body.packageKey.trim() : undefined;
     let manifest: PackageManifest | undefined;
     if (body?.manifest) {
       const parsed = parseManifest(body.manifest);
@@ -87,9 +88,9 @@ export async function registerPackageRoutes(app: FastifyInstance): Promise<void>
       manifest = parsed;
     }
 
-    if (!manifest && !packageDefinitionId) {
+    if (!manifest && !packageDefinitionId && !packageKey) {
       return reply.status(400).send({
-        error: "manifest or packageDefinitionId is required",
+        error: "manifest, packageDefinitionId, or packageKey is required",
       });
     }
 
@@ -98,6 +99,7 @@ export async function registerPackageRoutes(app: FastifyInstance): Promise<void>
         workspaceId,
         ...(manifest ? { manifest } : {}),
         ...(packageDefinitionId ? { packageDefinitionId } : {}),
+        ...(packageKey ? { packageKey } : {}),
         failOnConflict,
         ...(request.auth?.userId ? { installedByUserId: request.auth.userId } : {}),
       });

@@ -3,6 +3,7 @@ import type {
   Fact,
   InstalledPackage,
   Instruction,
+  NormalizedObservation,
   OperationalObject,
   PackageManifest,
   PackageManifestDiff,
@@ -24,6 +25,114 @@ export function parseCommaList(value: string): string[] {
 
 export function formatCommaList(items: string[] | undefined): string {
   return items?.join(", ") ?? "";
+}
+
+export interface ObservationProviderSummary {
+  providerKey: string;
+  name: string;
+  categories: string[];
+  runnable: boolean;
+}
+
+export interface ObservationMetricSummary {
+  metricKey: string;
+  categoryKey: string;
+  providerKey: string;
+  valueType: string;
+  unit?: string;
+  description: string;
+}
+
+export async function fetchObservationProviders(): Promise<ObservationProviderSummary[]> {
+  const data = await apiGet<{ providers: ObservationProviderSummary[] }>("/observation-providers");
+  return data.providers;
+}
+
+export async function fetchObservationMetrics(providerKey?: string): Promise<ObservationMetricSummary[]> {
+  const query = providerKey ? `?providerKey=${encodeURIComponent(providerKey)}` : "";
+  const data = await apiGet<{ metrics: ObservationMetricSummary[] }>(
+    `/observation-metrics${query}`,
+  );
+  return data.metrics;
+}
+
+export interface ObservationListFilters {
+  provider?: string;
+  category?: string;
+  metric?: string;
+  businessId?: string;
+  competitorId?: string;
+  collectedAfter?: string;
+  collectedBefore?: string;
+  limit?: number;
+  cursor?: string;
+}
+
+export interface ObservationListResult {
+  observations: NormalizedObservation[];
+  nextCursor?: string;
+}
+
+export interface ObservationDetailResult {
+  observation: NormalizedObservation;
+  lineage: {
+    memoryId: string;
+    memoryTitle: string;
+    createdAt: string;
+    ingestionTraceId?: string;
+  };
+}
+
+export interface CollectObservationResult {
+  providerKey: string;
+  observationCount: number;
+  observationIds: string[];
+  collectedAt: string;
+}
+
+function buildObservationQuery(
+  workspaceId: string,
+  filters: ObservationListFilters = {},
+): string {
+  const params = new URLSearchParams({ workspaceId });
+  if (filters.provider) params.set("provider", filters.provider);
+  if (filters.category) params.set("category", filters.category);
+  if (filters.metric) params.set("metric", filters.metric);
+  if (filters.businessId) params.set("businessId", filters.businessId);
+  if (filters.competitorId) params.set("competitorId", filters.competitorId);
+  if (filters.collectedAfter) params.set("collectedAfter", filters.collectedAfter);
+  if (filters.collectedBefore) params.set("collectedBefore", filters.collectedBefore);
+  if (filters.limit != null) params.set("limit", String(filters.limit));
+  if (filters.cursor) params.set("cursor", filters.cursor);
+  return params.toString();
+}
+
+export async function listObservations(
+  workspaceId: string,
+  filters: ObservationListFilters = {},
+): Promise<ObservationListResult> {
+  const query = buildObservationQuery(workspaceId, filters);
+  return apiGet<ObservationListResult>(`/observations?${query}`);
+}
+
+export async function getObservation(
+  workspaceId: string,
+  observationId: string,
+): Promise<ObservationDetailResult> {
+  const params = new URLSearchParams({ workspaceId });
+  return apiGet<ObservationDetailResult>(`/observations/${observationId}?${params.toString()}`);
+}
+
+export async function collectObservation(
+  providerKey: string,
+  body: {
+    workspaceId: string;
+    businessId?: string;
+    competitorId?: string;
+    params: Record<string, unknown>;
+  },
+): Promise<CollectObservationResult> {
+  return apiPost<CollectObservationResult>(`/observation-providers/${providerKey}/collect`, body);
 }
 
 export async function fetchDomains(workspaceId: string): Promise<Domain[]> {

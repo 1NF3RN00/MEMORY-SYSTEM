@@ -6,10 +6,18 @@ import {
   mergeRetrievalConfig,
   runRetrievalPipeline,
   applyCalibrationToRetrievalConfig,
+  retrieveObservations,
 } from "@memory-middleware/retrieval";
 import { mergeSystemCalibration } from "@memory-middleware/retrieval-diagnostics";
-import type { ContextPackage } from "@memory-middleware/shared-types";
+import type {
+  ContextPackage,
+  Domain,
+  NormalizedObservation,
+  ObservationFilter,
+} from "@memory-middleware/shared-types";
 import { DOMAIN_ENGINE_EVENT_TYPES } from "@memory-middleware/shared-types";
+import { collectWorkflowObservationFilters } from "@memory-middleware/domain-engine";
+import { createObservationRetrievalStore } from "./observation-retrieval-store.js";
 import { loadEnv } from "../config/env.js";
 import { buildChunkMetadataLookup } from "./domain-chunk-metadata.js";
 import { loadMemoryMetadataByIds } from "./domain-memory-metadata.js";
@@ -31,6 +39,24 @@ import {
   resolveDomainExecutionContext,
   type WorkflowRetrievalInput,
 } from "@memory-middleware/domain-engine";
+
+export async function retrieveObservationsForWorkflowScope(
+  app: FastifyInstance,
+  scope: { workspaceId: string; filters: ObservationFilter[] },
+): Promise<NormalizedObservation[]> {
+  if (scope.filters.length === 0) return [];
+  return retrieveObservations(createObservationRetrievalStore(app.prisma), scope);
+}
+
+export async function retrieveObservationsForWorkflow(
+  app: FastifyInstance,
+  input: { workspaceId: string; domains: Domain[] },
+): Promise<NormalizedObservation[]> {
+  return retrieveObservationsForWorkflowScope(app, {
+    workspaceId: input.workspaceId,
+    filters: collectWorkflowObservationFilters(input.domains),
+  });
+}
 
 export async function retrieveForWorkflowDomain(
   app: FastifyInstance,

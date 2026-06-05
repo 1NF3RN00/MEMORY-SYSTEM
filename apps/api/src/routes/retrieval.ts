@@ -6,6 +6,7 @@ import {
   mergeRetrievalConfig,
   runRetrievalPipeline,
   applyCalibrationToRetrievalConfig,
+  retrieveObservations,
 } from "@memory-middleware/retrieval";
 import { mergeSystemCalibration } from "@memory-middleware/retrieval-diagnostics";
 import {
@@ -42,6 +43,8 @@ import { getRetrievalPlan } from "../lib/planning-store.js";
 import { createPrismaDomainEngineStore } from "../lib/domain-engine/index.js";
 import { buildChunkMetadataLookup } from "../lib/domain-chunk-metadata.js";
 import { loadMemoryMetadataByIds } from "../lib/domain-memory-metadata.js";
+import { createObservationRetrievalStore } from "../lib/observation-retrieval-store.js";
+import type { ObservationFilter } from "@memory-middleware/shared-types";
 import {
   DomainEngineError,
   resolveDomainExecutionContext,
@@ -234,6 +237,23 @@ export async function registerRetrievalRoutes(app: FastifyInstance): Promise<voi
       });
 
       let contextPackage = result.contextPackage;
+      let observations: import("@memory-middleware/shared-types").NormalizedObservation[] | undefined;
+
+      if (executionContext && executionContext.observationFilters.length > 0) {
+        const mergedFilters: ObservationFilter[] = [
+          ...executionContext.observationFilters,
+          ...(parsed.observationFilters ?? []),
+        ];
+        observations = await retrieveObservations(createObservationRetrievalStore(app.prisma), {
+          workspaceId: parsed.workspaceId,
+          filters: mergedFilters,
+        });
+        contextPackage = {
+          ...contextPackage,
+          observations,
+        };
+      }
+
       if (result.executionContext) {
         const metadataByChunkId = await buildChunkMetadataLookup(app.prisma, contextPackage);
         const prepared = prepareContextPackageForDelivery({
@@ -302,6 +322,7 @@ export async function registerRetrievalRoutes(app: FastifyInstance): Promise<voi
       return {
         retrievalTraceId: traceId,
         contextPackage,
+        ...(observations ? { observations } : {}),
         ...(contextPackage.domainMetadata
           ? { factOverrides: contextPackage.domainMetadata.factOverrides }
           : {}),

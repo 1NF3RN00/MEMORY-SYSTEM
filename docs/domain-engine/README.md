@@ -6,7 +6,7 @@ This folder is the **authoritative build guide** for the Domain Engine and Packa
 
 | Document | Purpose |
 |----------|---------|
-| [CREATE_DOMAINS_AND_PACKAGES.md](./CREATE_DOMAINS_AND_PACKAGES.md) | **Operator guide** — how to create domains, facts, instructions, and packages (dashboard + API) |
+| [CREATE_DOMAINS_AND_PACKAGES.md](./CREATE_DOMAINS_AND_PACKAGES.md) | **Operator guide** — domains, packages, objects, workflows, runs, and replay (dashboard + API) |
 | [IMPLEMENTATION_INSTRUCTIONS.md](./IMPLEMENTATION_INSTRUCTIONS.md) | Locked decisions, phase order, agent rules, integration points |
 | [CONTRACTS.md](./CONTRACTS.md) | TypeScript contracts and Prisma model spec (Phase 1–7 done; Phase 8+ planned) |
 | [RBAC.md](./RBAC.md) | Role matrix and route permission rules |

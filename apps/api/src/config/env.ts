@@ -15,6 +15,13 @@ const envSchema = z.object({
   DIRECT_URL: z.string().url().optional(),
   TRACE_HEADER: z.string().default("x-trace-id"),
   OPENAI_API_KEY: z.string().optional(),
+  WORKFLOW_ANALYSIS_MODEL: z.string().optional(),
+  WORKFLOW_ANALYSIS_ENABLED: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((value) => value === "true"),
+  PAGESPEED_API_KEY: z.string().optional(),
+  APIFY_API_TOKEN: z.string().optional(),
   WORKER_POLL_INTERVAL_MS: z.coerce.number().int().positive().default(2000),
   TEMPORARY_MEMORY_TTL_MS: z.coerce.number().int().positive().default(3600000),
   SUPABASE_URL: z.string().url().optional(),

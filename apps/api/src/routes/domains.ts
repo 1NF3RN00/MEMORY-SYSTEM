@@ -240,6 +240,9 @@ export async function registerDomainRoutes(app: FastifyInstance): Promise<void> 
               ),
             }
           : {}),
+        ...(Array.isArray(body?.observationFilters)
+          ? { observationFilters: body.observationFilters as never[] }
+          : {}),
         relationshipConstraints: constraints,
         ...(Array.isArray(body?.retrievalRules)
           ? { retrievalRules: body.retrievalRules as never[] }
@@ -284,6 +287,9 @@ export async function registerDomainRoutes(app: FastifyInstance): Promise<void> 
           : {}),
         ...(Array.isArray(body?.retrievalRules)
           ? { retrievalRules: body.retrievalRules as never[] }
+          : {}),
+        ...(Array.isArray(body?.observationFilters)
+          ? { observationFilters: body.observationFilters as never[] }
           : {}),
       });
       return { domain };

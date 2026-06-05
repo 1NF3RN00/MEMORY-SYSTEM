@@ -1,10 +1,41 @@
 import type {
+  Domain,
   Fact,
   Instruction,
+  NormalizedObservation,
+  ObservationFilter,
   OperationalObject,
   WorkflowExecutionContext,
 } from "@memory-middleware/shared-types";
 import type { WorkflowExecutionContextLoadResult } from "./store.js";
+
+export interface WorkflowObservationPort {
+  retrieveObservations(scope: {
+    workspaceId: string;
+    filters: ObservationFilter[];
+  }): Promise<NormalizedObservation[]>;
+}
+
+/** Union observationFilters from all workflow domains. */
+export function collectWorkflowObservationFilters(domains: Domain[]): ObservationFilter[] {
+  const filters: ObservationFilter[] = [];
+  for (const domain of domains) {
+    if (domain.observationFilters.length > 0) {
+      filters.push(...domain.observationFilters);
+    }
+  }
+  return filters;
+}
+
+export async function loadWorkflowObservations(
+  port: WorkflowObservationPort,
+  workspaceId: string,
+  domains: Domain[],
+): Promise<NormalizedObservation[]> {
+  const filters = collectWorkflowObservationFilters(domains);
+  if (filters.length === 0) return [];
+  return port.retrieveObservations({ workspaceId, filters });
+}
 
 function dedupeInstructions(items: Instruction[]): Instruction[] {
   const seen = new Set<string>();
@@ -56,6 +87,7 @@ export function buildWorkflowExecutionContextFromLoad(
     domainFacts: sortWorkflowFacts(loaded.domainFacts),
     instructions: dedupeInstructions(loaded.instructions),
     objects: dedupeObjects(loaded.objects),
+    observations: [],
     retrievedContext: opts?.retrievedContext ?? [],
     previousWorkflowRuns: loaded.previousWorkflowRuns,
     resolvedAt: new Date().toISOString(),

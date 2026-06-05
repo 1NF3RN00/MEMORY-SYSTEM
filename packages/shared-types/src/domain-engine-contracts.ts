@@ -3,6 +3,8 @@
  * @see docs/domain-engine/CONTRACTS.md
  */
 
+import type { NormalizedObservation, ObservationFilter } from "./observation-contracts.js";
+
 export type OperationalRole =
   | "middleware_admin"
   | "agency_admin"
@@ -87,6 +89,7 @@ export interface Domain {
   status: DomainStatus;
   retrievalRules: RetrievalRule[];
   metadataFilters: string[];
+  observationFilters: ObservationFilter[];
   relationshipConstraints: RelationshipNeighborhoodConstraint;
   sourcePackageId?: string;
   createdAt: string;
@@ -104,6 +107,7 @@ export interface DomainExecutionContext {
   instructions: Instruction[];
   retrievalRules: RetrievalRule[];
   metadataFilters: string[];
+  observationFilters: ObservationFilter[];
   relationshipConstraints: RelationshipNeighborhoodConstraint;
   resolvedAt: string;
 }
@@ -149,9 +153,19 @@ export interface PackageManifestDomain {
   description?: string;
   retrievalRules: ManifestRetrievalRule[];
   metadataFilters: string[];
+  observationFilters?: ObservationFilter[];
   relationshipConstraints: RelationshipNeighborhoodConstraint;
   facts?: ManifestDomainFact[];
   instructions?: ManifestInstruction[];
+}
+
+export interface PackageWorkflowRef {
+  workflowKey: string;
+  name: string;
+  description?: string;
+  domains: string[];
+  outputTypes: string[];
+  analysisSpecKey: string;
 }
 
 export interface PackageManifest {
@@ -161,6 +175,7 @@ export interface PackageManifest {
   description?: string;
   domains: PackageManifestDomain[];
   globalFacts?: ManifestGlobalFact[];
+  workflows?: PackageWorkflowRef[];
   archiveRules?: Record<string, unknown>;
   metadataConfigs?: Record<string, unknown>;
 }
@@ -189,6 +204,7 @@ export interface PackageManifestDiff {
     removed: string[];
     changed: PackageManifestDomainDiff[];
   };
+  workflows: PackageManifestEntityDiff;
 }
 
 export interface PackageSnapshotRecord {
@@ -281,6 +297,7 @@ export interface WorkflowInstructionRef {
 export interface Workflow {
   workflowId: string;
   workspaceId: string;
+  workflowKey?: string;
   name: string;
   description: string;
   domains: string[];
@@ -288,6 +305,8 @@ export interface Workflow {
   instructionRefs: WorkflowInstructionRef[];
   outputTypes: string[];
   objectTypeFilters?: string[];
+  analysisSpecKey?: string;
+  sourcePackageId?: string;
   active: boolean;
   createdAt: string;
   updatedAt: string;
@@ -296,6 +315,7 @@ export interface Workflow {
 
 export interface CreateWorkflowInput {
   workspaceId: string;
+  workflowKey?: string;
   name: string;
   description?: string;
   domains?: string[];
@@ -303,9 +323,11 @@ export interface CreateWorkflowInput {
   instructionRefs?: WorkflowInstructionRef[];
   outputTypes?: string[];
   objectTypeFilters?: string[];
+  analysisSpecKey?: string;
 }
 
 export interface UpdateWorkflowInput {
+  workflowKey?: string;
   name?: string;
   description?: string;
   domains?: string[];
@@ -313,6 +335,7 @@ export interface UpdateWorkflowInput {
   instructionRefs?: WorkflowInstructionRef[];
   outputTypes?: string[];
   objectTypeFilters?: string[];
+  analysisSpecKey?: string;
   active?: boolean;
 }
 
@@ -360,6 +383,7 @@ export interface WorkflowExecutionContext {
   domainFacts: Fact[];
   instructions: Instruction[];
   objects: OperationalObject[];
+  observations: NormalizedObservation[];
   retrievedContext: import("./retrieval-contracts.js").ContextPackage[];
   previousWorkflowRuns: WorkflowRunDetail[];
   resolvedAt: string;
@@ -370,6 +394,7 @@ export type WorkflowContextLayer =
   | "domainFacts"
   | "instructions"
   | "objects"
+  | "observations"
   | "retrievedContext"
   | "previousWorkflowRuns";
 
@@ -378,6 +403,7 @@ export const WORKFLOW_CONTEXT_LAYER_ORDER: readonly WorkflowContextLayer[] = [
   "domainFacts",
   "instructions",
   "objects",
+  "observations",
   "retrievedContext",
   "previousWorkflowRuns",
 ] as const;

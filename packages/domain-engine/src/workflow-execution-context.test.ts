@@ -35,6 +35,7 @@ const domain: Domain = {
   status: "active",
   retrievalRules: [],
   metadataFilters: [],
+  observationFilters: [],
   relationshipConstraints: DEFAULT_RELATIONSHIP_NEIGHBORHOOD_CONSTRAINT,
   createdAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-01-01T00:00:00.000Z",

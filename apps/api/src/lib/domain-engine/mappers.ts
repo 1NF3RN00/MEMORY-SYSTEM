@@ -8,6 +8,7 @@ import type {
   InstructionStatus,
   InstalledPackage,
   InstalledPackageStatus,
+  ObservationFilter,
   OperationalObject,
   OperationalObjectStatus,
   PackageDefinitionRecord,
@@ -40,6 +41,52 @@ export function parseJsonArray(value: unknown): string[] {
     return value.filter((v): v is string => typeof v === "string");
   }
   return [];
+}
+
+function parseStringArrayField(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const items = value.filter(
+    (item): item is string => typeof item === "string" && item.trim().length > 0,
+  );
+  return items.length > 0 ? items : undefined;
+}
+
+export function parseObservationFilters(value: unknown): ObservationFilter[] {
+  if (!Array.isArray(value)) return [];
+
+  const filters: ObservationFilter[] = [];
+  for (const raw of value) {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
+    const row = raw as Record<string, unknown>;
+    const filter: ObservationFilter = {};
+    const providers = parseStringArrayField(row.providers);
+    const categories = parseStringArrayField(row.categories);
+    const metrics = parseStringArrayField(row.metrics);
+    const platforms = parseStringArrayField(row.platforms);
+
+    if (providers) filter.providers = providers;
+    if (categories) filter.categories = categories;
+    if (metrics) filter.metrics = metrics;
+    if (platforms) filter.platforms = platforms;
+    if (typeof row.businessId === "string" && row.businessId.trim()) {
+      filter.businessId = row.businessId.trim();
+    }
+    if (typeof row.competitorId === "string" && row.competitorId.trim()) {
+      filter.competitorId = row.competitorId.trim();
+    }
+    if (typeof row.collectedAfter === "string" && row.collectedAfter.trim()) {
+      filter.collectedAfter = row.collectedAfter.trim();
+    }
+    if (typeof row.collectedBefore === "string" && row.collectedBefore.trim()) {
+      filter.collectedBefore = row.collectedBefore.trim();
+    }
+
+    if (Object.keys(filter).length > 0) {
+      filters.push(filter);
+    }
+  }
+
+  return filters;
 }
 
 export function parseRelationshipConstraints(
@@ -193,6 +240,7 @@ export function mapDomain(
       parseRetrievalRuleConfig(r.id, r.domainId, r.name, r.config),
     ),
     metadataFilters: parseJsonArray(row.metadataFilters),
+    observationFilters: parseObservationFilters(row.observationFilters),
     relationshipConstraints: parseRelationshipConstraints(row.relationshipConstraints),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
@@ -272,6 +320,9 @@ export function mapWorkflow(row: PrismaWorkflow): Workflow {
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   };
+  if (row.workflowKey) workflow.workflowKey = row.workflowKey;
+  if (row.analysisSpecKey) workflow.analysisSpecKey = row.analysisSpecKey;
+  if (row.sourcePackageId) workflow.sourcePackageId = row.sourcePackageId;
   if (objectTypeFilters.length) workflow.objectTypeFilters = objectTypeFilters;
   if (row.archivedAt) workflow.archivedAt = row.archivedAt.toISOString();
   return workflow;

@@ -13,6 +13,7 @@
     "db:migrate": "node scripts/with-env.mjs migrate dev",
     "db:migrate:deploy": "node scripts/with-env.mjs migrate deploy",
     "db:seed": "node scripts/with-env.mjs db seed",
+    "package-catalog:seed": "tsx scripts/seed-package-catalog.ts",
     "platform:bootstrap": "tsx scripts/bootstrap-platform-admin.ts",
     "platform:set-password": "tsx scripts/set-operator-password.ts"
   },
@@ -23,6 +24,9 @@
     "@memory-middleware/historian": "*",
     "@memory-middleware/ingestion": "*",
     "@memory-middleware/normalization": "*",
+    "@memory-middleware/observation-ingestion": "*",
+    "@memory-middleware/observation-providers": "*",
+    "@memory-middleware/observation-registry": "*",
     "@memory-middleware/observability": "*",
     "@memory-middleware/planning": "*",
     "@memory-middleware/relationship": "*",

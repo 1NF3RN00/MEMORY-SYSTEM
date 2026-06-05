@@ -18,6 +18,7 @@ function emptyContext(overrides: Partial<WorkflowExecutionContext> = {}): Workfl
     domainFacts: [],
     instructions: [],
     objects: [],
+    observations: [],
     retrievedContext: [],
     previousWorkflowRuns: [],
     resolvedAt: new Date().toISOString(),
@@ -26,6 +27,12 @@ function emptyContext(overrides: Partial<WorkflowExecutionContext> = {}): Workfl
 }
 
 describe("workflow precedence", () => {
+  it("places observations after objects and before retrievedContext", () => {
+    assert.equal(workflowLayerPrecedes("objects", "observations"), true);
+    assert.equal(workflowLayerPrecedes("observations", "retrievedContext"), true);
+    assert.equal(workflowLayerPrecedes("observations", "objects"), false);
+  });
+
   it("orders populated layers by mandatory workflow precedence", () => {
     const context = emptyContext({
       globalFacts: [
@@ -96,6 +103,7 @@ describe("workflow precedence", () => {
           status: "active",
           retrievalRules: [],
           metadataFilters: [],
+          observationFilters: [],
           relationshipConstraints: DEFAULT_RELATIONSHIP_NEIGHBORHOOD_CONSTRAINT,
           createdAt: "2026-01-01T00:00:00.000Z",
           updatedAt: "2026-01-01T00:00:00.000Z",

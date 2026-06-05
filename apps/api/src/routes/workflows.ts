@@ -14,7 +14,12 @@ import { newUlid, type WorkflowInstructionRef } from "@memory-middleware/shared-
 import { createPrismaDomainEngineStore } from "../lib/domain-engine/index.js";
 import { sendDomainEngineError } from "../lib/domain-engine-route-errors.js";
 import { captureWorkflowRunReplaySnapshot, getWorkflowRunReplaySnapshot } from "../lib/workflow-replay-store.js";
-import { retrieveForWorkflowDomain } from "../lib/workflow-retrieval.js";
+import {
+  retrieveForWorkflowDomain,
+  retrieveObservationsForWorkflowScope,
+} from "../lib/workflow-retrieval.js";
+import { createOpenAiStructuredJsonCaller } from "../lib/workflow-analysis-caller.js";
+import { loadEnv } from "../config/env.js";
 import { enforceWorkspaceScope } from "../middleware/auth.js";
 import { enforceOperationalPermission } from "../middleware/operational-rbac.js";
 
@@ -55,6 +60,12 @@ function buildCreateWorkflowInput(
     name,
   };
   if (typeof body?.description === "string") input.description = body.description;
+  if (typeof body?.workflowKey === "string" && body.workflowKey.trim()) {
+    input.workflowKey = body.workflowKey.trim();
+  }
+  if (typeof body?.analysisSpecKey === "string" && body.analysisSpecKey.trim()) {
+    input.analysisSpecKey = body.analysisSpecKey.trim();
+  }
   const domains = parseStringArray(body?.domains);
   if (domains) input.domains = domains;
   const packages = parseStringArray(body?.packages);
@@ -72,6 +83,8 @@ function buildUpdateWorkflowInput(body: Record<string, unknown> | null) {
   const input: UpdateWorkflowInput = {};
   if (typeof body?.name === "string") input.name = body.name;
   if (typeof body?.description === "string") input.description = body.description;
+  if (typeof body?.workflowKey === "string") input.workflowKey = body.workflowKey;
+  if (typeof body?.analysisSpecKey === "string") input.analysisSpecKey = body.analysisSpecKey;
   const domains = parseStringArray(body?.domains);
   if (domains) input.domains = domains;
   const packages = parseStringArray(body?.packages);
@@ -317,10 +330,24 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
       }
 
       try {
+        const env = loadEnv();
+        const analysisEnabled =
+          env.WORKFLOW_ANALYSIS_ENABLED !== false && Boolean(env.WORKFLOW_ANALYSIS_MODEL);
         const detail = await executeWorkflow(engineDeps(app, newUlid()), executeInput, {
           retrieve: {
             retrieveForDomain: (input) => retrieveForWorkflowDomain(app, input),
           },
+          observations: {
+            retrieveObservations: (scope) => retrieveObservationsForWorkflowScope(app, scope),
+          },
+          ...(analysisEnabled && env.OPENAI_API_KEY && env.WORKFLOW_ANALYSIS_MODEL
+            ? {
+                analysis: {
+                  caller: createOpenAiStructuredJsonCaller(env.OPENAI_API_KEY),
+                  modelId: env.WORKFLOW_ANALYSIS_MODEL,
+                },
+              }
+            : {}),
         });
         await captureWorkflowRunReplaySnapshot(app.prisma, detail, query.trim());
         return {

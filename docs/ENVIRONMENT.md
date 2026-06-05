@@ -13,6 +13,8 @@ This guide covers every environment variable the repo uses, where to get each va
 | `API_HOST` / `API_PORT` | API | No | Defaults `0.0.0.0` / `3000` |
 | `TRACE_HEADER` | API | No | Default `x-trace-id` |
 | `OPENAI_API_KEY` | API, worker | No | [OpenAI API keys](https://platform.openai.com/api-keys) |
+| `PAGESPEED_API_KEY` | API (observation providers) | No | [PageSpeed Insights API](https://developers.google.com/speed/docs/insights/v5/get-started) |
+| `APIFY_API_TOKEN` | API (observation providers) | No | [Apify Console → Integrations](https://console.apify.com/account/integrations) |
 | `WORKER_POLL_INTERVAL_MS` | Worker | No | Default `2000` |
 | `TEMPORARY_MEMORY_TTL_MS` | Worker | No | Default `3600000` |
 | `VITE_API_URL` | Dashboard | Prod only | Your public API URL |

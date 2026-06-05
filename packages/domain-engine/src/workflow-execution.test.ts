@@ -32,9 +32,21 @@ const domain: Domain = {
   status: "active",
   retrievalRules: [],
   metadataFilters: [],
+  observationFilters: [{ providers: ["website"] }],
   relationshipConstraints: DEFAULT_RELATIONSHIP_NEIGHBORHOOD_CONSTRAINT,
   createdAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-01-01T00:00:00.000Z",
+};
+
+const sampleObservation = {
+  observationId: "01HOBS00000000000000000000",
+  provider: "website",
+  category: "site_structure",
+  metric: "page_count",
+  value: 12,
+  source: "website_crawl",
+  timestamp: "2026-06-05T12:00:00.000Z",
+  collectedAt: "2026-06-05T12:00:00.000Z",
 };
 
 function completedRunDetail(runId: string, context: WorkflowExecutionContext): WorkflowRunDetail {
@@ -142,6 +154,7 @@ function createMockStore(previousRuns: WorkflowRunDetail[] = []): DomainEngineSt
             domainFacts: [],
             instructions: [],
             objects: [],
+            observations: [],
             retrievedContext: [],
             previousWorkflowRuns: previousRuns,
             resolvedAt: new Date().toISOString(),
@@ -175,6 +188,7 @@ describe("executeWorkflow", () => {
       domainFacts: [],
       instructions: [],
       objects: [],
+      observations: [],
       retrievedContext: [],
       previousWorkflowRuns: [],
       resolvedAt: "2026-01-01T00:01:00.000Z",
@@ -199,11 +213,57 @@ describe("executeWorkflow", () => {
             diagnostics: { traceId: "trace-2", stages: [] },
           }),
         },
+        observations: {
+          retrieveObservations: async () => [],
+        },
       },
     );
 
     assert.equal(detail.executionContext.previousWorkflowRuns.length, 1);
     assert.equal(detail.executionContext.previousWorkflowRuns[0]?.workflowRunId, "01RUN1");
     assert.ok(detail.outputs.length >= 1);
+  });
+
+  it("loads observations into execution context and report output", async () => {
+    const emittedEvents: string[] = [];
+    const store = createMockStore();
+
+    const detail = await executeWorkflow(
+      {
+        store,
+        events: {
+          emit: async (event) => {
+            emittedEvents.push(event.event_type);
+          },
+        },
+        traceId: "trace-obs",
+      },
+      {
+        workspaceId: workflow.workspaceId,
+        workflowId: workflow.workflowId,
+        query: "SEO audit",
+      },
+      {
+        retrieve: {
+          retrieveForDomain: async () => ({
+            workspaceId: workflow.workspaceId,
+            query: "SEO audit",
+            tokenBudget: { maxTokens: 4000, usedTokens: 100 },
+            memories: [],
+            chunkTraces: [],
+            diagnostics: { traceId: "trace-obs", stages: [] },
+          }),
+        },
+        observations: {
+          retrieveObservations: async () => [sampleObservation],
+        },
+      },
+    );
+
+    assert.equal(detail.executionContext.observations.length, 1);
+    assert.equal(detail.executionContext.observations[0]?.metric, "page_count");
+    assert.ok(detail.outputs[0]?.content.includes("## Observations"));
+    assert.ok(detail.outputs[0]?.content.includes("page_count"));
+    assert.ok(emittedEvents.includes("observation_retrieved"));
   });
 });

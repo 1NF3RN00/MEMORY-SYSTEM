@@ -11,6 +11,7 @@ const baseContext: DomainExecutionContext = {
   instructions: [],
   retrievalRules: [],
   metadataFilters: [],
+  observationFilters: [],
   relationshipConstraints: DEFAULT_RELATIONSHIP_NEIGHBORHOOD_CONSTRAINT,
   resolvedAt: new Date().toISOString(),
 };

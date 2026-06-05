@@ -30,6 +30,15 @@ function validateManifest(manifest: PackageManifest): void {
   for (const f of manifest.globalFacts ?? []) {
     assertDomainSlug(f.key, "fact key");
   }
+  for (const workflow of manifest.workflows ?? []) {
+    assertDomainSlug(workflow.workflowKey, "workflowKey");
+    if (!workflow.analysisSpecKey.trim()) {
+      throw new DomainEngineError(
+        `analysisSpecKey is required for workflow ${workflow.workflowKey}`,
+        "validation",
+      );
+    }
+  }
 }
 
 async function resolveInstallManifest(
@@ -47,8 +56,15 @@ async function resolveInstallManifest(
     }
     return def.manifest;
   }
+  if (input.packageKey) {
+    const def = await store.getPackageDefinitionByKey(input.packageKey);
+    if (!def) {
+      throw new DomainEngineError(`Package definition not found: ${input.packageKey}`, "not_found");
+    }
+    return def.manifest;
+  }
   throw new DomainEngineError(
-    "manifest or packageDefinitionId is required",
+    "manifest, packageDefinitionId, or packageKey is required",
     "invalid_request",
   );
 }
