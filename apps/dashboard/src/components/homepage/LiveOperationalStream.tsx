@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { cn } from "../../lib/cn.js";
 import { EVENT_CATEGORY_STYLES } from "./constants.js";
@@ -19,7 +19,6 @@ function EventCard({ event, isNew }: EventCardProps) {
 
   return (
     <motion.article
-      layout
       initial={{ opacity: 0, x: -12 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 8 }}
@@ -108,7 +107,7 @@ interface LiveOperationalStreamProps {
   loading?: boolean;
 }
 
-export function LiveOperationalStream({ events, loading }: LiveOperationalStreamProps) {
+function LiveOperationalStreamComponent({ events, loading }: LiveOperationalStreamProps) {
   const [latestId, setLatestId] = useState<string | null>(null);
   const prevTopId = useRef<string | null>(null);
 
@@ -148,7 +147,7 @@ export function LiveOperationalStream({ events, loading }: LiveOperationalStream
             No operational events yet. Run ingestion or retrieval to populate this stream.
           </p>
         ) : (
-          <AnimatePresence initial={false} mode="popLayout">
+          <AnimatePresence initial={false}>
             <div className="flex flex-col gap-2">
               {events.map((event) => (
                 <EventCard key={event.id} event={event} isNew={event.id === latestId} />
@@ -160,3 +159,5 @@ export function LiveOperationalStream({ events, loading }: LiveOperationalStream
     </section>
   );
 }
+
+export const LiveOperationalStream = memo(LiveOperationalStreamComponent);

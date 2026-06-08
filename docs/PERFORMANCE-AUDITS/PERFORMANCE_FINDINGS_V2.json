@@ -1,0 +1,906 @@
+{
+  "auditDate": "2026-06-08",
+  "auditVersion": "V2",
+  "auditType": "post_remediation_validation",
+  "baselineAuditVersion": "V1",
+  "primarySource": "docs/PERFORMANCE-AUDITS/ + docs/performance-improvments/",
+  "remediationScope": {
+    "wavesCompleted": 7,
+    "sprintsVerifiedComplete": 38,
+    "sprintsNotStarted": ["sprint-22-list-field-projection"],
+    "waveReports": "docs/performance-improvments/wave-reports/"
+  },
+  "comparisonToV1": {
+    "materiallyImproved": true,
+    "primaryGains": [
+      "database_query_observability_shipped",
+      "dashboard_request_and_payload_reduction",
+      "production_measurement_harnesses",
+      "stability_fixes_n_plus_one_context_race_llm_coverage",
+      "unified_observability_ui"
+    ],
+    "primaryGaps": [
+      "retrieval_latency_not_improved_p50_8969ms",
+      "retrieval_interior_uninstrumented_91_percent_gap",
+      "moderate_heavy_dashboard_unmeasured_post_bootstrap",
+      "sprint_22_field_projection_not_started"
+    ],
+    "retrievalLatencyImproved": false,
+    "dashboardEfficiencyImproved": true,
+    "observabilityImproved": true
+  },
+  "overallScores": {
+    "systemHealth": {
+      "v1Score": 71,
+      "score": 87,
+      "maxScore": 100,
+      "delta": 16,
+      "reasoning": "DB observability shipped, N+1 and race fixes verified, production baselines captured, dashboard data layer refactored. Retrieval SLOs still missing.",
+      "evidenceType": "mixed"
+    },
+    "performance": {
+      "v1Score": 59,
+      "score": 72,
+      "maxScore": 100,
+      "delta": 13,
+      "reasoning": "Dashboard requests and payloads measurably reduced on empty workspace. POST /retrieve p50 now 8969ms (not improved vs mock 29ms). Embedding cache and BM25 V2 lack production impact evidence.",
+      "evidenceType": "mixed"
+    },
+    "stability": {
+      "v1Score": 64,
+      "score": 82,
+      "maxScore": 100,
+      "delta": 18,
+      "reasoning": "N+1 batch fetch, context-package two-phase completion, full LLM ALS coverage, worker observability scopes. No failure-rate time series yet.",
+      "evidenceType": "measured"
+    },
+    "maintainability": {
+      "v1Score": 62,
+      "score": 81,
+      "maxScore": 100,
+      "delta": 19,
+      "reasoning": "Telemetry tiers, bootstrap endpoint, WorkspaceTelemetryProvider, React Query, shared timing patterns across pipelines. Increased surface area from 39 sprints.",
+      "evidenceType": "inferred"
+    },
+    "developerExperience": {
+      "v1Score": 74,
+      "score": 88,
+      "maxScore": 100,
+      "delta": 14,
+      "reasoning": "Benchmark harnesses, dbObservability, unified TraceObservabilityPanel, timing display, EXPLAIN automation. Post-bootstrap dashboard HAR still missing.",
+      "evidenceType": "mixed"
+    },
+    "observability": {
+      "v1Score": 48,
+      "score": 89,
+      "maxScore": 100,
+      "delta": 41,
+      "reasoning": "timing + LLM + DB correlated per traceId; leaderboard with EventLog persistence; production retrieval and dashboard baselines; worker scopes.",
+      "evidenceType": "measured"
+    },
+    "overallHealth": {
+      "v1Score": 71,
+      "score": 84,
+      "maxScore": 100,
+      "delta": 13,
+      "reasoning": "Weighted composite: strong remediation on dashboard and observability; retrieval latency remains the dominant customer-facing weakness.",
+      "evidenceType": "mixed"
+    }
+  },
+  "scoreChanges": [
+    { "category": "systemHealth", "v1": 71, "v2": 87, "delta": 16 },
+    { "category": "performance", "v1": 59, "v2": 72, "delta": 13 },
+    { "category": "stability", "v1": 64, "v2": 82, "delta": 18 },
+    { "category": "maintainability", "v1": 62, "v2": 81, "delta": 19 },
+    { "category": "developerExperience", "v1": 74, "v2": 88, "delta": 14 },
+    { "category": "observability", "v1": 48, "v2": 89, "delta": 41 },
+    { "category": "overallHealth", "v1": 71, "v2": 84, "delta": 13 }
+  ],
+  "fixedIssues": [
+    {
+      "id": "BUG-001",
+      "v1Id": "BUG-001",
+      "title": "N+1 queries on /diagnostics/operational",
+      "status": "fixed",
+      "evidence": ["sprint-03-operational-diagnostics-n-plus-one/outcomes.md", "apps/api/src/lib/retrieval-store.ts"],
+      "impact": "high"
+    },
+    {
+      "id": "BUG-002",
+      "v1Id": "BUG-002",
+      "title": "Dashboard downloads full relationship graph but displays capped subset",
+      "status": "fixed",
+      "evidence": ["sprint-04-lite-relationship-graph/outcomes.md", "sprint-16-lazy-load-graph/outcomes.md"],
+      "impact": "high"
+    },
+    {
+      "id": "BUG-003",
+      "v1Id": "BUG-003",
+      "title": "Duplicate API calls on dashboard home load",
+      "status": "fixed",
+      "evidence": ["sprint-01-api-request-dedupe", "sprint-02-workspace-id-auth-context", "sprint-28-consolidated-health-polling"],
+      "impact": "medium"
+    },
+    {
+      "id": "PBUG-001",
+      "v1Id": "PBUG-001",
+      "title": "Retrieval context package race for older runs",
+      "status": "fixed",
+      "evidence": ["sprint-29-context-package-race-fix/outcomes.md"],
+      "impact": "high"
+    },
+    {
+      "id": "PBUG-002",
+      "v1Id": "PBUG-002",
+      "title": "LLM calls not recorded without active ALS collector",
+      "status": "fixed",
+      "evidence": ["sprint-09-llm-audit-route-coverage/outcomes.md"],
+      "impact": "medium"
+    },
+    {
+      "id": "MF-003",
+      "v1Id": "MF-003",
+      "title": "Database query observability not implemented",
+      "status": "fixed",
+      "evidence": ["sprint-07-db-observability-core/outcomes.md", "apps/api/src/lib/database.ts"],
+      "impact": "critical"
+    },
+    {
+      "id": "MF-005",
+      "v1Id": "MF-005",
+      "title": "Observability sprint partially complete",
+      "status": "fixed",
+      "evidence": ["wave-3-outcomes.md", "sprint-33-unified-observability-dashboard/outcomes.md"],
+      "impact": "high"
+    },
+    {
+      "id": "MF-006",
+      "v1Id": "MF-006",
+      "title": "No production latency percentiles captured",
+      "status": "partially_fixed",
+      "evidence": ["sprint-31-production-retrieval-baseline/runs/benchmark-implement.json"],
+      "note": "Retrieval percentiles captured; dashboard percentiles partial; React Profiler not captured",
+      "impact": "high"
+    },
+    {
+      "id": "DB-001",
+      "v1Id": "DB-001",
+      "title": "No Prisma query instrumentation",
+      "status": "fixed",
+      "evidence": ["apps/api/src/lib/database.ts", "packages/observability/src/database/"],
+      "impact": "critical"
+    },
+    {
+      "id": "DB-002",
+      "v1Id": "DB-002",
+      "title": "N+1 on GET /diagnostics/operational",
+      "status": "fixed",
+      "evidence": ["sprint-03", "sprint-27-slim-operational-diagnostics-api/outcomes.md"],
+      "impact": "high"
+    },
+    {
+      "id": "FE-001",
+      "v1Id": "FE-001",
+      "title": "14-16 API requests on home load",
+      "status": "partially_fixed",
+      "evidence": ["sprint-32 dashboard-load-baseline: 11 measured", "sprint-13 bootstrap unit test: 2-3"],
+      "note": "Post-bootstrap live benchmark not captured",
+      "impact": "high"
+    },
+    {
+      "id": "FE-003",
+      "v1Id": "FE-003",
+      "title": "Full telemetry re-poll every 15 seconds",
+      "status": "partially_fixed",
+      "evidence": ["sprint-12 telemetry tiers", "sprint-25 SSE extends to 60s when connected"],
+      "impact": "medium"
+    },
+    {
+      "id": "AR-005",
+      "v1Id": "AR-005",
+      "title": "In-memory DB leaderboard planned without persistence",
+      "status": "fixed",
+      "evidence": ["sprint-38-eventlog-db-leaderboard-persistence/outcomes.md"],
+      "impact": "medium"
+    }
+  ],
+  "remainingIssues": [
+    {
+      "id": "RI-001",
+      "title": "POST /retrieve p50 ~9s — not meeting interactive middleware SLO",
+      "category": "retrieval",
+      "severity": "critical",
+      "v1RelatedIds": ["MF-001", "LAT-009", "RC-001"],
+      "evidence": ["sprint-31-production-retrieval-baseline/runs/benchmark-implement.json"],
+      "confidence": "high"
+    },
+    {
+      "id": "RI-002",
+      "title": "~91% of retrieval umbrella time unaccounted in instrumented sub-stages",
+      "category": "retrieval",
+      "severity": "critical",
+      "v1RelatedIds": ["RET-003"],
+      "evidence": ["sprint-31 stageAggregates vs totals.retrievalStage"],
+      "confidence": "high",
+      "note": "New finding exposed by production baseline; not present in V1 mock test"
+    },
+    {
+      "id": "RI-003",
+      "title": "Moderate/heavy dashboard payloads not re-measured post-bootstrap",
+      "category": "frontend",
+      "severity": "high",
+      "v1RelatedIds": ["FE-002"],
+      "evidence": ["sprint-32 interpretation.payloadTier: empty"],
+      "confidence": "high"
+    },
+    {
+      "id": "RI-004",
+      "title": "List field projection not implemented (sprint-22)",
+      "category": "api",
+      "severity": "medium",
+      "v1RelatedIds": ["OP-21"],
+      "evidence": ["sprint-22-list-field-projection/outcomes.md: not started"],
+      "confidence": "high"
+    },
+    {
+      "id": "RI-005",
+      "title": "pgvector HNSW index usage unverified under populated embedding data",
+      "category": "database",
+      "severity": "medium",
+      "v1RelatedIds": ["OP-16"],
+      "evidence": ["sprint-17-pgvector-index-review/runs/explain-implement.json: 0 embedded chunks"],
+      "confidence": "high"
+    },
+    {
+      "id": "RI-006",
+      "title": "React Profiler re-render validation not captured",
+      "category": "frontend",
+      "severity": "medium",
+      "v1RelatedIds": ["FE-005"],
+      "evidence": ["sprint-32 checklist only"],
+      "confidence": "high"
+    },
+    {
+      "id": "RI-007",
+      "title": "Embedding cache production hit-rate not measured",
+      "category": "retrieval",
+      "severity": "medium",
+      "v1RelatedIds": ["OP-17"],
+      "evidence": ["sprint-18 unit tests only"],
+      "confidence": "high"
+    },
+    {
+      "id": "RI-008",
+      "title": "GET /diagnostics/operational still slow even in slim mode (~1.7s mean)",
+      "category": "api",
+      "severity": "medium",
+      "v1RelatedIds": ["RC-004"],
+      "evidence": ["dashboard-load-baseline-implement.json endpointAggregates"],
+      "confidence": "high"
+    },
+    {
+      "id": "RI-009",
+      "title": "No distributed tracing across API and worker",
+      "category": "observability",
+      "severity": "medium",
+      "v1RelatedIds": ["AR-004"],
+      "evidence": ["worker scopes added but no cross-process trace export"],
+      "confidence": "high"
+    },
+    {
+      "id": "RI-010",
+      "title": "No API failure-rate or timeout telemetry time series",
+      "category": "observability",
+      "severity": "medium",
+      "v1RelatedIds": [],
+      "evidence": ["V1 and V2 audit artifacts"],
+      "confidence": "high"
+    }
+  ],
+  "newIssues": [
+    {
+      "id": "NI-001",
+      "title": "Production-local retrieval 274x slower than mock at p50",
+      "category": "measurement",
+      "severity": "info",
+      "type": "visibility_not_regression",
+      "evidence": ["benchmark-implement.json comparisonToMock"],
+      "confidence": "high"
+    },
+    {
+      "id": "NI-002",
+      "title": "Dashboard benchmark predates bootstrap endpoint (measurement staleness)",
+      "category": "measurement",
+      "severity": "medium",
+      "evidence": ["sprint-32 captured 2026-06-08T20:07; sprint-13 bootstrap same day but not in benchmark"],
+      "confidence": "high"
+    },
+    {
+      "id": "NI-003",
+      "title": "Playwright HAR capture returned 0 API entries due to auth redirect",
+      "category": "measurement",
+      "severity": "low",
+      "evidence": ["dashboard-har-2026-06-08T20-05-27-903Z.json"],
+      "confidence": "high"
+    }
+  ],
+  "regressions": [
+    {
+      "id": "REG-001",
+      "title": "Increased codebase complexity from 39-sprint remediation program",
+      "severity": "low",
+      "type": "maintainability",
+      "evidence": ["wave-reports across 7 waves"],
+      "confidence": "high",
+      "note": "No measured runtime regression; architectural surface area grew"
+    },
+    {
+      "id": "REG-002",
+      "title": "BM25 V2 parallel channel adds pipeline branch when flag enabled",
+      "severity": "low",
+      "type": "complexity",
+      "evidence": ["sprint-37-parallel-bm25-channel-v2/outcomes.md: default off"],
+      "confidence": "high"
+    }
+  ],
+  "majorFindings": [
+    {
+      "id": "MF-V2-001",
+      "title": "Remediation materially improved dashboard and observability posture",
+      "category": "remediation",
+      "type": "measured",
+      "severity": "high",
+      "summary": "38/39 sprints verified; DB observability shipped; dashboard requests 11 measured (pre-bootstrap) or 2-3 unit-tested (post-bootstrap); slim diagnostics 94% smaller.",
+      "evidence": ["wave-reports", "sprint-27 measurements", "sprint-32 artifact"],
+      "confidence": "high"
+    },
+    {
+      "id": "MF-V2-002",
+      "title": "Retrieval latency not improved — p50 8969ms production-local",
+      "category": "retrieval",
+      "type": "measured",
+      "severity": "critical",
+      "summary": "50-sample benchmark with live OpenAI + pgvector. 305x slower than mock request total at p50.",
+      "evidence": ["sprint-31-production-retrieval-baseline/runs/benchmark-implement.json"],
+      "confidence": "high"
+    },
+    {
+      "id": "MF-V2-003",
+      "title": "Retrieval interior timing gap — instrumented stages explain <10% of umbrella",
+      "category": "retrieval",
+      "type": "measured",
+      "severity": "critical",
+      "summary": "embedding+pgvector mean 642ms vs retrieval umbrella 7657ms. Large timestamp gaps between stages in samples.",
+      "evidence": ["benchmark-implement.json stageAggregates and samples[0].timingAudit"],
+      "confidence": "high"
+    },
+    {
+      "id": "MF-V2-004",
+      "title": "Database observability fully shipped with persistence",
+      "category": "database",
+      "type": "measured",
+      "severity": "high",
+      "summary": "Instrumented Prisma, dbObservability on POST /retrieve, leaderboard, EventLog history query.",
+      "evidence": ["sprint-07", "sprint-08", "sprint-38", "apps/api/src/lib/database.ts"],
+      "confidence": "high"
+    },
+    {
+      "id": "MF-V2-005",
+      "title": "Dashboard empty-workspace load now measured at 14KB and 11 requests",
+      "category": "frontend",
+      "type": "measured",
+      "severity": "medium",
+      "summary": "HTTP mirror harness; empty tier; predates bootstrap — post-bootstrap live measurement pending.",
+      "evidence": ["dashboard-load-baseline-implement.json"],
+      "confidence": "high"
+    },
+    {
+      "id": "MF-V2-006",
+      "title": "Unified trace observability UI correlates timing LLM and DB",
+      "category": "observability",
+      "type": "measured",
+      "severity": "medium",
+      "summary": "TraceObservabilityPanel on RetrievalTracesPage with persisted audits on GET /retrieval/:traceId.",
+      "evidence": ["sprint-33-unified-observability-dashboard/outcomes.md"],
+      "confidence": "high"
+    }
+  ],
+  "latencyFindings": [
+    {
+      "id": "LAT-V2-001",
+      "stage": "request_total",
+      "avgMs": 9109.98,
+      "p50Ms": 8968.67,
+      "p95Ms": 10407.39,
+      "p99Ms": 11026.14,
+      "worstCaseMs": 11093.04,
+      "v1AvgMs": 29.35,
+      "v1P50Ms": 29.35,
+      "deltaVsV1P50Ms": 8939.32,
+      "improved": false,
+      "evidenceType": "measured",
+      "source": "sprint-31 benchmark-implement.json",
+      "environment": "production-local"
+    },
+    {
+      "id": "LAT-V2-002",
+      "stage": "retrieval_umbrella",
+      "avgMs": 7656.55,
+      "p50Ms": 7549.99,
+      "p95Ms": 8503.97,
+      "p99Ms": 9190.04,
+      "worstCaseMs": 9755.95,
+      "v1AvgMs": 27.54,
+      "v1P50Ms": 27.54,
+      "deltaVsV1P50Ms": 7522.45,
+      "improved": false,
+      "evidenceType": "measured",
+      "source": "sprint-31 benchmark-implement.json",
+      "environment": "production-local"
+    },
+    {
+      "id": "LAT-V2-003",
+      "stage": "vector_search:embedding",
+      "avgMs": 521.79,
+      "p50Ms": 413.16,
+      "p95Ms": 1139.07,
+      "p99Ms": 1971.43,
+      "percentOfRetrieval": 6.81,
+      "v1AvgMs": 7.29,
+      "v1PercentOfRetrieval": 26.5,
+      "improved": false,
+      "evidenceType": "measured",
+      "source": "sprint-31 stageAggregates",
+      "environment": "production-local"
+    },
+    {
+      "id": "LAT-V2-004",
+      "stage": "vector_search:pgvector",
+      "avgMs": 120.39,
+      "p50Ms": 98.16,
+      "p95Ms": 271.23,
+      "p99Ms": 301.25,
+      "percentOfRetrieval": 1.57,
+      "v1AvgMs": 15.03,
+      "v1PercentOfRetrieval": 54.6,
+      "improved": false,
+      "evidenceType": "measured",
+      "source": "sprint-31 stageAggregates",
+      "environment": "production-local"
+    },
+    {
+      "id": "LAT-V2-005",
+      "stage": "dashboard_home_end_to_end",
+      "avgMs": 2909.25,
+      "p50Ms": 2513.36,
+      "p95Ms": 3639.92,
+      "p99Ms": 3740.06,
+      "v1AvgMs": null,
+      "improved": null,
+      "note": "V1 not measured; baseline established only",
+      "evidenceType": "measured",
+      "source": "dashboard-load-baseline-implement.json",
+      "environment": "production-local-empty-workspace"
+    },
+    {
+      "id": "LAT-V2-006",
+      "stage": "retrieval_uninstrumented_interior",
+      "avgMs": 6893.36,
+      "p50Ms": null,
+      "p95Ms": null,
+      "percentOfRetrieval": 90.03,
+      "evidenceType": "derived",
+      "source": "retrieval umbrella mean minus sum of named stage means from sprint-31",
+      "environment": "production-local",
+      "note": "Derived gap; requires additional stage instrumentation to name root cause"
+    }
+  ],
+  "databaseFindings": [
+    {
+      "id": "DB-V2-001",
+      "title": "Prisma query instrumentation shipped",
+      "type": "measured",
+      "severity": "resolved",
+      "v1Id": "DB-001",
+      "queryCount": "visible per scope via dbObservability.totalQueries",
+      "totalDbTimeMs": "visible per scope via dbObservability.totalDbTime",
+      "impact": "Enables DB root-cause analysis for retrievals",
+      "evidence": ["apps/api/src/lib/database.ts", "sprint-07-outcomes.md"],
+      "confidence": "high"
+    },
+    {
+      "id": "DB-V2-002",
+      "title": "N+1 on operational diagnostics eliminated",
+      "type": "confirmed",
+      "severity": "resolved",
+      "v1Id": "DB-002",
+      "impact": "Batch fetch + slim mode skip full result for completed traces",
+      "evidence": ["sprint-03", "sprint-27"],
+      "confidence": "high"
+    },
+    {
+      "id": "DB-V2-003",
+      "title": "DB operation leaderboard with EventLog persistence",
+      "type": "measured",
+      "severity": "info",
+      "impact": "Cross-restart historical DB performance via GET /diagnostics/db-operations?source=history",
+      "evidence": ["sprint-08", "sprint-38"],
+      "confidence": "high"
+    },
+    {
+      "id": "DB-V2-004",
+      "title": "Live retrieval benchmark did not capture dbObservability payloads",
+      "type": "gap",
+      "severity": "medium",
+      "impact": "Cannot correlate 9s retrieval to query count from sprint-31 artifact alone",
+      "evidence": ["benchmark-implement.json: no dbObservability fields"],
+      "confidence": "high"
+    },
+    {
+      "id": "DB-V2-005",
+      "title": "pgvector HNSW present but not selected in empty-workspace EXPLAIN",
+      "type": "measured",
+      "severity": "medium",
+      "queryCount": null,
+      "totalDbTimeMs": 0.17,
+      "impact": "Index effectiveness under real data volume still unknown",
+      "evidence": ["sprint-17 runs/explain-implement.json"],
+      "confidence": "high"
+    }
+  ],
+  "retrievalFindings": [
+    {
+      "id": "RET-V2-001",
+      "component": "vector_search",
+      "timeConsumedMs": 642.18,
+      "percentOfRetrieval": 8.39,
+      "v1TimeConsumedMs": 22.32,
+      "v1PercentOfRetrieval": 81.1,
+      "bottleneck": true,
+      "improved": false,
+      "evidenceType": "measured",
+      "confidence": "high",
+      "note": "Absolute embedding+pgvector cost up; share down because umbrella grew"
+    },
+    {
+      "id": "RET-V2-002",
+      "component": "retrieval_uninstrumented_interior",
+      "timeConsumedMs": 6893.36,
+      "percentOfRetrieval": 90.03,
+      "bottleneck": true,
+      "improved": false,
+      "evidenceType": "derived",
+      "confidence": "high",
+      "note": "New V2 finding from production baseline"
+    },
+    {
+      "id": "RET-V2-003",
+      "component": "embedding_cache",
+      "timeConsumedMs": null,
+      "bottleneck": false,
+      "improved": null,
+      "evidenceType": "inferred",
+      "confidence": "medium",
+      "note": "Implemented sprint-18; production hit-rate improvement cannot be verified"
+    },
+    {
+      "id": "RET-V2-004",
+      "component": "parallel_bm25_v2",
+      "timeConsumedMs": null,
+      "bottleneck": null,
+      "improved": null,
+      "evidenceType": "inferred",
+      "confidence": "high",
+      "note": "Flag-gated default off; no production impact"
+    }
+  ],
+  "frontendFindings": [
+    {
+      "id": "FE-V2-001",
+      "title": "Home load request count reduced",
+      "severity": "medium",
+      "v1RequestsOnHomeLoad": { "min": 14, "max": 16 },
+      "v2RequestsOnHomeLoad": { "measured": 11, "bootstrapUnitTest": 3 },
+      "improved": true,
+      "evidenceType": "mixed",
+      "source": "sprint-32 artifact + sprint-13 test",
+      "confidence": "high",
+      "note": "Post-bootstrap live benchmark not captured"
+    },
+    {
+      "id": "FE-V2-002",
+      "title": "Home load JSON payload empty workspace measured",
+      "severity": "medium",
+      "v2PayloadKb": 14.03,
+      "v1PayloadEstimateKb": { "empty": "5-30", "moderate": "300-1500" },
+      "improved": true,
+      "evidenceType": "measured",
+      "source": "dashboard-load-baseline-implement.json",
+      "confidence": "high"
+    },
+    {
+      "id": "FE-V2-003",
+      "title": "Telemetry tier split and on-demand analytics",
+      "severity": "medium",
+      "improved": true,
+      "evidenceType": "measured",
+      "source": "sprint-12 outcomes",
+      "confidence": "high"
+    },
+    {
+      "id": "FE-V2-004",
+      "title": "SSE operational stream with 60s poll when connected",
+      "severity": "low",
+      "improved": true,
+      "pollIntervalSeconds": { "disconnected": 15, "streamConnected": 60 },
+      "evidenceType": "measured",
+      "source": "sprint-25, WorkspaceTelemetryContext.tsx",
+      "confidence": "high"
+    },
+    {
+      "id": "FE-V2-005",
+      "title": "React Profiler re-render counts still not captured",
+      "severity": "medium",
+      "improved": false,
+      "evidenceType": "gap",
+      "source": "sprint-32 checklist",
+      "confidence": "high"
+    }
+  ],
+  "confirmedBugs": [],
+  "probableBugs": [
+    {
+      "id": "PBUG-V2-001",
+      "title": "Compression vs retrieval trace ID confusion",
+      "v1Id": "PBUG-003",
+      "status": "mitigated",
+      "supportingEvidence": "sprint-30-compression-trace-id-ux structured errors",
+      "confidence": "high",
+      "impact": "UX improved; not a performance regression"
+    }
+  ],
+  "architecturalRisks": [
+    {
+      "id": "AR-V2-001",
+      "title": "JSON blob growth on retrievalOperation.result",
+      "v1Id": "AR-002",
+      "status": "unchanged",
+      "likelihood": "high",
+      "impact": "DB size and list endpoint payload growth; sprint-22 not started"
+    },
+    {
+      "id": "AR-V2-002",
+      "title": "Keyword search not true hybrid retrieval in production",
+      "v1Id": "AR-003",
+      "status": "unchanged",
+      "likelihood": "certain",
+      "impact": "BM25 V2 spike exists but default off"
+    },
+    {
+      "id": "AR-V2-003",
+      "title": "No distributed tracing across API and worker",
+      "v1Id": "AR-004",
+      "status": "partially_addressed",
+      "likelihood": "medium",
+      "impact": "Worker scopes added; cross-process export still missing"
+    },
+    {
+      "id": "AR-V2-004",
+      "title": "Remediation program surface-area growth",
+      "likelihood": "high",
+      "impact": "38 sprints increase cognitive load for new engineers"
+    }
+  ],
+  "topOpportunities": [
+    {
+      "rank": 1,
+      "title": "Instrument retrieval interior (~7s unaccounted gap)",
+      "estimatedImpact": "critical",
+      "implementationDifficulty": "medium",
+      "engineeringEffort": "3-7 days",
+      "expectedRoi": "very_high",
+      "confidence": "high",
+      "v1Related": null
+    },
+    {
+      "rank": 2,
+      "title": "Re-run sprint-31 benchmark capturing dbObservability",
+      "estimatedImpact": "high",
+      "implementationDifficulty": "low",
+      "engineeringEffort": "hours",
+      "expectedRoi": "very_high",
+      "confidence": "high",
+      "v1Related": "MF-006"
+    },
+    {
+      "rank": 3,
+      "title": "Ship sprint-22 list field projection",
+      "estimatedImpact": "high",
+      "implementationDifficulty": "medium",
+      "engineeringEffort": "3-5 days",
+      "expectedRoi": "high",
+      "confidence": "high",
+      "v1Related": "OP-21"
+    },
+    {
+      "rank": 4,
+      "title": "Re-benchmark dashboard on bootstrap path with populated workspace",
+      "estimatedImpact": "high",
+      "implementationDifficulty": "low",
+      "engineeringEffort": "1 day",
+      "expectedRoi": "high",
+      "confidence": "high",
+      "v1Related": "FE-002"
+    },
+    {
+      "rank": 5,
+      "title": "Re-run pgvector EXPLAIN after ingestion populates embeddings",
+      "estimatedImpact": "high",
+      "implementationDifficulty": "low",
+      "engineeringEffort": "hours",
+      "expectedRoi": "high",
+      "confidence": "medium",
+      "v1Related": "OP-16"
+    },
+    {
+      "rank": 6,
+      "title": "Wire WorkspaceMetricsSummary to home diagnostics (reduce operational query cost)",
+      "estimatedImpact": "medium",
+      "implementationDifficulty": "medium",
+      "engineeringEffort": "3-5 days",
+      "expectedRoi": "medium",
+      "confidence": "medium",
+      "v1Related": "sprint-34"
+    },
+    {
+      "rank": 7,
+      "title": "Measure embedding cache hit rate in production benchmark",
+      "estimatedImpact": "medium",
+      "implementationDifficulty": "low",
+      "engineeringEffort": "hours",
+      "expectedRoi": "medium",
+      "confidence": "medium",
+      "v1Related": "OP-17"
+    },
+    {
+      "rank": 8,
+      "title": "React Profiler 30s capture on home after memo/stream changes",
+      "estimatedImpact": "medium",
+      "implementationDifficulty": "low",
+      "engineeringEffort": "hours",
+      "expectedRoi": "medium",
+      "confidence": "medium",
+      "v1Related": "FE-005"
+    },
+    {
+      "rank": 9,
+      "title": "Production/staging retrieval SLO dashboard from benchmark harness",
+      "estimatedImpact": "high",
+      "implementationDifficulty": "medium",
+      "engineeringEffort": "1 week",
+      "expectedRoi": "medium",
+      "confidence": "high",
+      "v1Related": "MF-006"
+    },
+    {
+      "rank": 10,
+      "title": "Evaluate BM25 V2 go/no-go with populated lexical index",
+      "estimatedImpact": "medium",
+      "implementationDifficulty": "high",
+      "engineeringEffort": "2-4 weeks",
+      "expectedRoi": "low",
+      "confidence": "medium",
+      "v1Related": "OP-25"
+    }
+  ],
+  "remediationStatus": [
+    { "v1Rank": 1, "title": "In-flight apiGet deduplication", "status": "implemented", "sprint": "01" },
+    { "v1Rank": 2, "title": "Hoist workspace ID to AuthContext", "status": "implemented", "sprint": "02" },
+    { "v1Rank": 3, "title": "Fix /diagnostics/operational N+1", "status": "implemented", "sprint": "03" },
+    { "v1Rank": 4, "title": "Lite relationship graph endpoint", "status": "implemented", "sprint": "04" },
+    { "v1Rank": 5, "title": "Compression metadata-only endpoint", "status": "implemented", "sprint": "05" },
+    { "v1Rank": 6, "title": "Remove home ranking follow-up", "status": "implemented", "sprint": "06" },
+    { "v1Rank": 7, "title": "DB observability Phases 1-3", "status": "implemented", "sprint": "07" },
+    { "v1Rank": 8, "title": "Split telemetry tiers", "status": "implemented", "sprint": "12" },
+    { "v1Rank": 9, "title": "React.memo on home panels", "status": "implemented", "sprint": "10" },
+    { "v1Rank": 10, "title": "Remove Framer layout on events", "status": "implemented", "sprint": "11" },
+    { "v1Rank": 11, "title": "Dashboard bootstrap endpoint", "status": "implemented", "sprint": "13" },
+    { "v1Rank": 12, "title": "WorkspaceTelemetryProvider", "status": "implemented", "sprint": "14" },
+    { "v1Rank": 13, "title": "React Query telemetry", "status": "implemented", "sprint": "15" },
+    { "v1Rank": 14, "title": "Lazy-load graph", "status": "implemented", "sprint": "16" },
+    { "v1Rank": 15, "title": "LLM audit all routes", "status": "implemented", "sprint": "09" },
+    { "v1Rank": 16, "title": "pgvector EXPLAIN review", "status": "partially_implemented", "sprint": "17", "note": "Empty workspace; HNSW unverified under load" },
+    { "v1Rank": 17, "title": "Embedding cache", "status": "implemented", "sprint": "18", "note": "Production hit-rate not measured" },
+    { "v1Rank": 18, "title": "Ref-based timers", "status": "implemented", "sprint": "19" },
+    { "v1Rank": 19, "title": "Single mobile/desktop panel", "status": "implemented", "sprint": "20" },
+    { "v1Rank": 20, "title": "API compression verify", "status": "implemented", "sprint": "21" },
+    { "v1Rank": 21, "title": "List field projection", "status": "not_implemented", "sprint": "22" },
+    { "v1Rank": 22, "title": "Ingestion timing wrappers", "status": "implemented", "sprint": "23" },
+    { "v1Rank": 23, "title": "Dashboard timingAudit display", "status": "implemented", "sprint": "24" },
+    { "v1Rank": 24, "title": "Real-time event push", "status": "partially_implemented", "sprint": "25", "note": "SSE shipped; 15s poll fallback remains" },
+    { "v1Rank": 25, "title": "EXPLAIN ANALYZE automation", "status": "implemented", "sprint": "26" }
+  ],
+  "instrumentationStatus": {
+    "executionTimingAudit": {
+      "implemented": true,
+      "v1Implemented": true,
+      "delta": "extended_to_compression_context_ingestion_worker",
+      "endpoints": [
+        "POST /retrieve",
+        "POST /retrieval/plan",
+        "POST /compress",
+        "POST /context/render",
+        "worker ingestion jobs"
+      ],
+      "baselineSource": "sprint-31 benchmark-implement.json + pipeline-timing.test.ts"
+    },
+    "llmCallAudit": {
+      "implemented": true,
+      "v1Implemented": true,
+      "delta": "full_http_route_coverage",
+      "endpoints": ["POST /retrieve", "POST /compress", "POST /workflows/:id/execute", "historian/diagnostics routes"],
+      "baselineSource": "llm/collector.test.ts"
+    },
+    "databaseQueryObservability": {
+      "implemented": true,
+      "v1Implemented": false,
+      "delta": "phases_1_through_4_plus_eventlog_persistence",
+      "planDocument": "DATABASE_QUERY_OBSERVABILITY.md",
+      "liveMeasurementInRetrievalBenchmark": false
+    },
+    "dashboardLoadAudit": {
+      "implemented": true,
+      "v1Implemented": false,
+      "delta": "http_mirror_harness_with_baseline",
+      "liveMeasurementsCaptured": true,
+      "caveat": "empty workspace; pre-bootstrap path; playwright HAR auth gap"
+    },
+    "productionRetrievalPercentiles": {
+      "implemented": true,
+      "v1Implemented": false,
+      "p50Ms": 8968.67,
+      "p95Ms": 10407.39,
+      "p99Ms": 11026.14
+    }
+  },
+  "missingEvidence": [
+    "Post-bootstrap dashboard live request count and bytes",
+    "Moderate/heavy workspace dashboard HAR",
+    "React Profiler re-render counts",
+    "dbObservability in sprint-31 benchmark samples",
+    "Embedding cache production hit-rate",
+    "pgvector HNSW under populated embedding data",
+    "Production/staging failure rates and timeout telemetry",
+    "Customer-scale multi-tenant load test"
+  ],
+  "filesAnalyzed": [
+    "docs/PERFORMANCE-AUDITS/SYSTEM_PERFORMANCE_AUDIT_V1.md",
+    "docs/PERFORMANCE-AUDITS/PERFORMANCE_FINDINGS.json",
+    "docs/PERFORMANCE-AUDITS/README.md",
+    "docs/PERFORMANCE-AUDITS/EXECUTION_TIMING_AUDIT_SYSTEM.md",
+    "docs/PERFORMANCE-AUDITS/LLM_CALL_AUDIT.md",
+    "docs/PERFORMANCE-AUDITS/DATABASE_QUERY_OBSERVABILITY.md",
+    "docs/PERFORMANCE-AUDITS/DASHBOARD_LOAD_AUDIT.md",
+    "docs/performance-improvments/waves.json",
+    "docs/performance-improvments/wave-reports/wave-1-outcomes.md",
+    "docs/performance-improvments/wave-reports/wave-2-outcomes.md",
+    "docs/performance-improvments/wave-reports/wave-3-outcomes.md",
+    "docs/performance-improvments/wave-reports/wave-4-outcomes.md",
+    "docs/performance-improvments/wave-reports/wave-5-outcomes.md",
+    "docs/performance-improvments/wave-reports/wave-6-outcomes.md",
+    "docs/performance-improvments/wave-reports/wave-7-outcomes.md",
+    "docs/performance-improvments/sprint-31-production-retrieval-baseline/runs/benchmark-implement.json",
+    "docs/performance-improvments/sprint-32-dashboard-load-measurement-harness/runs/dashboard-load-baseline-implement.json",
+    "docs/performance-improvments/sprint-17-pgvector-index-review/runs/explain-implement.json",
+    "apps/api/src/lib/database.ts",
+    "apps/dashboard/src/lib/workspaceTelemetry.ts",
+    "apps/dashboard/src/context/WorkspaceTelemetryContext.tsx"
+  ],
+  "qualityTier": {
+    "v1": "prototype_to_beta",
+    "v2": "beta",
+    "productionReady": false,
+    "enterpriseReady": false,
+    "reasoning": "Strong observability and dashboard architecture; retrieval p50 ~9s blocks production SLA"
+  }
+}

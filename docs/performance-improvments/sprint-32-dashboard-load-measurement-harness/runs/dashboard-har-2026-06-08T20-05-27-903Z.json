@@ -1,0 +1,37 @@
+{
+  "generatedAt": "2026-06-08T20:05:27.903Z",
+  "measurementMode": "playwright_har",
+  "dashboardUrl": "http://localhost:5173",
+  "strictModeWarning": "Vite dev wraps the app in React StrictMode (apps/dashboard/src/main.tsx), which re-runs mount effects and can ~double Fetch/XHR count vs production build. Use `vite preview` or Playwright against a production build for prod-like request counts.",
+  "harSummary": {
+    "entryCount": 2,
+    "apiEntryCount": 0,
+    "totalResponseBytes": 0,
+    "paths": []
+  },
+  "auditReference": {
+    "requestCountProd": {
+      "min": 12,
+      "max": 16
+    },
+    "payloadKb": {
+      "empty": {
+        "min": 5,
+        "max": 30
+      },
+      "moderate": {
+        "min": 300,
+        "max": 1500
+      },
+      "heavy": {
+        "min": 2000,
+        "max": 5000
+      }
+    },
+    "strictModeNote": "Vite dev wraps the app in React StrictMode (apps/dashboard/src/main.tsx), which re-runs mount effects and can ~double Fetch/XHR count vs production build. Use `vite preview` or Playwright against a production build for prod-like request counts."
+  },
+  "artifacts": {
+    "harPath": "C:\\Users\\james\\semantic-core\\docs\\performance-improvments\\sprint-32-dashboard-load-measurement-harness\\runs\\dashboard-har-2026-06-08T20-05-18-496Z.har",
+    "sanitizedHarPath": "C:\\Users\\james\\semantic-core\\docs\\performance-improvments\\sprint-32-dashboard-load-measurement-harness\\runs\\dashboard-har-2026-06-08T20-05-18-496Z.sanitized.har"
+  }
+}

@@ -1,4 +1,5 @@
-import type { EventEmitter } from "@memory-middleware/observability";
+import type { EventEmitter, ExecutionTimingCollector } from "@memory-middleware/observability";
+import { measurePipelineStage, resolvePipelineCollector } from "@memory-middleware/observability";
 import { preprocessQuery } from "@memory-middleware/retrieval";
 import type {
   PlanningReplayInput,
@@ -31,6 +32,7 @@ export interface RunPlanningInput {
   workspaceContext?: WorkspaceMetadataContext;
   events?: EventEmitter;
   onStage?: (stages: PlanningStageRecord[]) => void;
+  timingCollector?: ExecutionTimingCollector;
 }
 
 export interface RunPlanningResult {
@@ -99,6 +101,8 @@ export function createFallbackPlan(input: {
 
 export async function runPlanningPipeline(input: RunPlanningInput): Promise<RunPlanningResult> {
   const planId = input.planId ?? newUlid();
+  const timing = resolvePipelineCollector(planId, input.timingCollector);
+  return measurePipelineStage(planId, "planning", timing, async () => {
   const config = input.config ?? DEFAULT_PLANNING_RUNTIME_CONFIG;
   const retrievalMode = input.request.retrievalMode ?? "precision";
   const stages: PlanningStageRecord[] = [];
@@ -125,10 +129,10 @@ export async function runPlanningPipeline(input: RunPlanningInput): Promise<RunP
     await notify();
 
     const decompStarted = Date.now();
-    const { decomposition, decomposedConcepts, reasons: decompositionReasons } = decomposeQuery(
-      input.request.query,
-      config.maxDecomposedConcepts,
-    );
+    const { decomposition, decomposedConcepts, reasons: decompositionReasons } =
+      await measurePipelineStage(planId, "intent_extraction", timing, async () =>
+        decomposeQuery(input.request.query, config.maxDecomposedConcepts),
+      );
     const preprocessed = preprocessQuery(input.request.query);
 
     pushStage(stages, "decomposition", "completed", new Date().toISOString(), {
@@ -255,6 +259,7 @@ export async function runPlanningPipeline(input: RunPlanningInput): Promise<RunP
 
     return { plan: fallback, stages, replayInput };
   }
+  });
 }
 
 export function replayPlanning(

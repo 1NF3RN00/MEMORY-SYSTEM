@@ -1,0 +1,236 @@
+{
+  "generatedAt": "2026-06-08T21:27:44.917Z",
+  "auditRefs": {
+    "findingIds": [
+      "OP-16",
+      "LAT-001",
+      "MF-001"
+    ],
+    "latencyFinding": "LAT-001",
+    "mockPgvectorMs": 15.03
+  },
+  "environment": {
+    "databaseHost": "db.xrmbizsvdbdzecyopirs.supabase.co",
+    "workspaceId": "01KT7D64WDCDGTHEYK93KEXAPH",
+    "sampleQueryText": "What operational incidents occurred recently?",
+    "embeddingDimensions": 1536,
+    "embeddingSource": "unit_vector_fallback"
+  },
+  "workspaceStats": {
+    "workspaceId": "01KT7D64WDCDGTHEYK93KEXAPH",
+    "embeddedChunkCount": 0,
+    "eligibleMemoryCount": 0
+  },
+  "indexes": [
+    {
+      "indexName": "memory_chunks_embedding_hnsw_idx",
+      "indexDef": "CREATE INDEX memory_chunks_embedding_hnsw_idx ON public.memory_chunks USING hnsw (embedding vector_cosine_ops)",
+      "tableName": "memory_chunks"
+    }
+  ],
+  "variants": [
+    {
+      "variantId": "base_precision",
+      "description": "Default precision retrieval — workspace filter, topK=24, no SQL threshold",
+      "limit": 24,
+      "filter": {
+        "workspaceId": "01KT7D64WDCDGTHEYK93KEXAPH"
+      },
+      "executionTimeMs": 0.219,
+      "planningTimeMs": 2.778,
+      "usesHnswIndex": false,
+      "usesSeqScanOnChunks": false,
+      "indexNames": [
+        "memories_workspace_id_idx",
+        "memory_chunks_memory_id_sequence_key"
+      ],
+      "planSummary": "Limit 0.07ms → Sort 0.07ms → Nested Loop 0.01ms → Index Scan on memories via memories_workspace_id_idx 0.00ms → Bitmap Heap Scan on memory_chunks 0.00ms → Bitmap Index Scan via memory_chunks_memory_id_sequence_key 0.00ms",
+      "rawPlan": [
+        {
+          "nodeType": "Limit",
+          "actualTotalTime": 0.068,
+          "actualRows": 0,
+          "plans": [
+            {
+              "nodeType": "Sort",
+              "actualTotalTime": 0.067,
+              "actualRows": 0,
+              "plans": [
+                {
+                  "nodeType": "Nested Loop",
+                  "actualTotalTime": 0.005,
+                  "actualRows": 0,
+                  "plans": [
+                    {
+                      "nodeType": "Index Scan",
+                      "relationName": "memories",
+                      "indexName": "memories_workspace_id_idx",
+                      "actualTotalTime": 0.004,
+                      "actualRows": 0,
+                      "filter": "(retrieval_eligible AND (NOT archived) AND ((expires_at IS NULL) OR (expires_at > now())))",
+                      "plans": []
+                    },
+                    {
+                      "nodeType": "Bitmap Heap Scan",
+                      "relationName": "memory_chunks",
+                      "actualTotalTime": 0,
+                      "actualRows": 0,
+                      "filter": "((embedding IS NOT NULL) AND (embedding_status = 'completed'::text))",
+                      "plans": [
+                        {
+                          "nodeType": "Bitmap Index Scan",
+                          "indexName": "memory_chunks_memory_id_sequence_key",
+                          "actualTotalTime": 0,
+                          "actualRows": 0,
+                          "plans": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "variantId": "expanded_topk",
+      "description": "Expanded mode candidate breadth — topK=48",
+      "limit": 48,
+      "filter": {
+        "workspaceId": "01KT7D64WDCDGTHEYK93KEXAPH"
+      },
+      "executionTimeMs": 0.157,
+      "planningTimeMs": 0.784,
+      "usesHnswIndex": false,
+      "usesSeqScanOnChunks": false,
+      "indexNames": [
+        "memories_workspace_id_idx",
+        "memory_chunks_memory_id_sequence_key"
+      ],
+      "planSummary": "Limit 0.02ms → Sort 0.02ms → Nested Loop 0.01ms → Index Scan on memories via memories_workspace_id_idx 0.01ms → Bitmap Heap Scan on memory_chunks 0.00ms → Bitmap Index Scan via memory_chunks_memory_id_sequence_key 0.00ms",
+      "rawPlan": [
+        {
+          "nodeType": "Limit",
+          "actualTotalTime": 0.018,
+          "actualRows": 0,
+          "plans": [
+            {
+              "nodeType": "Sort",
+              "actualTotalTime": 0.017,
+              "actualRows": 0,
+              "plans": [
+                {
+                  "nodeType": "Nested Loop",
+                  "actualTotalTime": 0.01,
+                  "actualRows": 0,
+                  "plans": [
+                    {
+                      "nodeType": "Index Scan",
+                      "relationName": "memories",
+                      "indexName": "memories_workspace_id_idx",
+                      "actualTotalTime": 0.009,
+                      "actualRows": 0,
+                      "filter": "(retrieval_eligible AND (NOT archived) AND ((expires_at IS NULL) OR (expires_at > now())))",
+                      "plans": []
+                    },
+                    {
+                      "nodeType": "Bitmap Heap Scan",
+                      "relationName": "memory_chunks",
+                      "actualTotalTime": 0,
+                      "actualRows": 0,
+                      "filter": "((embedding IS NOT NULL) AND (embedding_status = 'completed'::text))",
+                      "plans": [
+                        {
+                          "nodeType": "Bitmap Index Scan",
+                          "indexName": "memory_chunks_memory_id_sequence_key",
+                          "actualTotalTime": 0,
+                          "actualRows": 0,
+                          "plans": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "variantId": "semantic_memory_filter",
+      "description": "Precision with semantic memory_type filter (common package scope)",
+      "limit": 24,
+      "filter": {
+        "workspaceId": "01KT7D64WDCDGTHEYK93KEXAPH",
+        "memoryTypes": [
+          "semantic"
+        ]
+      },
+      "executionTimeMs": 0.11,
+      "planningTimeMs": 0.86,
+      "usesHnswIndex": false,
+      "usesSeqScanOnChunks": false,
+      "indexNames": [
+        "memories_workspace_id_idx",
+        "memory_chunks_memory_id_sequence_key"
+      ],
+      "planSummary": "Limit 0.02ms → Sort 0.01ms → Nested Loop 0.01ms → Index Scan on memories via memories_workspace_id_idx 0.01ms → Bitmap Heap Scan on memory_chunks 0.00ms → Bitmap Index Scan via memory_chunks_memory_id_sequence_key 0.00ms",
+      "rawPlan": [
+        {
+          "nodeType": "Limit",
+          "actualTotalTime": 0.016,
+          "actualRows": 0,
+          "plans": [
+            {
+              "nodeType": "Sort",
+              "actualTotalTime": 0.014,
+              "actualRows": 0,
+              "plans": [
+                {
+                  "nodeType": "Nested Loop",
+                  "actualTotalTime": 0.008,
+                  "actualRows": 0,
+                  "plans": [
+                    {
+                      "nodeType": "Index Scan",
+                      "relationName": "memories",
+                      "indexName": "memories_workspace_id_idx",
+                      "actualTotalTime": 0.007,
+                      "actualRows": 0,
+                      "filter": "(retrieval_eligible AND (NOT archived) AND (memory_type = ANY ('{semantic}'::text[])) AND ((expires_at IS NULL) OR (expires_at > now())))",
+                      "plans": []
+                    },
+                    {
+                      "nodeType": "Bitmap Heap Scan",
+                      "relationName": "memory_chunks",
+                      "actualTotalTime": 0,
+                      "actualRows": 0,
+                      "filter": "((embedding IS NOT NULL) AND (embedding_status = 'completed'::text))",
+                      "plans": [
+                        {
+                          "nodeType": "Bitmap Index Scan",
+                          "indexName": "memory_chunks_memory_id_sequence_key",
+                          "actualTotalTime": 0,
+                          "actualRows": 0,
+                          "plans": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "recommendations": [
+    "No sequential scan on `memory_chunks` in captured plans — index-backed vector ordering appears healthy at current scale.",
+    "Workspace has zero embedded chunks; EXPLAIN timings are not representative of production retrieval load. Re-run after ingestion.",
+    "Do not change `topK` or similarity thresholds without a dedicated sprint — candidate limits affect ranking determinism (anti-objective)."
+  ]
+}

@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import type { FastifyInstance } from "fastify";
+import { runWithTimingAsync } from "@memory-middleware/observability";
 import {
   buildContextDiff,
   compareDeliveryContexts,
@@ -20,10 +21,15 @@ import {
 } from "../lib/context-store.js";
 import { buildChunkMetadataLookup } from "../lib/domain-chunk-metadata.js";
 import { captureReplaySnapshotFromTrace } from "../lib/historian-store.js";
+import {
+  parseListFieldsQuery,
+  projectListRows,
+} from "../lib/list-field-projection.js";
 import { getRetrievalTrace } from "../lib/retrieval-store.js";
 
 export async function registerContextRoutes(app: FastifyInstance): Promise<void> {
   app.post("/context/render", async (request, reply) => {
+    return runWithTimingAsync(request.timingCollector, async () => {
     const parsed = parseContextRenderBody(request.body);
     if ("error" in parsed) {
       return reply.status(400).send({ error: parsed.error });
@@ -70,6 +76,7 @@ export async function registerContextRoutes(app: FastifyInstance): Promise<void>
         ...(executionContext ? { executionContext } : {}),
         ...(metadataByChunkId ? { metadataByChunkId } : {}),
         events: app.events,
+        timingCollector: request.timingCollector,
         onStage: async (stages: ContextRenderStageRecord[]) => {
           const existing = await app.prisma.contextRenderOperation.findFirst({
             where: { deliveryId },
@@ -144,6 +151,7 @@ export async function registerContextRoutes(app: FastifyInstance): Promise<void>
         deliveryId,
         deliveryContext: result.deliveryContext,
         renderingDecisions: result.renderingDecisions,
+        timingAudit: request.timingCollector.toAudit(),
       };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -166,6 +174,7 @@ export async function registerContextRoutes(app: FastifyInstance): Promise<void>
         originalContextPackage: resolved.contextPackage,
       });
     }
+    });
   });
 
   app.get<{ Params: { id: string } }>("/context/render/:id", async (request, reply) => {
@@ -265,16 +274,24 @@ export async function registerContextRoutes(app: FastifyInstance): Promise<void>
     };
   });
 
-  app.get<{ Querystring: { workspaceId?: string; limit?: string } }>(
+  app.get<{ Querystring: { workspaceId?: string; limit?: string; fields?: string } }>(
     "/context/render",
-    async (request) => {
+    async (request, reply) => {
+      const fieldProjection = parseListFieldsQuery("contextRender", request.query.fields);
+      if (!fieldProjection.ok) {
+        return reply.status(400).send({
+          error: fieldProjection.error,
+          invalidFields: fieldProjection.invalidFields,
+        });
+      }
+
       const limit = Number(request.query.limit ?? 50);
       const traces = await listContextRenderTraces(
         app.prisma,
         request.query.workspaceId,
         limit,
       );
-      return { traces };
+      return { traces: projectListRows(traces, fieldProjection.fields) };
     },
   );
 }

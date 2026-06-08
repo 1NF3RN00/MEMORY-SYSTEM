@@ -1,0 +1,500 @@
+{
+  "generatedAt": "2026-06-08T20:07:55.523Z",
+  "measurementMode": "http_api_mirror",
+  "environment": {
+    "apiUrl": "http://localhost:3000",
+    "hostClass": "local",
+    "workspaceId": "01KT7D64WDCDGTHEYK93KEXAPH",
+    "sampleCount": 3,
+    "skipAuth": false,
+    "nodeEnv": "production",
+    "supabaseConfigured": false
+  },
+  "auditReference": {
+    "requestCountProd": {
+      "min": 12,
+      "max": 16
+    },
+    "payloadKb": {
+      "empty": {
+        "min": 5,
+        "max": 30
+      },
+      "moderate": {
+        "min": 300,
+        "max": 1500
+      },
+      "heavy": {
+        "min": 2000,
+        "max": 5000
+      }
+    },
+    "strictModeNote": "Vite dev wraps the app in React StrictMode (apps/dashboard/src/main.tsx), which re-runs mount effects and can ~double Fetch/XHR count vs production build. Use `vite preview` or Playwright against a production build for prod-like request counts."
+  },
+  "cycles": [
+    {
+      "cycleIndex": 0,
+      "requests": [
+        {
+          "phase": "auth",
+          "method": "GET",
+          "path": "/workspaces/default",
+          "status": 200,
+          "responseBytes": 143,
+          "durationMs": 812.7484,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/memory?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&limit=100",
+          "status": 200,
+          "responseBytes": 58,
+          "durationMs": 1700.2041000000002,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/retrieval?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&limit=50",
+          "status": 200,
+          "responseBytes": 13532,
+          "durationMs": 1922.3881999999999,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/ingestion?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&limit=30",
+          "status": 200,
+          "responseBytes": 13,
+          "durationMs": 1607.7307,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/compression?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&limit=30",
+          "status": 200,
+          "responseBytes": 13,
+          "durationMs": 1642.4576,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/context/render?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&limit=20",
+          "status": 200,
+          "responseBytes": 13,
+          "durationMs": 1611.3244,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/diagnostics/drift?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&limit=50",
+          "status": 200,
+          "responseBytes": 133,
+          "durationMs": 1976.7552,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/diagnostics/operational?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&limit=100&mode=slim",
+          "status": 200,
+          "responseBytes": 211,
+          "durationMs": 2265.3551,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/retrieval/heatmaps?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&limit=20",
+          "status": 200,
+          "responseBytes": 57,
+          "durationMs": 1789.0735,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/health",
+          "status": 200,
+          "responseBytes": 128,
+          "durationMs": 1242.636,
+          "error": null
+        },
+        {
+          "phase": "graph",
+          "method": "GET",
+          "path": "/relationships/graph?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&lite=true",
+          "status": 200,
+          "responseBytes": 66,
+          "durationMs": 684.2948000000001,
+          "error": null
+        }
+      ],
+      "totals": {
+        "requestCount": 11,
+        "successCount": 11,
+        "totalResponseBytes": 14367,
+        "authMs": 812.7484,
+        "telemetryParallelMs": 2267.6679,
+        "telemetryFollowupMs": 0,
+        "graphMs": 684.3049999999998,
+        "endToEndMs": 3765.0977
+      }
+    },
+    {
+      "cycleIndex": 1,
+      "requests": [
+        {
+          "phase": "auth",
+          "method": "GET",
+          "path": "/workspaces/default",
+          "status": 200,
+          "responseBytes": 143,
+          "durationMs": 412.38080000000036,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/memory?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&limit=100",
+          "status": 200,
+          "responseBytes": 58,
+          "durationMs": 826.6796999999997,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/retrieval?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&limit=50",
+          "status": 200,
+          "responseBytes": 13532,
+          "durationMs": 1016.4165000000003,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/ingestion?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&limit=30",
+          "status": 200,
+          "responseBytes": 13,
+          "durationMs": 729.5923999999995,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/compression?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&limit=30",
+          "status": 200,
+          "responseBytes": 13,
+          "durationMs": 731.8308999999999,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/context/render?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&limit=20",
+          "status": 200,
+          "responseBytes": 13,
+          "durationMs": 827.9332999999997,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/diagnostics/drift?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&limit=50",
+          "status": 200,
+          "responseBytes": 133,
+          "durationMs": 830.8611000000001,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/diagnostics/operational?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&limit=100&mode=slim",
+          "status": 200,
+          "responseBytes": 211,
+          "durationMs": 1418.5775999999996,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/retrieval/heatmaps?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&limit=20",
+          "status": 200,
+          "responseBytes": 57,
+          "durationMs": 907.3176000000003,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/health",
+          "status": 200,
+          "responseBytes": 128,
+          "durationMs": 501.20600000000013,
+          "error": null
+        },
+        {
+          "phase": "graph",
+          "method": "GET",
+          "path": "/relationships/graph?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&lite=true",
+          "status": 200,
+          "responseBytes": 66,
+          "durationMs": 680.8225999999995,
+          "error": null
+        }
+      ],
+      "totals": {
+        "requestCount": 11,
+        "successCount": 11,
+        "totalResponseBytes": 14367,
+        "authMs": 412.38080000000036,
+        "telemetryParallelMs": 1419.9947999999995,
+        "telemetryFollowupMs": 0,
+        "graphMs": 680.8321000000005,
+        "endToEndMs": 2513.3641000000002
+      }
+    },
+    {
+      "cycleIndex": 2,
+      "requests": [
+        {
+          "phase": "auth",
+          "method": "GET",
+          "path": "/workspaces/default",
+          "status": 200,
+          "responseBytes": 143,
+          "durationMs": 412.8262000000004,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/memory?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&limit=100",
+          "status": 200,
+          "responseBytes": 58,
+          "durationMs": 627.4939999999997,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/retrieval?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&limit=50",
+          "status": 200,
+          "responseBytes": 13532,
+          "durationMs": 891.4292999999998,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/ingestion?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&limit=30",
+          "status": 200,
+          "responseBytes": 13,
+          "durationMs": 724.3860999999997,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/compression?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&limit=30",
+          "status": 200,
+          "responseBytes": 13,
+          "durationMs": 811.6025,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/context/render?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&limit=20",
+          "status": 200,
+          "responseBytes": 13,
+          "durationMs": 764.3939,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/diagnostics/drift?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&limit=50",
+          "status": 200,
+          "responseBytes": 133,
+          "durationMs": 1090.7330999999995,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/diagnostics/operational?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&limit=100&mode=slim",
+          "status": 200,
+          "responseBytes": 211,
+          "durationMs": 1350.3183000000008,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/retrieval/heatmaps?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&limit=20",
+          "status": 200,
+          "responseBytes": 57,
+          "durationMs": 896.4027000000006,
+          "error": null
+        },
+        {
+          "phase": "telemetry_parallel",
+          "method": "GET",
+          "path": "/health",
+          "status": 200,
+          "responseBytes": 128,
+          "durationMs": 539.2642000000005,
+          "error": null
+        },
+        {
+          "phase": "graph",
+          "method": "GET",
+          "path": "/relationships/graph?workspaceId=01KT7D64WDCDGTHEYK93KEXAPH&lite=true",
+          "status": 200,
+          "responseBytes": 66,
+          "durationMs": 685.2716,
+          "error": null
+        }
+      ],
+      "totals": {
+        "requestCount": 11,
+        "successCount": 11,
+        "totalResponseBytes": 14367,
+        "authMs": 412.8262000000004,
+        "telemetryParallelMs": 1351.1327,
+        "telemetryFollowupMs": 0,
+        "graphMs": 685.2801999999992,
+        "endToEndMs": 2449.281499999999
+      }
+    }
+  ],
+  "aggregates": {
+    "requestCount": {
+      "count": 3,
+      "min": 11,
+      "max": 11,
+      "mean": 11,
+      "p50": 11,
+      "p95": 11,
+      "p99": 11
+    },
+    "totalResponseBytes": {
+      "count": 3,
+      "min": 14367,
+      "max": 14367,
+      "mean": 14367,
+      "p50": 14367,
+      "p95": 14367,
+      "p99": 14367
+    },
+    "totalResponseKb": {
+      "count": 3,
+      "min": 14.0302734375,
+      "max": 14.0302734375,
+      "mean": 14.0302734375,
+      "p50": 14.0302734375,
+      "p95": 14.0302734375,
+      "p99": 14.0302734375
+    },
+    "endToEndMs": {
+      "count": 3,
+      "min": 2449.281499999999,
+      "max": 3765.0977,
+      "mean": 2909.247766666667,
+      "p50": 2513.3641000000002,
+      "p95": 3639.92434,
+      "p99": 3740.063028
+    }
+  },
+  "endpointAggregates": [
+    {
+      "pathPattern": "/retrieval?workspaceId=:ws&limit=50",
+      "count": 3,
+      "totalBytes": 40596,
+      "meanDurationMs": 1276.7446666666667,
+      "maxDurationMs": 1922.3881999999999
+    },
+    {
+      "pathPattern": "/diagnostics/operational?workspaceId=:ws&limit=100&mode=slim",
+      "count": 3,
+      "totalBytes": 633,
+      "meanDurationMs": 1678.0836666666667,
+      "maxDurationMs": 2265.3551
+    },
+    {
+      "pathPattern": "/workspaces/default",
+      "count": 3,
+      "totalBytes": 429,
+      "meanDurationMs": 545.9851333333336,
+      "maxDurationMs": 812.7484
+    },
+    {
+      "pathPattern": "/diagnostics/drift?workspaceId=:ws&limit=50",
+      "count": 3,
+      "totalBytes": 399,
+      "meanDurationMs": 1299.4497999999999,
+      "maxDurationMs": 1976.7552
+    },
+    {
+      "pathPattern": "/health",
+      "count": 3,
+      "totalBytes": 384,
+      "meanDurationMs": 761.0354000000002,
+      "maxDurationMs": 1242.636
+    },
+    {
+      "pathPattern": "/relationships/graph?workspaceId=:ws&lite=true",
+      "count": 3,
+      "totalBytes": 198,
+      "meanDurationMs": 683.4629999999999,
+      "maxDurationMs": 685.2716
+    },
+    {
+      "pathPattern": "/memory?workspaceId=:ws&limit=100",
+      "count": 3,
+      "totalBytes": 174,
+      "meanDurationMs": 1051.4592666666665,
+      "maxDurationMs": 1700.2041000000002
+    },
+    {
+      "pathPattern": "/retrieval/heatmaps?workspaceId=:ws&limit=20",
+      "count": 3,
+      "totalBytes": 171,
+      "meanDurationMs": 1197.5979333333337,
+      "maxDurationMs": 1789.0735
+    },
+    {
+      "pathPattern": "/ingestion?workspaceId=:ws&limit=30",
+      "count": 3,
+      "totalBytes": 39,
+      "meanDurationMs": 1020.5697333333331,
+      "maxDurationMs": 1607.7307
+    },
+    {
+      "pathPattern": "/compression?workspaceId=:ws&limit=30",
+      "count": 3,
+      "totalBytes": 39,
+      "meanDurationMs": 1061.9636666666665,
+      "maxDurationMs": 1642.4576
+    },
+    {
+      "pathPattern": "/context/render?workspaceId=:ws&limit=20",
+      "count": 3,
+      "totalBytes": 39,
+      "meanDurationMs": 1067.8838666666666,
+      "maxDurationMs": 1611.3244
+    }
+  ],
+  "interpretation": {
+    "payloadTier": "empty",
+    "withinAuditRequestRange": false,
+    "withinAuditPayloadRange": true
+  }
+}

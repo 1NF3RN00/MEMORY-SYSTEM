@@ -18,6 +18,7 @@ import {
   retrieveForWorkflowDomain,
   retrieveObservationsForWorkflowScope,
 } from "../lib/workflow-retrieval.js";
+import { runWithLlmCallAsync } from "@memory-middleware/observability";
 import { createOpenAiStructuredJsonCaller } from "../lib/workflow-analysis-caller.js";
 import { loadEnv } from "../config/env.js";
 import { enforceWorkspaceScope } from "../middleware/auth.js";
@@ -330,6 +331,7 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
       }
 
       try {
+        return await runWithLlmCallAsync(request.llmCallCollector, async () => {
         const env = loadEnv();
         const analysisEnabled =
           env.WORKFLOW_ANALYSIS_ENABLED !== false && Boolean(env.WORKFLOW_ANALYSIS_MODEL);
@@ -358,7 +360,9 @@ export async function registerWorkflowRoutes(app: FastifyInstance): Promise<void
           generatedMemoryIds: detail.generatedMemoryIds,
           generatedObjectIds: detail.generatedObjectIds,
           executionContext: detail.executionContext,
+          llmCallAudit: request.llmCallCollector.toAudit(),
         };
+        });
       } catch (error) {
         return sendDomainEngineError(reply, error);
       }

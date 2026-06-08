@@ -2,6 +2,10 @@
  * Sprint 2 retrieval contracts — authoritative API and trace shapes.
  */
 
+import type { ExecutionTimingAudit } from "./execution-timing-contracts.js";
+import type { LlmCallAudit } from "./llm-call-contracts.js";
+import type { RetrievalDbObservability } from "./database-query-contracts.js";
+
 export type RetrievalMode =
   | "precision"
   | "expanded"
@@ -41,6 +45,8 @@ export interface RetrievalPipelineMetadata {
   finalChunkCount: number;
   /** Sprint 4 — retrieval expansion (metadata + neighbor hints) */
   expansion?: import("./structural-contracts.js").RetrievalExpansionResult;
+  /** Sprint 37 — shadow lexical channel evaluation (V2 spike, flag-gated) */
+  lexicalChannelV2Shadow?: import("./lexical-channel-v2-contracts.js").LexicalChannelV2Shadow;
   /** Domain Engine — task identity when domain-scoped retrieve */
   domainKey?: string;
   domainAction?: string;
@@ -159,6 +165,9 @@ export interface RetrievalTraceView {
   retrievalMode: RetrievalMode;
   tokenBudget: number;
   stages: RetrievalStageRecord[];
+  timingAudit?: ExecutionTimingAudit;
+  llmCallAudit?: LlmCallAudit;
+  dbObservability?: RetrievalDbObservability;
   contextPackage?: ContextPackage;
   preprocessedQuery?: PreprocessedQuery;
   executionContext?: import("./domain-engine-contracts.js").DomainExecutionContext;

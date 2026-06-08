@@ -1,13 +1,20 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { InstalledPackage, PackageManifest, PackageManifestDiff } from "@memory-middleware/shared-types";
+import type {
+  InstalledPackage,
+  PackageDefinitionRecord,
+  PackageManifest,
+  PackageManifestDiff,
+} from "@memory-middleware/shared-types";
 import { useAuth } from "../context/AuthContext.js";
 import {
   archiveInstalledPackageApi,
   comparePackageApi,
   downloadJson,
   exportPackageApi,
+  fetchCatalogPackages,
   fetchInstalledPackages,
   installPackageApi,
+  installPackageByKeyApi,
 } from "../lib/domain-engine-api.js";
 import { EmptyState } from "../components/domain-engine/EmptyState.js";
 import { PackageDiffView } from "../components/domain-engine/PackageDiffView.js";
@@ -30,29 +37,77 @@ export function PackageManagerPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const compareInputRef = useRef<HTMLInputElement>(null);
   const [packages, setPackages] = useState<InstalledPackage[]>([]);
+  const [catalog, setCatalog] = useState<PackageDefinitionRecord[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [diff, setDiff] = useState<PackageManifestDiff | null>(null);
   const [compareTargetId, setCompareTargetId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [skipConflicts, setSkipConflicts] = useState(false);
+
+  const fetchWithRetry = useCallback(async <T,>(fn: () => Promise<T>, attempts = 3): Promise<T> => {
+    let lastError: unknown;
+    for (let attempt = 0; attempt < attempts; attempt += 1) {
+      try {
+        return await fn();
+      } catch (err) {
+        lastError = err;
+        const message = err instanceof Error ? err.message : String(err);
+        const transient =
+          message === "Failed to fetch" || /^(502|503|504):/.test(message);
+        if (!transient || attempt === attempts - 1) break;
+        await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+      }
+    }
+    throw lastError;
+  }, []);
 
   const load = useCallback(async () => {
     if (!workspaceId) return;
     setLoading(true);
     setError(null);
     try {
-      setPackages(await fetchInstalledPackages(workspaceId));
+      setPackages(await fetchWithRetry(() => fetchInstalledPackages(workspaceId)));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load packages");
     } finally {
       setLoading(false);
     }
-  }, [workspaceId]);
+  }, [workspaceId, fetchWithRetry]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setCatalogLoading(true);
+    setCatalogError(null);
+    void fetchWithRetry(() => fetchCatalogPackages())
+      .then((rows) => {
+        if (!cancelled) setCatalog(rows);
+      })
+      .catch((err) => {
+        if (!cancelled) {
+          setCatalogError(
+            err instanceof Error ? err.message : "Failed to load package catalog",
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setCatalogLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchWithRetry]);
+
+  const activePackageKeys = new Set(
+    packages.filter((pkg) => pkg.status === "active").map((pkg) => pkg.packageKey),
+  );
 
   async function handleExport(installedPackageId: string, packageKey: string) {
     if (!workspaceId) return;
@@ -77,8 +132,12 @@ export function PackageManagerPage() {
     try {
       const text = await file.text();
       const manifest = JSON.parse(text) as PackageManifest;
-      const installed = await installPackageApi(workspaceId, manifest);
-      setMessage(`Installed ${installed.packageKey} v${installed.installedVersion}`);
+      const installed = await installPackageApi(workspaceId, manifest, !skipConflicts);
+      setMessage(
+        skipConflicts
+          ? `Installed ${installed.packageKey} v${installed.installedVersion}. Keys that conflicted with existing packages were skipped.`
+          : `Installed ${installed.packageKey} v${installed.installedVersion}`,
+      );
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Install failed");
@@ -112,6 +171,26 @@ export function PackageManagerPage() {
     } finally {
       setBusy(false);
       if (compareInputRef.current) compareInputRef.current.value = "";
+    }
+  }
+
+  async function handleInstallFromCatalog(packageKey: string) {
+    if (!workspaceId) return;
+    setBusy(true);
+    setError(null);
+    setMessage(null);
+    try {
+      const installed = await installPackageByKeyApi(workspaceId, packageKey, !skipConflicts);
+      setMessage(
+        skipConflicts
+          ? `Installed ${installed.packageKey} v${installed.installedVersion}. Keys that conflicted with existing packages were skipped.`
+          : `Installed ${installed.packageKey} v${installed.installedVersion}`,
+      );
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Install failed");
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -160,8 +239,70 @@ export function PackageManagerPage() {
         }}
       />
 
+      <label className="flex max-w-2xl items-start gap-2 text-sm text-[var(--color-text-secondary)]">
+        <input
+          type="checkbox"
+          checked={skipConflicts}
+          onChange={(e) => setSkipConflicts(e.target.checked)}
+          className="mt-1"
+        />
+        <span>
+          Skip conflicting keys — install domains, facts, and instructions that do not collide with
+          packages already in this workspace (e.g. when a second bundle reuses{" "}
+          <code className="text-[var(--color-accent)]">website</code> +{" "}
+          <code className="text-[var(--color-accent)]">audit</code>).
+        </span>
+      </label>
+
       {error && <p className="text-sm text-[var(--color-danger)]">{error}</p>}
       {message && <p className="text-sm text-[var(--color-success)]">{message}</p>}
+
+      <Panel title="Local package catalog">
+        {catalogError && (
+          <p className="mb-3 text-sm text-[var(--color-danger)]">{catalogError}</p>
+        )}
+        {catalogLoading ? (
+          <p className="text-sm text-[var(--color-text-tertiary)]">Loading catalog…</p>
+        ) : catalog.length === 0 && !catalogError ? (
+          <p className="text-sm text-[var(--color-text-secondary)]">
+            No catalog entries yet. From the repo root run{" "}
+            <code className="text-[var(--color-accent)]">npm run package-catalog:seed</code> while
+            the API is running locally.
+          </p>
+        ) : (
+          <div className="grid gap-3 md:grid-cols-2">
+            {catalog.map((entry) => {
+              const installed = activePackageKeys.has(entry.packageKey);
+              return (
+                <div
+                  key={entry.packageDefinitionId}
+                  className="rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-surface-1)] p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium">{entry.name}</p>
+                      <p className="font-mono text-xs text-[var(--color-text-tertiary)]">
+                        {entry.packageKey} · v{entry.version}
+                      </p>
+                      {entry.description && (
+                        <p className="mt-2 text-sm text-[var(--color-text-secondary)]">
+                          {entry.description}
+                        </p>
+                      )}
+                    </div>
+                    <Button
+                      disabled={!workspaceId || busy || installed}
+                      onClick={() => void handleInstallFromCatalog(entry.packageKey)}
+                    >
+                      {installed ? "Installed" : "Install"}
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Panel>
 
       <Panel title="Installed packages">
         {loading ? (

@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { runWithTimingAsync } from "@memory-middleware/observability";
 import {
   benchmarkPlanning,
   batchReplayBenchmark,
@@ -27,6 +28,9 @@ export async function registerPlanningRoutes(app: FastifyInstance): Promise<void
   });
 
   app.post("/retrieval/plan", async (request, reply) => {
+    return runWithTimingAsync(
+      request.timingCollector,
+      async () => {
     const parsed = parsePlanningBody(request.body);
     if ("error" in parsed) {
       return reply.status(400).send({ error: parsed.error });
@@ -45,6 +49,7 @@ export async function registerPlanningRoutes(app: FastifyInstance): Promise<void
       planId,
       workspaceContext,
       events: app.events,
+      timingCollector: request.timingCollector,
     });
 
     await createRetrievalPlanRecord(app.prisma, {
@@ -62,7 +67,12 @@ export async function registerPlanningRoutes(app: FastifyInstance): Promise<void
       planId: result.plan.planId,
       plan: result.plan,
       stages: result.stages,
+      timingAudit: request.timingCollector.toAudit(),
+      llmCallAudit: request.llmCallCollector.toAudit(),
     };
+    },
+      request.llmCallCollector,
+    );
   });
 
   app.get<{ Params: { id: string } }>("/retrieval/plan/:id", async (request, reply) => {

@@ -1,5 +1,6 @@
 import type {
   OperationalDiagnosticsReport,
+  OperationalDiagnosticsSlimReport,
   ReplaySnapshot,
   TokenInflationReport,
 } from "@memory-middleware/shared-types";
@@ -99,6 +100,22 @@ export function buildOperationalDiagnostics(
     tokenWaste,
     contextualDegradation,
     generatedAt: now,
+  };
+}
+
+export function toOperationalDiagnosticsSlimReport(
+  report: OperationalDiagnosticsReport,
+): OperationalDiagnosticsSlimReport {
+  return {
+    mode: "slim",
+    workspaceId: report.workspaceId,
+    counts: {
+      failedRetrievals: report.failedRetrievals.length,
+      lowConfidenceRetrievals: report.lowConfidenceRetrievals.length,
+      tokenWaste: report.tokenWaste.length,
+      contextualDegradation: report.contextualDegradation.length,
+    },
+    generatedAt: report.generatedAt,
   };
 }
 

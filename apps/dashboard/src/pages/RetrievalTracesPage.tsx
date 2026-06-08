@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { apiGet, apiPost } from "../lib/api.js";
@@ -18,7 +18,16 @@ import {
   DataTableRow,
 } from "../components/ui/DataTable.js";
 import { MetricCell, MetricStrip } from "../components/ui/MetricCell.js";
-import { RetrievalTimeline } from "../components/observability/RetrievalTimeline.js";
+import { TraceObservabilityPanel } from "../components/observability/TraceObservabilityPanel.js";
+import {
+  observabilityTraceHref,
+  parseObservabilitySubview,
+} from "../lib/traceObservability.js";
+import type {
+  ExecutionTimingAudit,
+  LlmCallAudit,
+  RetrievalDbObservability,
+} from "@memory-middleware/shared-types";
 import { ContextAssembly, TokenBudgetVisualizer } from "../components/observability/ContextAssembly.js";
 import { ExplainabilityPanel, ReinforcementScoringPanel } from "../components/observability/ExplainabilityPanel.js";
 import { RetrievalHeatmap } from "../components/observability/RetrievalHeatmap.js";
@@ -117,6 +126,9 @@ interface TraceDetail {
     retrievalMode: string;
     tokenBudget: number;
     stages: StageRecord[];
+    timingAudit?: ExecutionTimingAudit;
+    llmCallAudit?: LlmCallAudit;
+    dbObservability?: RetrievalDbObservability;
     contextPackage?: ContextPackageView;
     preprocessedQuery?: { normalizedQuery: string; keywords: string[] };
     createdAt: string;
@@ -159,6 +171,9 @@ export function RetrievalTracesPage() {
   const { traceId } = useParams();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const observabilityRef = useRef<HTMLDivElement>(null);
+  const observabilitySubview = parseObservabilitySubview(searchParams.get("view"));
+  const highlightObservability = searchParams.get("view") === "observability";
   const [traces, setTraces] = useState<TraceSummary[]>([]);
   const [detail, setDetail] = useState<TraceDetail | null>(null);
   const [events, setEvents] = useState<EventItem[]>([]);
@@ -235,6 +250,11 @@ export function RetrievalTracesPage() {
         .finally(() => setLoading(false));
     }
   }, [traceId, workspaceId]);
+
+  useEffect(() => {
+    if (!traceId || !searchParams.get("view")?.startsWith("observ")) return;
+    observabilityRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [traceId, searchParams, detail]);
 
   useEffect(() => {
     const planId = searchParams.get("planId")?.trim();
@@ -480,6 +500,7 @@ export function RetrievalTracesPage() {
                   <DataTableHeaderCell>Query</DataTableHeaderCell>
                   <DataTableHeaderCell>Status</DataTableHeaderCell>
                   <DataTableHeaderCell>Time</DataTableHeaderCell>
+                  <DataTableHeaderCell>Audits</DataTableHeaderCell>
                 </DataTableHead>
                 <DataTableBody>
                   {traces.map((t) => (
@@ -492,6 +513,14 @@ export function RetrievalTracesPage() {
                       <DataTableCell>{t.query.slice(0, 40)}{t.query.length > 40 ? "…" : ""}</DataTableCell>
                       <DataTableCell><Badge variant={statusToBadge(t.status)}>{t.status}</Badge></DataTableCell>
                       <DataTableCell mono>{new Date(t.createdAt).toLocaleString()}</DataTableCell>
+                      <DataTableCell>
+                        <Link
+                          to={observabilityTraceHref(t.retrievalTraceId)}
+                          className="font-metric text-[0.625rem] uppercase tracking-[0.04em] text-[var(--color-accent)] no-underline hover:underline"
+                        >
+                          Observability
+                        </Link>
+                      </DataTableCell>
                     </DataTableRow>
                   ))}
                 </DataTableBody>
@@ -555,16 +584,26 @@ export function RetrievalTracesPage() {
         </motion.div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-        <motion.div variants={staggerItem}>
-          <Panel code="RET.PIPE" title="Pipeline Timeline" description="Stage-by-stage execution with latency decomposition.">
-            <RetrievalTimeline
-              stages={trace.stages}
-              {...(pkg ? { totalLatencyMs: pkg.retrievalMetadata.retrievalLatencyMs } : {})}
-            />
-          </Panel>
-        </motion.div>
+      <motion.div variants={staggerItem} className="mb-4" ref={observabilityRef}>
+        <Panel
+          code="OBS.UNIFIED"
+          title="Unified Observability"
+          description="Execution timing, LLM call audit, and database query observability correlated by trace ID."
+        >
+          <TraceObservabilityPanel
+            traceId={trace.retrievalTraceId}
+            stages={trace.stages}
+            {...(trace.timingAudit ? { timingAudit: trace.timingAudit } : {})}
+            {...(trace.llmCallAudit ? { llmCallAudit: trace.llmCallAudit } : {})}
+            {...(trace.dbObservability ? { dbObservability: trace.dbObservability } : {})}
+            {...(pkg ? { legacyTotalLatencyMs: pkg.retrievalMetadata.retrievalLatencyMs } : {})}
+            {...(observabilitySubview ? { initialSubview: observabilitySubview } : {})}
+            highlight={highlightObservability}
+          />
+        </Panel>
+      </motion.div>
 
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
         {pkg && (
           <motion.div variants={staggerItem}>
             <Panel code="CTX.ASM" title="Context Assembly" description="Token budget allocation and memory composition.">

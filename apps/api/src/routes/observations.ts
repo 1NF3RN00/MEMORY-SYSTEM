@@ -5,6 +5,7 @@ import {
 } from "@memory-middleware/observation-registry";
 import { storeObservationBatch } from "@memory-middleware/observation-ingestion";
 import { createOpenAiEmbeddingClient } from "@memory-middleware/ingestion";
+import { runWithLlmCallAsync } from "@memory-middleware/observability";
 import type {
   NormalizedObservation,
   Observation,
@@ -267,6 +268,7 @@ export async function registerObservationRoutes(app: FastifyInstance): Promise<v
   app.post<{
     Body: { workspaceId: string; observations: RawObservationInput[] };
   }>("/observations", async (request, reply) => {
+    return runWithLlmCallAsync(request.llmCallCollector, async () => {
     const { workspaceId, observations } = request.body ?? {};
     if (!workspaceId) {
       return reply.status(400).send({ error: "workspaceId is required" });
@@ -327,6 +329,7 @@ export async function registerObservationRoutes(app: FastifyInstance): Promise<v
         eventType: result.eventType,
         supersededMemoryIds: result.supersededMemoryIds,
       })),
+    });
     });
   });
 }

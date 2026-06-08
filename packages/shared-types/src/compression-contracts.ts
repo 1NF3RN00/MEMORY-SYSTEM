@@ -26,6 +26,24 @@ export interface CompressionStageTrace {
   metadata?: Record<string, unknown>;
 }
 
+/** Structured 400 body when POST /compress receives the wrong trace ID type. */
+export type CompressionContextResolveCode =
+  | "compression_trace_id_provided"
+  | "retrieval_trace_not_found"
+  | "retrieval_incomplete"
+  | "retrieval_failed"
+  | "context_package_lost"
+  | "workspace_mismatch";
+
+export interface CompressionContextResolveError {
+  error: string;
+  code: CompressionContextResolveCode;
+  suppliedTraceId: string;
+  /** Correct retrieval trace to use when a compression trace ID was supplied. */
+  retrievalTraceId?: string;
+  compressionTraceId?: string;
+}
+
 export interface CompressionRequest {
   workspaceId: string;
   /** Load context from an existing retrieval trace when contextPackage is omitted. */
@@ -100,6 +118,28 @@ export interface CompressionTraceView {
   trimmingDecisions?: TrimmingDecision[];
   createdAt: string;
   completedAt?: string;
+  error?: string;
+}
+
+/** Metadata-only projection for dashboard telemetry — no context packages or stage bodies. */
+export interface CompressionTraceSummaryView {
+  compressionTraceId: string;
+  workspaceId: string;
+  retrievalTraceId: string;
+  status: CompressionTraceView["status"];
+  fidelityMode: FidelityMode;
+  nuancePreservation: number;
+  tokenOptimization: number;
+  targetTokenBudget?: number;
+  createdAt: string;
+  completedAt?: string;
+  compressionMetadata?: Pick<
+    CompressionMetadata,
+    "originalTokens" | "optimizedTokens" | "tokenSavings" | "fidelityScore"
+  >;
+  fidelityReport?: Pick<FidelityReport, "fidelityScore">;
+  mergeCount: number;
+  trimCount: number;
   error?: string;
 }
 

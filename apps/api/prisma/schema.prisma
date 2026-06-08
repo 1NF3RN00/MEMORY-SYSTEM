@@ -156,6 +156,8 @@ model Workspace {
 
   operationalObjects    OperationalObject[]
 
+  metricsSummary        WorkspaceMetricsSummary?
+
   workflows             Workflow[]
 
   workflowRuns          WorkflowRun[]
@@ -167,6 +169,64 @@ model Workspace {
   @@index([platformId])
 
   @@map("workspaces")
+
+}
+
+
+
+/// Pre-aggregated workspace counters — O(1) dashboard metrics read (Sprint-34).
+
+model WorkspaceMetricsSummary {
+
+  workspaceId String @id @map("workspace_id")
+
+  activeMemories Int @default(0) @map("active_memories")
+
+  retrievalTotal Int @default(0) @map("retrieval_total")
+
+  retrievalCompleted Int @default(0) @map("retrieval_completed")
+
+  retrievalFailed Int @default(0) @map("retrieval_failed")
+
+  retrieval24h Int @default(0) @map("retrieval_24h")
+
+  retrievalFailed24h Int @default(0) @map("retrieval_failed_24h")
+
+  retrievalLatencySumMs BigInt @default(0) @map("retrieval_latency_sum_ms")
+
+  retrievalLatencyCount Int @default(0) @map("retrieval_latency_count")
+
+  ingestionTotal Int @default(0) @map("ingestion_total")
+
+  ingestionCompleted Int @default(0) @map("ingestion_completed")
+
+  ingestionFailed Int @default(0) @map("ingestion_failed")
+
+  ingestion24h Int @default(0) @map("ingestion_24h")
+
+  compressionTotal Int @default(0) @map("compression_total")
+
+  compressionCompleted Int @default(0) @map("compression_completed")
+
+  compressionFailed Int @default(0) @map("compression_failed")
+
+  contextRenderTotal Int @default(0) @map("context_render_total")
+
+  contextRenderCompleted Int @default(0) @map("context_render_completed")
+
+  contextRenderFailed Int @default(0) @map("context_render_failed")
+
+  rollingWindowStartAt DateTime @default(now()) @map("rolling_window_start_at")
+
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+
+
+  @@map("workspace_metrics_summaries")
 
 }
 

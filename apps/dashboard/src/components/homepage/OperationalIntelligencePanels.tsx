@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { motion } from "framer-motion";
 import { staggerContainer, staggerItem } from "../../design-system/motion.js";
 import { IntelligenceCard, MetricRow } from "./IntelligenceCard.js";
@@ -6,9 +7,18 @@ import type { IntelligencePanelData } from "./types.js";
 interface OperationalIntelligencePanelsProps {
   data: IntelligencePanelData;
   loading?: boolean;
+  analyticsLoaded?: boolean;
+  analyticsLoading?: boolean;
+  onRequestAnalytics?: () => void;
 }
 
-export function OperationalIntelligencePanels({ data, loading }: OperationalIntelligencePanelsProps) {
+function OperationalIntelligencePanelsComponent({
+  data,
+  loading,
+  analyticsLoaded = false,
+  analyticsLoading = false,
+  onRequestAnalytics,
+}: OperationalIntelligencePanelsProps) {
   const {
     activeContextWindow,
     retrievalConfidence,
@@ -20,12 +30,26 @@ export function OperationalIntelligencePanels({ data, loading }: OperationalInte
   return (
     <section className="flex h-full min-h-0 flex-col border-l border-[var(--color-border-subtle)] bg-[var(--color-surface-0)]">
       <header className="shrink-0 border-b border-[var(--color-border-subtle)] px-4 py-3">
-        <h2 className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-primary)]">
-          Operational Intelligence
-        </h2>
-        <p className="mt-0.5 font-metric text-[0.625rem] uppercase tracking-[0.06em] text-[var(--color-text-tertiary)]">
-          Context assembly state
-        </p>
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <h2 className="text-[0.6875rem] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-primary)]">
+              Operational Intelligence
+            </h2>
+            <p className="mt-0.5 font-metric text-[0.625rem] uppercase tracking-[0.06em] text-[var(--color-text-tertiary)]">
+              Context assembly state
+            </p>
+          </div>
+          {!analyticsLoaded && onRequestAnalytics ? (
+            <button
+              type="button"
+              onClick={onRequestAnalytics}
+              disabled={analyticsLoading}
+              className="shrink-0 rounded border border-[var(--color-border-default)] px-2 py-1 font-metric text-[0.5625rem] uppercase tracking-[0.06em] text-[var(--color-text-secondary)] transition-colors hover:border-[var(--color-border-strong)] hover:text-[var(--color-text-primary)] disabled:opacity-50"
+            >
+              {analyticsLoading ? "Loading…" : "Load diagnostics"}
+            </button>
+          ) : null}
+        </div>
       </header>
 
       <motion.div
@@ -63,7 +87,11 @@ export function OperationalIntelligencePanels({ data, loading }: OperationalInte
           <IntelligenceCard label="Retrieval Confidence">
             <MetricRow
               label="Contextual confidence"
-              value={retrievalConfidence.contextualConfidence.toFixed(2)}
+              value={
+                retrievalConfidence.contextualConfidence !== null
+                  ? retrievalConfidence.contextualConfidence.toFixed(2)
+                  : "—"
+              }
               mono
               highlight
             />
@@ -128,3 +156,5 @@ export function OperationalIntelligencePanels({ data, loading }: OperationalInte
     </section>
   );
 }
+
+export const OperationalIntelligencePanels = memo(OperationalIntelligencePanelsComponent);

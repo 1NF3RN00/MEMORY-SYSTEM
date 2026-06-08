@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 
 import { createOpenAiEmbeddingClient } from "@memory-middleware/ingestion";
+import { runWithLlmCallAsync } from "@memory-middleware/observability";
 
 import {
 
@@ -179,6 +180,7 @@ export async function registerObservationProviderRoutes(app: FastifyInstance): P
     };
 
   }>("/observation-providers/:providerKey/collect", async (request, reply) => {
+    return runWithLlmCallAsync(request.llmCallCollector, async () => {
 
     const { providerKey } = request.params;
 
@@ -445,6 +447,8 @@ export async function registerObservationProviderRoutes(app: FastifyInstance): P
       });
 
     }
+
+    });
 
   });
 

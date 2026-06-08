@@ -1,10 +1,14 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
+import { recordRetrievalMetrics } from "./metrics-aggregation-store.js";
 import { mergeRetrievalConfig } from "@memory-middleware/retrieval";
 import {
   DEFAULT_RETRIEVAL_RUNTIME_CONFIG,
   type ContextPackage,
   type DomainExecutionContext,
+  type ExecutionTimingAudit,
+  type LlmCallAudit,
   type RelationshipAugmentationResult,
+  type RetrievalDbObservability,
   type RetrievalHeatmapEntry,
   type RetrievalMode,
   type RetrievalQuery,
@@ -17,6 +21,8 @@ import {
 export interface StoredRetrievalResult {
   contextPackage?: ContextPackage;
   stages: RetrievalStageRecord[];
+  timingAudit?: ExecutionTimingAudit;
+  llmCallAudit?: LlmCallAudit;
   preprocessedQuery?: {
     normalizedQuery: string;
     keywords: string[];
@@ -26,6 +32,7 @@ export interface StoredRetrievalResult {
   tokenBudget: number;
   relationshipAugmentation?: RelationshipAugmentationResult;
   executionContext?: DomainExecutionContext;
+  dbObservability?: RetrievalDbObservability;
   error?: string;
 }
 
@@ -54,6 +61,63 @@ export async function createRetrievalOperation(
   });
 }
 
+function serializeStoredRetrievalResult(
+  stored: StoredRetrievalResult,
+  error?: string,
+): Prisma.InputJsonValue {
+  return JSON.parse(
+    JSON.stringify({ ...stored, ...(error ? { error } : {}) }),
+  ) as Prisma.InputJsonValue;
+}
+
+/** Merge patches without dropping a persisted contextPackage. */
+export function mergeStoredRetrievalResult(
+  prev: StoredRetrievalResult,
+  patch: Partial<StoredRetrievalResult>,
+): StoredRetrievalResult {
+  const merged: StoredRetrievalResult = {
+    ...prev,
+    ...patch,
+  };
+  if (prev.contextPackage && patch.contextPackage === undefined) {
+    merged.contextPackage = prev.contextPackage;
+  }
+  return merged;
+}
+
+/**
+ * Persist in-flight stage progress without clobbering a stored context package
+ * or overwriting a terminal (completed/failed) operation.
+ */
+export async function persistRetrievalStageProgress(
+  prisma: PrismaClient,
+  traceId: string,
+  stages: RetrievalStageRecord[],
+  meta: { retrievalMode: RetrievalMode; tokenBudget: number },
+): Promise<void> {
+  const existing = await prisma.retrievalOperation.findFirst({
+    where: { traceId, status: "processing" },
+    orderBy: { createdAt: "desc" },
+  });
+  if (!existing) return;
+
+  const prev = (existing.result ?? {}) as unknown as StoredRetrievalResult;
+  if (prev.contextPackage) return;
+
+  const partial = mergeStoredRetrievalResult(prev, {
+    retrievalMode: meta.retrievalMode,
+    tokenBudget: meta.tokenBudget,
+    stages,
+  });
+
+  await prisma.retrievalOperation.updateMany({
+    where: { traceId, status: "processing" },
+    data: {
+      result: serializeStoredRetrievalResult(partial),
+    },
+  });
+}
+
 export async function completeRetrievalOperation(
   prisma: PrismaClient,
   traceId: string,
@@ -61,16 +125,40 @@ export async function completeRetrievalOperation(
   status: "completed" | "failed",
   error?: string,
 ): Promise<void> {
+  if (status === "completed" && !stored.contextPackage) {
+    throw new Error(
+      "Cannot mark retrieval completed without contextPackage — would expose false success",
+    );
+  }
+
+  const processingOp = await prisma.retrievalOperation.findFirst({
+    where: { traceId, status: "processing" },
+    orderBy: { createdAt: "desc" },
+    select: { workspaceId: true, createdAt: true },
+  });
+
+  const resultPayload = serializeStoredRetrievalResult(stored, error);
+  const completedAt = new Date();
+
+  // Phase 1: persist full result (including contextPackage) while still processing.
   await prisma.retrievalOperation.updateMany({
-    where: { traceId },
+    where: { traceId, status: "processing" },
+    data: { result: resultPayload },
+  });
+
+  // Phase 2: promote to terminal status only after the package is stored.
+  await prisma.retrievalOperation.updateMany({
+    where: { traceId, status: "processing" },
     data: {
       status,
-      completedAt: new Date(),
-      result: JSON.parse(
-        JSON.stringify({ ...stored, ...(error ? { error } : {}) }),
-      ) as Prisma.InputJsonValue,
+      completedAt,
     },
   });
+
+  if (processingOp) {
+    const latencyMs = completedAt.getTime() - processingOp.createdAt.getTime();
+    await recordRetrievalMetrics(prisma, processingOp.workspaceId, status, latencyMs);
+  }
 }
 
 export async function getRetrievalTrace(
@@ -94,6 +182,9 @@ export async function getRetrievalTrace(
     retrievalMode: result.retrievalMode ?? "precision",
     tokenBudget: result.tokenBudget ?? result.contextPackage?.tokenBudget?.maxTokens ?? 0,
     stages: result.stages ?? [],
+    ...(result.timingAudit ? { timingAudit: result.timingAudit } : {}),
+    ...(result.llmCallAudit ? { llmCallAudit: result.llmCallAudit } : {}),
+    ...(result.dbObservability ? { dbObservability: result.dbObservability } : {}),
     ...(result.contextPackage ? { contextPackage: result.contextPackage } : {}),
     ...(result.preprocessedQuery ? { preprocessedQuery: result.preprocessedQuery } : {}),
     ...(result.executionContext ? { executionContext: result.executionContext } : {}),
@@ -137,6 +228,58 @@ export async function listRetrievalTraces(
       ...(op.completedAt ? { completedAt: op.completedAt.toISOString() } : {}),
     };
   });
+}
+
+/** Batch-fetch stored retrieval results keyed by traceId (one query for all ids). */
+export async function getRetrievalResultsByTraceIds(
+  prisma: PrismaClient,
+  traceIds: string[],
+): Promise<Map<string, StoredRetrievalResult>> {
+  if (traceIds.length === 0) {
+    return new Map();
+  }
+
+  const operations = await prisma.retrievalOperation.findMany({
+    where: { traceId: { in: traceIds } },
+    select: { traceId: true, result: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const byTraceId = new Map<string, StoredRetrievalResult>();
+  for (const op of operations) {
+    if (!byTraceId.has(op.traceId)) {
+      byTraceId.set(op.traceId, (op.result ?? {}) as unknown as StoredRetrievalResult);
+    }
+  }
+  return byTraceId;
+}
+
+/** Batch-fetch failure metadata only (error + failed stage) for failed traces. */
+export async function getRetrievalFailureInfoByTraceIds(
+  prisma: PrismaClient,
+  traceIds: string[],
+): Promise<Map<string, { error?: string; failedStage?: string }>> {
+  if (traceIds.length === 0) {
+    return new Map();
+  }
+
+  const operations = await prisma.retrievalOperation.findMany({
+    where: { traceId: { in: traceIds } },
+    select: { traceId: true, result: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const byTraceId = new Map<string, { error?: string; failedStage?: string }>();
+  for (const op of operations) {
+    if (byTraceId.has(op.traceId)) continue;
+    const result = (op.result ?? {}) as unknown as StoredRetrievalResult;
+    const failedStage = result.stages?.find((s) => s.status === "failed")?.stage;
+    byTraceId.set(op.traceId, {
+      ...(result.error ? { error: result.error } : {}),
+      ...(failedStage ? { failedStage } : {}),
+    });
+  }
+  return byTraceId;
 }
 
 export async function getWorkspaceRetrievalConfig(

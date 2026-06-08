@@ -1,5 +1,23 @@
 export { isUlid, newUlid } from "./ids.js";
 export type {
+  ExecutionStageName,
+  ExecutionStageTiming,
+  ExecutionTimingAudit,
+} from "./execution-timing-contracts.js";
+export type {
+  LlmCallAudit,
+  LlmCallRecord,
+  LlmOperation,
+} from "./llm-call-contracts.js";
+export type {
+  DbDuplicateQueryGroup,
+  DbNPlusOnePattern,
+  DbOperationLeaderboardEntry,
+  DbQueryRecord,
+  DbScopeSummary,
+  RetrievalDbObservability,
+} from "./database-query-contracts.js";
+export type {
   CanonicalMemoryChunk,
   CanonicalMemoryChunkMetadata,
   CanonicalMemoryChunkObservability,
@@ -67,6 +85,11 @@ export {
   DEFAULT_RETRIEVAL_RUNTIME_CONFIG,
   RETRIEVAL_EVENT_TYPES,
 } from "./retrieval-contracts.js";
+export type {
+  LexicalChannelV2Candidate,
+  LexicalChannelV2MergePreview,
+  LexicalChannelV2Shadow,
+} from "./lexical-channel-v2-contracts.js";
 export type { EventPayload, EventSeverity } from "./event-payload.js";
 export type {
   AdjacencyHint,
@@ -74,12 +97,15 @@ export type {
   CompressionFidelityProfile,
   CompressionMetadata,
   CompressionOverlapConfig,
+  CompressionContextResolveCode,
+  CompressionContextResolveError,
   CompressionPipelineStage,
   CompressionRequest,
   CompressionRuntimeConfig,
   CompressionStageRecord,
   CompressionStageTrace,
   CompressionTraceView,
+  CompressionTraceSummaryView,
   CompressionTrimConfig,
   FidelityImpact,
   FidelityMode,
@@ -157,7 +183,9 @@ export type {
   HistorianRetentionConfig,
   LowConfidenceRetrievalDiagnostic,
   MemoryHistoryTimeline,
+  OperationalDiagnosticsCounts,
   OperationalDiagnosticsReport,
+  OperationalDiagnosticsSlimReport,
   PermanentDeletionResult,
   RankingComparisonEntry,
   ReplayMode,
@@ -175,6 +203,27 @@ export {
   DEFAULT_HISTORIAN_RETENTION_CONFIG,
   HISTORIAN_EVENT_TYPES,
 } from "./historian-contracts.js";
+export type {
+  DashboardBootstrapHealth,
+  DashboardBootstrapHealthStatus,
+  DashboardBootstrapIngestionTraceSummary,
+  DashboardBootstrapMemorySummary,
+  DashboardBootstrapResponse,
+  DashboardBootstrapRetrievalTraceSummary,
+} from "./dashboard-bootstrap-contracts.js";
+export type {
+  WorkspaceIngestionMetrics,
+  WorkspaceMetricsSummaryResponse,
+  WorkspaceOperationCounts,
+  WorkspaceRetrievalMetrics,
+} from "./workspace-metrics-contracts.js";
+export type {
+  OperationalStreamEnvelope,
+  OperationalStreamEnvelopeKind,
+  OperationalStreamEventCategory,
+  OperationalStreamEventPayload,
+} from "./operational-stream-contracts.js";
+export { OPERATIONAL_STREAM_PATH_SUFFIX } from "./operational-stream-contracts.js";
 export type {
   ExpansionReason,
   ModeTuningEntry,

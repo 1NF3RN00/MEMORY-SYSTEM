@@ -1,10 +1,22 @@
 import type { FastifyInstance } from "fastify";
 import { getIngestionTrace, getSourceTruth } from "../lib/ingestion-store.js";
+import {
+  parseListFieldsQuery,
+  projectListRows,
+} from "../lib/list-field-projection.js";
 
 export async function registerIngestionRoutes(app: FastifyInstance): Promise<void> {
-  app.get<{ Querystring: { workspaceId?: string; limit?: string } }>(
+  app.get<{ Querystring: { workspaceId?: string; limit?: string; fields?: string } }>(
     "/ingestion",
-    async (request) => {
+    async (request, reply) => {
+      const fieldProjection = parseListFieldsQuery("ingestion", request.query.fields);
+      if (!fieldProjection.ok) {
+        return reply.status(400).send({
+          error: fieldProjection.error,
+          invalidFields: fieldProjection.invalidFields,
+        });
+      }
+
       const limit = Math.min(Number(request.query.limit ?? 50), 100);
       const traces = await app.prisma.ingestionTrace.findMany({
         ...(request.query.workspaceId
@@ -14,17 +26,17 @@ export async function registerIngestionRoutes(app: FastifyInstance): Promise<voi
         take: limit,
       });
 
-      return {
-        traces: traces.map((t) => ({
-          traceId: t.traceId,
-          workspaceId: t.workspaceId,
-          memoryId: t.memoryId,
-          status: t.status,
-          sourceType: t.sourceType,
-          createdAt: t.createdAt.toISOString(),
-          updatedAt: t.updatedAt.toISOString(),
-        })),
-      };
+      const rows = traces.map((t) => ({
+        traceId: t.traceId,
+        workspaceId: t.workspaceId,
+        memoryId: t.memoryId,
+        status: t.status,
+        sourceType: t.sourceType,
+        createdAt: t.createdAt.toISOString(),
+        updatedAt: t.updatedAt.toISOString(),
+      }));
+
+      return { traces: projectListRows(rows, fieldProjection.fields) };
     },
   );
 

@@ -1,3 +1,4 @@
+import { recordLlmCall } from "@memory-middleware/observability";
 import {
   EMBEDDING_MODEL_V1,
   EMBEDDING_VERSION_V1,
@@ -20,6 +21,7 @@ export interface EmbeddingResult {
 export function createOpenAiEmbeddingClient(apiKey: string): EmbeddingClient {
   return {
     async embed(texts: string[]): Promise<number[][]> {
+      const started = Date.now();
       const response = await fetch("https://api.openai.com/v1/embeddings", {
         method: "POST",
         headers: {
@@ -40,7 +42,16 @@ export function createOpenAiEmbeddingClient(apiKey: string): EmbeddingClient {
 
       const data = (await response.json()) as {
         data: Array<{ embedding: number[]; index: number }>;
+        usage?: { prompt_tokens?: number; total_tokens?: number };
       };
+
+      recordLlmCall({
+        operation: "embedding",
+        model: EMBEDDING_MODEL_V1,
+        promptTokens: data.usage?.prompt_tokens ?? data.usage?.total_tokens ?? 0,
+        completionTokens: 0,
+        latencyMs: Date.now() - started,
+      });
 
       const sorted = [...data.data].sort((a, b) => a.index - b.index);
       return sorted.map((item) => item.embedding);

@@ -304,7 +304,7 @@ export function RetrievalDiagnosticsPage() {
   useEffect(() => {
     if (!workspaceId) return;
     apiGet<{ traces: Array<{ retrievalTraceId: string; query: string; status: string }> }>(
-      `/retrieval?limit=50`,
+      `/retrieval?limit=50&fields=retrievalTraceId,query,status`,
     )
       .then((data) => {
         setTraceOptions(

@@ -8,6 +8,7 @@ import {
   forceSimulation,
   type SimulationNodeDatum,
 } from "d3-force";
+import { useAuth } from "../../context/AuthContext.js";
 import { apiGet } from "../../lib/api.js";
 import type { MemoryGraphLink, MemoryGraphNode } from "./types.js";
 
@@ -73,9 +74,60 @@ function mapGraphFromApi(data: {
   return { nodes, links };
 }
 
-export function ContextualIntelligenceMap() {
+const SKELETON_NODES = [
+  { left: "18%", top: "28%", size: 10 },
+  { left: "42%", top: "22%", size: 8 },
+  { left: "68%", top: "35%", size: 12 },
+  { left: "32%", top: "52%", size: 9 },
+  { left: "58%", top: "58%", size: 11 },
+  { left: "24%", top: "68%", size: 7 },
+  { left: "72%", top: "62%", size: 9 },
+] as const;
+
+function GraphLoadingSkeleton() {
+  return (
+    <div
+      className="flex h-full flex-col items-center justify-center gap-5 px-6"
+      aria-busy="true"
+      aria-label="Loading relationship graph"
+    >
+      <div className="relative h-56 w-full max-w-lg">
+        <div className="absolute inset-0 rounded-lg border border-[var(--color-border-subtle)] bg-[rgba(255,255,255,0.01)]" />
+        {SKELETON_NODES.map((node, index) => (
+          <span
+            key={index}
+            className="absolute animate-pulse rounded-full bg-[rgba(56,189,248,0.18)]"
+            style={{
+              left: node.left,
+              top: node.top,
+              width: node.size,
+              height: node.size,
+              animationDelay: `${index * 120}ms`,
+            }}
+          />
+        ))}
+        <svg className="absolute inset-0 h-full w-full text-[rgba(255,255,255,0.04)]" aria-hidden="true">
+          <line x1="22%" y1="32%" x2="46%" y2="26%" stroke="currentColor" strokeWidth="1" />
+          <line x1="46%" y1="26%" x2="70%" y2="38%" stroke="currentColor" strokeWidth="1" />
+          <line x1="36%" y1="56%" x2="60%" y2="62%" stroke="currentColor" strokeWidth="1" />
+          <line x1="28%" y1="72%" x2="60%" y2="62%" stroke="currentColor" strokeWidth="1" />
+        </svg>
+      </div>
+      <p className="text-[0.75rem] text-[var(--color-text-muted)]">Loading relationship graph…</p>
+    </div>
+  );
+}
+
+interface ContextualIntelligenceMapProps {
+  /** When true, home telemetry has finished — graph may load after map is visible. */
+  telemetryReady?: boolean;
+}
+
+export function ContextualIntelligenceMap({ telemetryReady = false }: ContextualIntelligenceMapProps) {
+  const { workspaceId, loading: authLoading } = useAuth();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const graphFetchStartedRef = useRef(false);
   const simNodesRef = useRef<SimNode[]>([]);
   const simLinksRef = useRef<InternalLink[]>([]);
   const particlesRef = useRef<Particle[]>([]);
@@ -85,18 +137,22 @@ export function ContextualIntelligenceMap() {
     null,
   );
   const phaseLabelRef = useRef("Context assembly idle");
+  const phaseLabelElementRef = useRef<HTMLSpanElement>(null);
   const waveExpiredRef = useRef(false);
   const [dimensions, setDimensions] = useState({ width: 800, height: 600 });
-  const [phaseLabel, setPhaseLabel] = useState("Context assembly idle");
   const [graphNodes, setGraphNodes] = useState<MemoryGraphNode[]>([]);
   const [graphLinks, setGraphLinks] = useState<MemoryGraphLink[]>([]);
-  const [graphLoading, setGraphLoading] = useState(true);
+  const [mapInView, setMapInView] = useState(false);
+  const [graphStatus, setGraphStatus] = useState<"idle" | "loading" | "ready" | "empty">("idle");
   const hubIdRef = useRef<string | null>(null);
+  const graphLoading = graphStatus === "loading" || graphStatus === "idle";
 
   const updatePhaseLabel = useCallback((label: string) => {
     if (phaseLabelRef.current === label) return;
     phaseLabelRef.current = label;
-    setPhaseLabel(label);
+    if (phaseLabelElementRef.current) {
+      phaseLabelElementRef.current.textContent = label;
+    }
   }, []);
 
   const triggerRetrievalWave = useCallback(() => {
@@ -151,11 +207,42 @@ export function ContextualIntelligenceMap() {
   }, [updatePhaseLabel]);
 
   useEffect(() => {
+    graphFetchStartedRef.current = false;
+    setMapInView(false);
+    setGraphStatus("idle");
+    setGraphNodes([]);
+    setGraphLinks([]);
+    hubIdRef.current = null;
+  }, [workspaceId]);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry?.isIntersecting) {
+          setMapInView(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "80px 0px", threshold: 0.01 },
+    );
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (authLoading || !workspaceId) return;
+    if (!mapInView || !telemetryReady) return;
+    if (graphFetchStartedRef.current) return;
+
+    graphFetchStartedRef.current = true;
     let cancelled = false;
+    setGraphStatus("loading");
 
     async function loadGraph() {
       try {
-        const workspace = await apiGet<{ id: string }>("/workspaces/default");
         const graph = await apiGet<{
           nodes: Array<{
             id: string;
@@ -165,7 +252,7 @@ export function ContextualIntelligenceMap() {
             retrievalEligible: boolean;
           }>;
           edges: Array<{ source: string; target: string; weight: number }>;
-        }>(`/relationships/graph?workspaceId=${workspace.id}`);
+        }>(`/relationships/graph?workspaceId=${workspaceId}&lite=true`);
 
         if (cancelled) return;
         const mapped = mapGraphFromApi(graph);
@@ -176,14 +263,14 @@ export function ContextualIntelligenceMap() {
             (best, node) => (!best || node.accessWeight > best.accessWeight ? node : best),
             null,
           )?.id ?? null;
+        setGraphStatus(mapped.nodes.length > 0 ? "ready" : "empty");
       } catch {
         if (!cancelled) {
           setGraphNodes([]);
           setGraphLinks([]);
           hubIdRef.current = null;
+          setGraphStatus("empty");
         }
-      } finally {
-        if (!cancelled) setGraphLoading(false);
       }
     }
 
@@ -191,7 +278,7 @@ export function ContextualIntelligenceMap() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [authLoading, workspaceId, mapInView, telemetryReady]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -428,17 +515,18 @@ export function ContextualIntelligenceMap() {
           </p>
         </div>
         <div className="rounded-md border border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] px-3 py-1.5">
-          <span className="font-metric text-[0.5625rem] uppercase tracking-[0.06em] text-[var(--color-accent)]">
-            {phaseLabel}
+          <span
+            ref={phaseLabelElementRef}
+            className="font-metric text-[0.5625rem] uppercase tracking-[0.06em] text-[var(--color-accent)]"
+          >
+            Context assembly idle
           </span>
         </div>
       </header>
 
       <div ref={containerRef} className="relative min-h-0 flex-1">
         {graphLoading ? (
-          <div className="flex h-full items-center justify-center px-6 text-[0.875rem] text-[var(--color-text-secondary)]">
-            Loading relationship graph…
-          </div>
+          <GraphLoadingSkeleton />
         ) : graphNodes.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
             <p className="text-[0.875rem] text-[var(--color-text-secondary)]">

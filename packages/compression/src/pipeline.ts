@@ -1,4 +1,5 @@
-import type { EventEmitter } from "@memory-middleware/observability";
+import type { EventEmitter, ExecutionTimingCollector } from "@memory-middleware/observability";
+import { measurePipelineStage, resolvePipelineCollector } from "@memory-middleware/observability";
 import type {
   CompressionMetadata,
   CompressionRequest,
@@ -48,6 +49,7 @@ export interface RunCompressionInput {
   abstractionClient?: AbstractionClient | null;
   runtimeOverrides?: Parameters<typeof mergeCompressionConfig>[0];
   onStage?: (stages: CompressionStageRecord[]) => void;
+  timingCollector?: ExecutionTimingCollector;
 }
 
 export interface RunCompressionResult {
@@ -97,6 +99,8 @@ export async function runCompressionPipeline(
   input: RunCompressionInput,
 ): Promise<RunCompressionResult> {
   const traceId = input.traceId ?? newUlid();
+  const timing = resolvePipelineCollector(traceId, input.timingCollector);
+  return measurePipelineStage(traceId, "compression", timing, async () => {
   const stages: CompressionStageRecord[] = [];
   const stageTraces: CompressionStageTrace[] = [];
   const pipelineStarted = Date.now();
@@ -383,6 +387,7 @@ export async function runCompressionPipeline(
       error: message,
     };
   }
+  });
 }
 
 export { mergeCompressionConfig } from "./config.js";

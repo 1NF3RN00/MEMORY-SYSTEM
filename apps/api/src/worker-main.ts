@@ -32,6 +32,7 @@ async function main(): Promise<void> {
       const processed = await processNextIngestionJob({
         prisma,
         events,
+        logger,
         ...(env.OPENAI_API_KEY ? { openAiApiKey: env.OPENAI_API_KEY } : {}),
       });
 

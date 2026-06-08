@@ -1,0 +1,82 @@
+{
+  "waves": {
+    "1": {
+      "name": "Quick wins",
+      "summary": "Request dedupe, workspace ID, diagnostics N+1, health poll, ranking removal, React.memo.",
+      "sprints": ["01", "02", "03", "28", "06", "10"],
+      "priority": "P0",
+      "estimatedEffort": "<2 days",
+      "successCriteria": [
+        "Home load drops by several HTTP requests",
+        "Operational diagnostics uses batch DB fetch",
+        "All six sprint outcomes.md show verification complete"
+      ]
+    },
+    "2": {
+      "name": "Payload slimming",
+      "summary": "Lite graph, compression metadata, slim diagnostics API, lazy-load graph.",
+      "sprints": ["04", "05", "27", "16"],
+      "priority": "P0",
+      "estimatedEffort": "3-7 days",
+      "successCriteria": [
+        "Home telemetry avoids full graph and compression packages",
+        "Typical home JSON materially smaller than Wave 1 baseline"
+      ]
+    },
+    "3": {
+      "name": "Observability and baselines",
+      "summary": "Production latency baselines, dashboard HAR harness, DB observability, LLM audit coverage, worker scopes.",
+      "sprints": ["31", "32", "07", "08", "09", "35", "38"],
+      "priority": "P0-P1",
+      "estimatedEffort": "1-2 weeks",
+      "successCriteria": [
+        "Measured p95 retrieval latency documented",
+        "dbObservability on POST /retrieve",
+        "Dashboard load measured not estimated"
+      ]
+    },
+    "4": {
+      "name": "Dashboard data layer",
+      "summary": "Telemetry tiers, bootstrap endpoint, shared provider, React Query.",
+      "sprints": ["12", "13", "14", "15"],
+      "priority": "P1",
+      "estimatedEffort": "1-2 weeks",
+      "successCriteria": [
+        "Home load 2-4 requests with caching",
+        "No duplicate telemetry polls across routes"
+      ]
+    },
+    "5": {
+      "name": "Render and UX polish",
+      "summary": "Framer layout, ref-based timers, single panel instance, gzip, compression trace UX.",
+      "sprints": ["11", "19", "20", "21", "30"],
+      "priority": "P1-P2",
+      "estimatedEffort": "3-7 days",
+      "successCriteria": [
+        "Fewer poll-driven re-renders on home",
+        "Timer-driven commits eliminated"
+      ]
+    },
+    "6": {
+      "name": "Retrieval depth",
+      "summary": "pgvector tuning, embedding cache, context-package race, timing completion, ingestion timing.",
+      "sprints": ["17", "18", "29", "36", "39", "23", "24"],
+      "priority": "P2",
+      "estimatedEffort": "2-4 weeks",
+      "successCriteria": [
+        "Evidence-based pgvector recommendations",
+        "Ingestion and delivery pipelines fully timed"
+      ]
+    },
+    "7": {
+      "name": "Long-term",
+      "summary": "WebSocket stream, EXPLAIN automation, unified observability UI, metrics store, BM25 V2 spike.",
+      "sprints": ["25", "26", "33", "34", "37"],
+      "priority": "P3",
+      "estimatedEffort": "4+ weeks",
+      "successCriteria": [
+        "Architectural spikes documented with go/no-go"
+      ]
+    }
+  }
+}

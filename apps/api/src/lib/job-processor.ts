@@ -1,5 +1,17 @@
 import type { PrismaClient } from "@prisma/client";
-import type { EventEmitter } from "@memory-middleware/observability";
+import type { DbScopeSummary } from "@memory-middleware/shared-types";
+import {
+  emitDbScopeCompleted,
+  emitLlmCallAudit,
+  emitTimingAudit,
+  ExecutionTimingCollector,
+  LlmCallCollector,
+  runWithDbObservationScope,
+  runWithTimingAsync,
+  type EventEmitter,
+  type Logger,
+} from "@memory-middleware/observability";
+import { loadDbObservabilityEnv } from "../config/db-observability-env.js";
 import {
   createOpenAiEmbeddingClient,
   runIngestionPipeline,
@@ -11,7 +23,49 @@ import { createPipelineStore } from "./ingestion-store.js";
 export interface JobProcessorOptions {
   prisma: PrismaClient;
   events: EventEmitter;
+  logger?: Logger;
   openAiApiKey?: string;
+}
+
+interface WorkerJobCollectors {
+  timingCollector: ExecutionTimingCollector;
+  llmCallCollector: LlmCallCollector;
+}
+
+async function emitWorkerJobAudits(
+  options: JobProcessorOptions,
+  job: { id: string; traceId: string },
+  collectors: WorkerJobCollectors,
+  summary: DbScopeSummary,
+): Promise<void> {
+  if (!options.logger) return;
+
+  const dbEnv = loadDbObservabilityEnv();
+  const metadata = { scope: "worker", job_id: job.id };
+
+  const emitSafe = async (audit: string, fn: () => Promise<void>): Promise<void> => {
+    try {
+      await fn();
+    } catch (error) {
+      options.logger?.warn(
+        { error, audit, trace_id: job.traceId, job_id: job.id },
+        "worker.audit.emit_failed",
+      );
+    }
+  };
+
+  await emitSafe("timing", () =>
+    emitTimingAudit(options.logger!, options.events, collectors.timingCollector.toAudit(), metadata),
+  );
+  await emitSafe("llm", () =>
+    emitLlmCallAudit(options.logger!, options.events, collectors.llmCallCollector.toAudit(), metadata),
+  );
+  await emitSafe("db", () =>
+    emitDbScopeCompleted(options.logger!, options.events, summary, {
+      leaderboardCapacity: dbEnv.DB_LEADERBOARD_SIZE,
+      metadata,
+    }),
+  );
 }
 
 export async function processNextIngestionJob(
@@ -24,15 +78,60 @@ export async function processNextIngestionJob(
 
   if (!job) return false;
 
-  await options.prisma.ingestionJob.update({
-    where: { id: job.id },
-    data: {
-      status: "processing",
-      startedAt: new Date(),
-      attemptCount: { increment: 1 },
-    },
-  });
+  const dbEnv = loadDbObservabilityEnv();
+  const collectors: WorkerJobCollectors = {
+    timingCollector: new ExecutionTimingCollector(job.traceId),
+    llmCallCollector: new LlmCallCollector(job.traceId),
+  };
 
+  const { result: processed, summary } = await runWithDbObservationScope(
+    { scopeId: job.traceId, scopeType: "worker" },
+    async () =>
+      runWithTimingAsync(
+        collectors.timingCollector,
+        async () => {
+          await collectors.timingCollector.measureAsync("worker_job:claim", async () => {
+            await options.prisma.ingestionJob.update({
+              where: { id: job.id },
+              data: {
+                status: "processing",
+                startedAt: new Date(),
+                attemptCount: { increment: 1 },
+              },
+            });
+          });
+
+          return processIngestionJobBody(options, job, collectors);
+        },
+        collectors.llmCallCollector,
+      ),
+    {
+      slowQueryMs: dbEnv.DB_SLOW_QUERY_MS,
+      nPlusOneThreshold: dbEnv.DB_N_PLUS_ONE_THRESHOLD,
+    },
+  );
+
+  await emitWorkerJobAudits(options, job, collectors, summary);
+
+  return processed;
+}
+
+async function processIngestionJobBody(
+  options: JobProcessorOptions,
+  job: {
+    id: string;
+    workspaceId: string;
+    traceId: string;
+    sourceType: string;
+    persistenceMode: string;
+    memoryType: string;
+    useLlmStructuring: boolean;
+    attemptCount: number;
+    maxAttempts: number;
+    inputPayload: unknown;
+  },
+  collectors: WorkerJobCollectors,
+): Promise<boolean> {
   const payload = job.inputPayload as {
     content?: string;
     url?: string;
@@ -62,11 +161,16 @@ export async function processNextIngestionJob(
     : null;
 
   try {
-    const result = await runIngestionPipeline(pipelineInput, {
-      events: options.events,
-      store: createPipelineStore(options.prisma),
-      embeddingClient,
-    });
+    const result = await collectors.timingCollector.measureAsync(
+      "worker_job:ingestion",
+      async () =>
+        runIngestionPipeline(pipelineInput, {
+          events: options.events,
+          store: createPipelineStore(options.prisma),
+          embeddingClient,
+          timingCollector: collectors.timingCollector,
+        }),
+    );
 
     await options.prisma.ingestionJob.update({
       where: { id: job.id },
@@ -101,10 +205,20 @@ export async function processNextIngestionJob(
     });
 
     if (failed) {
+      const existingTrace = await options.prisma.ingestionTrace.findUnique({
+        where: { traceId: job.traceId },
+        select: { workspaceId: true, status: true },
+      });
+
       await options.prisma.ingestionTrace.update({
         where: { traceId: job.traceId },
         data: { status: "failed" },
       });
+
+      if (existingTrace && existingTrace.status !== "failed") {
+        const { recordIngestionMetrics } = await import("./metrics-aggregation-store.js");
+        await recordIngestionMetrics(options.prisma, existingTrace.workspaceId, "failed");
+      }
     }
 
     return true;
@@ -134,6 +248,9 @@ export async function expireTemporaryMemories(
         ingestionStatus: "archived",
       },
     });
+
+    const { adjustActiveMemories } = await import("./metrics-aggregation-store.js");
+    await adjustActiveMemories(prisma, memory.workspaceId, -1);
 
     await events.emit({
       event_type: "ingestion.temporary.expired",

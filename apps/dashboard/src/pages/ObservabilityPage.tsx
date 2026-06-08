@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext.js";
+import {
+  useTelemetryAnalyticsState,
+  useWorkspaceTelemetry,
+} from "../context/WorkspaceTelemetryContext.js";
 import { motion } from "framer-motion";
 import { staggerContainer, staggerItem } from "../design-system/motion.js";
 import { PageHeader } from "../components/ui/PageHeader.js";
@@ -19,28 +24,42 @@ import {
   DataTableHeaderCell,
   DataTableRow,
 } from "../components/ui/DataTable.js";
-import {
-  emptyWorkspaceTelemetry,
-  fetchWorkspaceTelemetry,
-  type WorkspaceTelemetry,
-} from "../lib/workspaceTelemetry.js";
+import type { RankingRow } from "../components/observability/ExplainabilityPanel.js";
+import { fetchRankingBreakdown } from "../lib/workspaceTelemetry.js";
+import { observabilityTraceHref } from "../lib/traceObservability.js";
 
 export function ObservabilityPage() {
-  const [telemetry, setTelemetry] = useState<WorkspaceTelemetry>(emptyWorkspaceTelemetry());
-  const [loading, setLoading] = useState(true);
+  const { workspaceId, loading: authLoading } = useAuth();
+  const { telemetry, loading } = useWorkspaceTelemetry();
+  const { requestAnalytics } = useTelemetryAnalyticsState();
+  const [rankingRows, setRankingRows] = useState<RankingRow[]>([]);
 
   useEffect(() => {
+    if (authLoading || !workspaceId) return;
+    requestAnalytics();
+  }, [authLoading, workspaceId, requestAnalytics]);
+
+  useEffect(() => {
+    if (authLoading || !workspaceId || loading) return;
+
     let cancelled = false;
-    void fetchWorkspaceTelemetry().then((data) => {
-      if (!cancelled) {
-        setTelemetry(data ?? emptyWorkspaceTelemetry());
-        setLoading(false);
-      }
+    setRankingRows([]);
+
+    const latestRetrievalId = telemetry.retrievalTraces.find(
+      (trace) => trace.status === "completed",
+    )?.retrievalTraceId;
+    if (!latestRetrievalId) return;
+
+    void fetchRankingBreakdown(latestRetrievalId).then((rows) => {
+      if (!cancelled) setRankingRows(rows);
     });
+
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [authLoading, workspaceId, loading, telemetry.retrievalTraces]);
+
+  const showLoading = authLoading || loading;
 
   return (
     <motion.div
@@ -61,20 +80,20 @@ export function ObservabilityPage() {
         <MetricStrip columns={4}>
           <MetricCell
             label="Requests (24h)"
-            value={loading ? "—" : telemetry.requestCount24h.toLocaleString()}
+            value={showLoading ? "—" : telemetry.requestCount24h.toLocaleString()}
             accent
           />
           <MetricCell
             label="P99 Latency"
-            value={loading ? "—" : `${telemetry.p99LatencyMs}ms`}
+            value={showLoading ? "—" : `${telemetry.p99LatencyMs}ms`}
           />
           <MetricCell
             label="Error Rate"
-            value={loading ? "—" : `${(telemetry.errorRate * 100).toFixed(2)}%`}
+            value={showLoading ? "—" : `${(telemetry.errorRate * 100).toFixed(2)}%`}
           />
           <MetricCell
             label="Token Throughput (24h)"
-            value={loading ? "—" : telemetry.tokenThroughput.toLocaleString()}
+            value={showLoading ? "—" : telemetry.tokenThroughput.toLocaleString()}
           />
         </MetricStrip>
       </motion.div>
@@ -101,6 +120,7 @@ export function ObservabilityPage() {
                   <DataTableHeaderCell>Trace</DataTableHeaderCell>
                   <DataTableHeaderCell>Status</DataTableHeaderCell>
                   <DataTableHeaderCell>Created</DataTableHeaderCell>
+                  <DataTableHeaderCell>Audits</DataTableHeaderCell>
                 </DataTableHead>
                 <DataTableBody>
                   {telemetry.retrievalTraces.slice(0, 6).map((trace) => (
@@ -113,6 +133,14 @@ export function ObservabilityPage() {
                       <DataTableCell>{trace.status}</DataTableCell>
                       <DataTableCell>
                         {new Date(trace.createdAt).toISOString().slice(0, 19).replace("T", " ")}
+                      </DataTableCell>
+                      <DataTableCell>
+                        <Link
+                          to={observabilityTraceHref(trace.retrievalTraceId)}
+                          className="font-metric text-[0.625rem] uppercase tracking-[0.04em] text-[var(--color-accent)] no-underline hover:underline"
+                        >
+                          Observability
+                        </Link>
                       </DataTableCell>
                     </DataTableRow>
                   ))}
@@ -196,8 +224,8 @@ export function ObservabilityPage() {
             title="Reinforcement Scoring"
             description="Ranking breakdown from the latest completed retrieval."
           >
-            {telemetry.rankingRows.length > 0 ? (
-              <ReinforcementScoringPanel rows={telemetry.rankingRows} />
+            {rankingRows.length > 0 ? (
+              <ReinforcementScoringPanel rows={rankingRows} />
             ) : (
               <p className="text-sm text-[var(--color-text-secondary)]">
                 No ranking data available. Complete a retrieval to populate scoring forensics.

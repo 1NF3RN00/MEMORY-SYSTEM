@@ -1,9 +1,9 @@
 import type { FastifyInstance } from "fastify";
+import { runWithLlmCallAsync } from "@memory-middleware/observability";
 import { createOpenAiAbstractionClient, runCompressionPipeline } from "@memory-middleware/compression";
 import { createOpenAiEmbeddingClient } from "@memory-middleware/ingestion";
 import {
   buildBenchmarkComparison,
-  buildOperationalDiagnostics,
   buildTokenInflationReport,
   detectDrift,
   emitBenchmarkExecuted,
@@ -38,6 +38,11 @@ import {
   runStoredReplay,
 } from "../lib/historian-store.js";
 import {
+  buildFullOperationalDiagnosticsReport,
+  buildSlimOperationalDiagnosticsReport,
+  enrichTracesForOperationalDiagnostics,
+} from "../lib/operational-diagnostics.js";
+import {
   buildAdjacencyLookupForChunks,
   loadMemoryMetadataForExpansion,
 } from "../lib/retrieval-adjacency.js";
@@ -45,6 +50,8 @@ import { createPgVectorSearchStore } from "../lib/retrieval-vector-store.js";
 import {
   completeRetrievalOperation,
   createRetrievalOperation,
+  getRetrievalFailureInfoByTraceIds,
+  getRetrievalResultsByTraceIds,
   getWorkspaceRetrievalConfig,
   listRetrievalTraces,
   type StoredRetrievalResult,
@@ -97,6 +104,7 @@ export async function registerHistorianRoutes(app: FastifyInstance): Promise<voi
   });
 
   app.post("/replay/benchmark", async (request, reply) => {
+    return runWithLlmCallAsync(request.llmCallCollector, async () => {
     const body = request.body as BenchmarkReplayRequest | undefined;
     if (!body?.workspaceId || !body?.retrievalTraceId) {
       return reply.status(400).send({ error: "workspaceId and retrievalTraceId are required" });
@@ -271,6 +279,7 @@ export async function registerHistorianRoutes(app: FastifyInstance): Promise<voi
     );
 
     return { comparison, ...(body.rerunRetrieval ? { benchmarkTraceId } : {}) };
+    });
   });
 
   app.get<{ Querystring: { workspaceId?: string; limit?: string } }>(
@@ -312,7 +321,7 @@ export async function registerHistorianRoutes(app: FastifyInstance): Promise<voi
     },
   );
 
-  app.get<{ Querystring: { workspaceId?: string; limit?: string } }>(
+  app.get<{ Querystring: { workspaceId?: string; limit?: string; mode?: string } }>(
     "/diagnostics/operational",
     async (request, reply) => {
       if (!request.query.workspaceId) {
@@ -320,31 +329,38 @@ export async function registerHistorianRoutes(app: FastifyInstance): Promise<voi
       }
 
       const limit = Number(request.query.limit ?? 100);
+      const mode = request.query.mode === "slim" ? "slim" : "full";
       const traces = await listRetrievalTraces(app.prisma, request.query.workspaceId, limit);
       const snapshots = await listReplaySnapshots(app.prisma, request.query.workspaceId, limit);
       const snapshotByTrace = new Map(snapshots.map((s) => [s.retrievalTraceId, s]));
 
-      const enrichedTraces = await Promise.all(
-        traces.map(async (t) => {
-          const op = await app.prisma.retrievalOperation.findFirst({
-            where: { traceId: t.retrievalTraceId },
-          });
-          const result = (op?.result ?? {}) as unknown as StoredRetrievalResult;
-          const failedStage = result.stages?.find((s) => s.status === "failed")?.stage;
-          const snapshot = snapshotByTrace.get(t.retrievalTraceId);
-          return {
-            retrievalTraceId: t.retrievalTraceId,
-            query: t.query,
-            status: t.status,
-            createdAt: t.createdAt,
-            ...(result.error ? { error: result.error } : {}),
-            ...(failedStage ? { failedStage } : {}),
-            ...(snapshot ? { snapshot } : {}),
-          };
-        }),
+      const failedTraceIds = traces
+        .filter((t) => t.status === "failed")
+        .map((t) => t.retrievalTraceId);
+
+      const resultsByTraceId =
+        mode === "slim"
+          ? await getRetrievalFailureInfoByTraceIds(app.prisma, failedTraceIds)
+          : await getRetrievalResultsByTraceIds(
+              app.prisma,
+              traces.map((t) => t.retrievalTraceId),
+            );
+
+      const enrichedTraces = enrichTracesForOperationalDiagnostics(
+        traces,
+        resultsByTraceId as Map<string, StoredRetrievalResult>,
+        snapshotByTrace,
       );
 
-      const report = buildOperationalDiagnostics(
+      if (mode === "slim") {
+        const report = buildSlimOperationalDiagnosticsReport(
+          request.query.workspaceId,
+          enrichedTraces,
+        );
+        return { report };
+      }
+
+      const report = buildFullOperationalDiagnosticsReport(
         request.query.workspaceId,
         enrichedTraces,
       );

@@ -1,8 +1,18 @@
 {
   "packageKey": "social-growth",
   "name": "Social Growth",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Social and brand domains with monthly marketing review workflow",
+  "globalFacts": [
+    {
+      "scope": "global",
+      "key": "social-growth-goal",
+      "title": "Social Growth Goal",
+      "content": "Grow engaged social audience and maintain consistent brand publishing cadence.",
+      "priority": 8,
+      "status": "active"
+    }
+  ],
   "domains": [
     {
       "domainKey": "social",
@@ -23,7 +33,7 @@
       },
       "instructions": [
         {
-          "actionKey": "review",
+          "actionKey": "sg-social-review",
           "title": "Social Review Instructions",
           "content": "Compare follower growth, posting cadence, and engagement by platform.",
           "status": "active"
@@ -45,7 +55,7 @@
       "facts": [
         {
           "scope": "domain",
-          "key": "posting-cadence-target",
+          "key": "sg-posting-cadence-target",
           "title": "Posting Cadence Target",
           "content": "Publish at least 12 social posts per month across active platforms.",
           "priority": 5,
@@ -54,7 +64,7 @@
       ],
       "instructions": [
         {
-          "actionKey": "align",
+          "actionKey": "sg-brand-align",
           "title": "Brand Alignment Instructions",
           "content": "Evaluate whether observed social activity aligns with brand cadence targets.",
           "status": "active"
@@ -76,18 +86,18 @@
       "facts": [
         {
           "scope": "domain",
-          "key": "primary-growth-goal",
-          "title": "Primary Growth Goal",
-          "content": "Increase qualified leads from organic search by 20% year over year.",
-          "priority": 10,
+          "key": "sg-strategy-goal",
+          "title": "Social Strategy Goal",
+          "content": "Translate social performance into audience and engagement growth priorities.",
+          "priority": 8,
           "status": "active"
         }
       ],
       "instructions": [
         {
-          "actionKey": "plan",
-          "title": "Strategy Planning Instructions",
-          "content": "Align social findings with growth goals.",
+          "actionKey": "sg-strategy-plan",
+          "title": "Social Strategy Planning",
+          "content": "Align social findings with the social growth goal.",
           "status": "active"
         }
       ]
@@ -95,7 +105,7 @@
   ],
   "workflows": [
     {
-      "workflowKey": "monthly-marketing-review",
+      "workflowKey": "sg-monthly-marketing-review",
       "name": "Monthly Marketing Review",
       "description": "Social and brand marketing health review",
       "domains": ["brand", "strategy", "social"],

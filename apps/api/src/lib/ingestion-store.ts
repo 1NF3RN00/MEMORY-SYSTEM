@@ -1,4 +1,9 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
+import {
+  adjustActiveMemories,
+  ingestionStatusToMetricsStatus,
+  recordIngestionMetrics,
+} from "./metrics-aggregation-store.js";
 import type { PipelineStore } from "@memory-middleware/ingestion";
 import { newUlid } from "@memory-middleware/shared-types";
 import type {
@@ -13,6 +18,11 @@ import type {
 export function createPipelineStore(prisma: PrismaClient): PipelineStore {
   return {
     async updateTraceStatus(traceId, status, stages, normalizationTrace) {
+      const existing = await prisma.ingestionTrace.findUnique({
+        where: { traceId },
+        select: { workspaceId: true, status: true },
+      });
+
       await prisma.ingestionTrace.update({
         where: { traceId },
         data: {
@@ -23,6 +33,14 @@ export function createPipelineStore(prisma: PrismaClient): PipelineStore {
             : {}),
         },
       });
+
+      if (existing) {
+        const metricsStatus = ingestionStatusToMetricsStatus(status);
+        const wasTerminal = ingestionStatusToMetricsStatus(existing.status) !== null;
+        if (metricsStatus && !wasTerminal) {
+          await recordIngestionMetrics(prisma, existing.workspaceId, metricsStatus);
+        }
+      }
     },
 
     async persistSourceTruth(data) {
@@ -95,6 +113,10 @@ export function createPipelineStore(prisma: PrismaClient): PipelineStore {
           data: { memoryId: memory.id },
         });
       });
+
+      if (!memory.observability.archived) {
+        await adjustActiveMemories(prisma, memory.workspaceId, 1);
+      }
     },
 
     async updateChunkEmbeddings(memoryId, chunks) {

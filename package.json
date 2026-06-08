@@ -21,17 +21,35 @@
     "db:migrate": "npm run db:migrate -w @memory-middleware/api",
     "db:migrate:deploy": "npm run db:migrate:deploy -w @memory-middleware/api",
     "db:seed": "npm run db:seed -w @memory-middleware/api",
+    "package-catalog:seed": "npm run package-catalog:seed -w @memory-middleware/api",
+    "packages:install-local": "npm run packages:install-local -w @memory-middleware/api",
     "platform:bootstrap": "npm run platform:bootstrap -w @memory-middleware/api",
     "platform:set-password": "npm run platform:set-password -w @memory-middleware/api",
     "bootstrap": "npm run platform:bootstrap -w @memory-middleware/api",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "deploy:dashboard": "vercel deploy --prod --yes --cwd apps/dashboard",
-    "deploy:api": "vercel deploy --prod --yes --cwd apps/api"
+    "deploy:api": "vercel deploy --prod --yes --cwd apps/api",
+    "perf:sprint": "node scripts/performance-sprints/run-sprint.mjs",
+    "perf:wave": "node scripts/performance-sprints/run-wave.mjs",
+    "perf:notify": "node scripts/performance-sprints/notify-wave.mjs",
+    "perf:outcomes": "node scripts/performance-sprints/collect-wave-outcomes.mjs",
+    "perf:trigger-url": "node scripts/performance-sprints/print-trigger-url.mjs",
+    "perf:test-trigger": "node scripts/performance-sprints/test-trigger.mjs",
+    "perf:watch": "node scripts/performance-sprints/watch-waves.mjs",
+    "perf:bench-retrieval": "npx tsx scripts/benchmark-retrieval.ts",
+    "perf:bench-pgvector-explain": "npx tsx scripts/benchmark-pgvector-explain.ts",
+    "perf:explain-slow-query": "npx tsx scripts/explain-slow-query.ts",
+    "perf:test-explain-slow-query": "npm run build -w @memory-middleware/observability && npx tsx --test scripts/explain-slow-query.test.ts",
+    "perf:test-pgvector-explain": "npx tsx --test scripts/benchmark-pgvector-explain.test.ts && node --import tsx --test packages/retrieval/src/vector-search-sql.test.ts",
+    "perf:bench-dashboard-load": "npx tsx scripts/benchmark-dashboard-load.ts",
+    "perf:bench-dashboard-har": "npx tsx scripts/benchmark-dashboard-har.ts",
+    "dev:remote": "npm run dev -w @memory-middleware/dev-remote"
   },
   "engines": {
     "node": ">=20"
   },
   "devDependencies": {
+    "@cursor/sdk": "^1.0.18",
     "@types/node": "^25.9.1",
     "typescript": "^6.0.3"
   },

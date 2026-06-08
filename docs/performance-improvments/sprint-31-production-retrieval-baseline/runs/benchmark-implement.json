@@ -1,0 +1,3556 @@
+{
+  "generatedAt": "2026-06-08T19:52:45.929Z",
+  "environment": {
+    "apiUrl": "http://localhost:3000",
+    "hostClass": "local",
+    "workspaceId": "01KT7D64WDCDGTHEYK93KEXAPH",
+    "retrievalMode": "precision",
+    "tokenBudget": 2000,
+    "sampleCount": 50,
+    "warmupCount": 2,
+    "querySet": [
+      "What operational incidents occurred recently?",
+      "What are the compliance and policy decisions?",
+      "Describe the system architecture and technical design",
+      "enterprise pricing policy",
+      "customer onboarding workflow steps"
+    ],
+    "openaiConfigured": true,
+    "supabaseConfigured": true,
+    "nodeEnv": "production"
+  },
+  "mockBaseline": {
+    "retrievalStageMs": 27.54,
+    "requestTotalMs": 29.35,
+    "source": "pipeline-timing.test.ts / EXECUTION_TIMING_AUDIT_SYSTEM.md"
+  },
+  "totals": {
+    "timingAuditTotalLatency": {
+      "count": 50,
+      "min": 8269.49,
+      "max": 11093.04,
+      "mean": 9109.980100000002,
+      "p50": 8968.6695,
+      "p95": 10407.39475,
+      "p99": 11026.14226
+    },
+    "wallClock": {
+      "count": 50,
+      "min": 8272.30769999999,
+      "max": 11095.162899999996,
+      "mean": 9112.392419999998,
+      "p50": 8971.086099999957,
+      "p95": 10409.372770000013,
+      "p99": 11028.182251999988
+    },
+    "retrievalStage": {
+      "count": 50,
+      "min": 6915.359,
+      "max": 9755.95,
+      "mean": 7656.54594,
+      "p50": 7549.9905,
+      "p95": 8503.96795,
+      "p99": 9190.038709999997
+    }
+  },
+  "comparisonToMock": {
+    "timingTotalVsMockRequestTotal": {
+      "p50Ratio": 305.57647359454853,
+      "p95Ratio": 354.596073253833,
+      "p50DeltaMs": 8939.3195,
+      "p95DeltaMs": 10378.04475
+    },
+    "retrievalStageVsMockRetrieval": {
+      "p50Ratio": 274.1463507625272,
+      "p95Ratio": 308.78605482933915,
+      "p50DeltaMs": 7522.4505,
+      "p95DeltaMs": 8476.42795
+    }
+  },
+  "stageAggregates": [
+    {
+      "stage": "retrieval",
+      "count": 50,
+      "meanMs": 7656.54594,
+      "p50Ms": 7549.9905,
+      "p95Ms": 8503.96795,
+      "p99Ms": 9190.038709999997,
+      "percentOfRetrievalMean": 100
+    },
+    {
+      "stage": "vector_search:embedding",
+      "count": 50,
+      "meanMs": 521.79,
+      "p50Ms": 413.15999999999997,
+      "p95Ms": 1139.0681,
+      "p99Ms": 1971.433149999998,
+      "percentOfRetrievalMean": 6.814952905513421
+    },
+    {
+      "stage": "vector_search:pgvector",
+      "count": 50,
+      "meanMs": 120.38922000000002,
+      "p50Ms": 98.1585,
+      "p95Ms": 271.22815,
+      "p99Ms": 301.25476000000003,
+      "percentOfRetrievalMean": 1.5723698511498776
+    },
+    {
+      "stage": "keyword_search",
+      "count": 50,
+      "meanMs": 0.24574000000000001,
+      "p50Ms": 0.242,
+      "p95Ms": 0.43884999999999996,
+      "p99Ms": 0.5653799999999995,
+      "percentOfRetrievalMean": 0.0032095412464801325
+    },
+    {
+      "stage": "intent_extraction",
+      "count": 50,
+      "meanMs": 0.19426000000000002,
+      "p50Ms": 0.218,
+      "p95Ms": 0.26155,
+      "p99Ms": 0.3572499999999997,
+      "percentOfRetrievalMean": 0.0025371753989632557
+    },
+    {
+      "stage": "context_assembly",
+      "count": 50,
+      "meanMs": 0.027920000000000014,
+      "p50Ms": 0.0315,
+      "p95Ms": 0.04374999999999998,
+      "p99Ms": 0.06378999999999994,
+      "percentOfRetrievalMean": 0.00036465529259268063
+    },
+    {
+      "stage": "graph_traversal",
+      "count": 50,
+      "meanMs": 0.027120000000000002,
+      "p50Ms": 0.025,
+      "p95Ms": 0.038199999999999984,
+      "p99Ms": 0.06739999999999992,
+      "percentOfRetrievalMean": 0.0003542067168736925
+    },
+    {
+      "stage": "reranking",
+      "count": 50,
+      "meanMs": 0.02210000000000001,
+      "p50Ms": 0.0115,
+      "p95Ms": 0.019,
+      "p99Ms": 0.27901999999999905,
+      "percentOfRetrievalMean": 0.00028864190423704295
+    },
+    {
+      "stage": "metadata_filtering",
+      "count": 50,
+      "meanMs": 0.019040000000000012,
+      "p50Ms": 0.021,
+      "p95Ms": 0.025,
+      "p99Ms": 0.025509999999999998,
+      "percentOfRetrievalMean": 0.000248676102111914
+    }
+  ],
+  "samples": [
+    {
+      "index": 0,
+      "query": "What operational incidents occurred recently?",
+      "httpStatus": 200,
+      "wallClockMs": 9476.455300000001,
+      "timingAudit": {
+        "requestId": "01KTMC8ZMM66TDVGGTT3DVFBHE",
+        "totalLatency": 9473.432,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:45:11.307Z",
+            "endTime": "2026-06-08T19:45:11.307Z",
+            "durationMs": 0.024
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:45:12.111Z",
+            "endTime": "2026-06-08T19:45:12.111Z",
+            "durationMs": 0.252
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:45:12.939Z",
+            "endTime": "2026-06-08T19:45:13.203Z",
+            "durationMs": 264.011
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:45:13.204Z",
+            "endTime": "2026-06-08T19:45:13.300Z",
+            "durationMs": 96.068
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:45:14.410Z",
+            "endTime": "2026-06-08T19:45:14.410Z",
+            "durationMs": 0.525
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:45:17.591Z",
+            "endTime": "2026-06-08T19:45:17.591Z",
+            "durationMs": 0.038
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:45:18.627Z",
+            "endTime": "2026-06-08T19:45:18.627Z",
+            "durationMs": 0.016
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:45:18.627Z",
+            "endTime": "2026-06-08T19:45:18.627Z",
+            "durationMs": 0.143
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:45:10.950Z",
+            "endTime": "2026-06-08T19:45:19.036Z",
+            "durationMs": 8086.736
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMC903CKSA3MZMQRT3SMDSD",
+      "error": null
+    },
+    {
+      "index": 1,
+      "query": "What are the compliance and policy decisions?",
+      "httpStatus": 200,
+      "wallClockMs": 8361.8737,
+      "timingAudit": {
+        "requestId": "01KTMC98WTH1FA81JJQWKWNDV9",
+        "totalLatency": 8357.703,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:45:20.976Z",
+            "endTime": "2026-06-08T19:45:20.976Z",
+            "durationMs": 0.02
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:45:21.846Z",
+            "endTime": "2026-06-08T19:45:21.846Z",
+            "durationMs": 0.24
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:45:22.655Z",
+            "endTime": "2026-06-08T19:45:22.934Z",
+            "durationMs": 278.982
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:45:22.934Z",
+            "endTime": "2026-06-08T19:45:23.029Z",
+            "durationMs": 94.522
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:45:23.826Z",
+            "endTime": "2026-06-08T19:45:23.827Z",
+            "durationMs": 0.007
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:45:26.242Z",
+            "endTime": "2026-06-08T19:45:26.242Z",
+            "durationMs": 0.032
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:45:27.135Z",
+            "endTime": "2026-06-08T19:45:27.135Z",
+            "durationMs": 0.026
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:45:27.135Z",
+            "endTime": "2026-06-08T19:45:27.135Z",
+            "durationMs": 0.192
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:45:20.575Z",
+            "endTime": "2026-06-08T19:45:27.490Z",
+            "durationMs": 6915.359
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMC99CBZ6D6XAM0SDCV87GP",
+      "error": null
+    },
+    {
+      "index": 2,
+      "query": "Describe the system architecture and technical design",
+      "httpStatus": 200,
+      "wallClockMs": 8582.5026,
+      "timingAudit": {
+        "requestId": "01KTMC9H25R83S1978HT6Z0YSV",
+        "totalLatency": 8578.415,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:45:29.157Z",
+            "endTime": "2026-06-08T19:45:29.157Z",
+            "durationMs": 0.023
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:45:29.965Z",
+            "endTime": "2026-06-08T19:45:29.966Z",
+            "durationMs": 0.24
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:45:30.781Z",
+            "endTime": "2026-06-08T19:45:31.016Z",
+            "durationMs": 234.815
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:45:31.016Z",
+            "endTime": "2026-06-08T19:45:31.109Z",
+            "durationMs": 93.072
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:45:32.040Z",
+            "endTime": "2026-06-08T19:45:32.040Z",
+            "durationMs": 0.014
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:45:34.804Z",
+            "endTime": "2026-06-08T19:45:34.804Z",
+            "durationMs": 0.016
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:45:35.700Z",
+            "endTime": "2026-06-08T19:45:35.700Z",
+            "durationMs": 0.036
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:45:35.700Z",
+            "endTime": "2026-06-08T19:45:35.701Z",
+            "durationMs": 0.435
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:45:28.798Z",
+            "endTime": "2026-06-08T19:45:36.067Z",
+            "durationMs": 7269.311
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMC9HHBDYJ0MF27A6R4Y4ZZ",
+      "error": null
+    },
+    {
+      "index": 3,
+      "query": "enterprise pricing policy",
+      "httpStatus": 200,
+      "wallClockMs": 8530.207799999996,
+      "timingAudit": {
+        "requestId": "01KTMC9SEABYRN9ZMRF8GTF180",
+        "totalLatency": 8527.156,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:45:37.658Z",
+            "endTime": "2026-06-08T19:45:37.658Z",
+            "durationMs": 0.025
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:45:38.463Z",
+            "endTime": "2026-06-08T19:45:38.463Z",
+            "durationMs": 0.146
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:45:39.268Z",
+            "endTime": "2026-06-08T19:45:39.635Z",
+            "durationMs": 366.695
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:45:39.635Z",
+            "endTime": "2026-06-08T19:45:39.736Z",
+            "durationMs": 100.959
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:45:40.839Z",
+            "endTime": "2026-06-08T19:45:40.839Z",
+            "durationMs": 0.007
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:45:43.345Z",
+            "endTime": "2026-06-08T19:45:43.346Z",
+            "durationMs": 0.023
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:45:44.245Z",
+            "endTime": "2026-06-08T19:45:44.245Z",
+            "durationMs": 0.024
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:45:44.245Z",
+            "endTime": "2026-06-08T19:45:44.246Z",
+            "durationMs": 0.168
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:45:37.295Z",
+            "endTime": "2026-06-08T19:45:44.600Z",
+            "durationMs": 7304.428
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMC9STJBYF14Y4G43931Y4C",
+      "error": null
+    },
+    {
+      "index": 4,
+      "query": "customer onboarding workflow steps",
+      "httpStatus": 200,
+      "wallClockMs": 9876.577599999997,
+      "timingAudit": {
+        "requestId": "01KTMCA1RXXPNEKW1XQZAQKB4M",
+        "totalLatency": 9872.416,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:45:47.318Z",
+            "endTime": "2026-06-08T19:45:47.318Z",
+            "durationMs": 0.022
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:45:48.217Z",
+            "endTime": "2026-06-08T19:45:48.217Z",
+            "durationMs": 0.086
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:45:49.039Z",
+            "endTime": "2026-06-08T19:45:49.368Z",
+            "durationMs": 328.916
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:45:49.368Z",
+            "endTime": "2026-06-08T19:45:49.642Z",
+            "durationMs": 273.547
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:45:50.448Z",
+            "endTime": "2026-06-08T19:45:50.448Z",
+            "durationMs": 0.006
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:45:52.874Z",
+            "endTime": "2026-06-08T19:45:52.874Z",
+            "durationMs": 0.036
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:45:53.775Z",
+            "endTime": "2026-06-08T19:45:53.775Z",
+            "durationMs": 0.035
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:45:53.775Z",
+            "endTime": "2026-06-08T19:45:53.776Z",
+            "durationMs": 0.241
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:45:46.790Z",
+            "endTime": "2026-06-08T19:45:54.132Z",
+            "durationMs": 7341.963
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCA284CZEP4SPJDX2BW00Z",
+      "error": null
+    },
+    {
+      "index": 5,
+      "query": "What operational incidents occurred recently?",
+      "httpStatus": 200,
+      "wallClockMs": 8921.825900000003,
+      "timingAudit": {
+        "requestId": "01KTMCABDJNEQY94XMMV1RA0Y1",
+        "totalLatency": 8918.965,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:45:56.043Z",
+            "endTime": "2026-06-08T19:45:56.043Z",
+            "durationMs": 0.024
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:45:56.831Z",
+            "endTime": "2026-06-08T19:45:56.831Z",
+            "durationMs": 0.23
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:45:57.627Z",
+            "endTime": "2026-06-08T19:45:57.962Z",
+            "durationMs": 335.27
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:45:57.962Z",
+            "endTime": "2026-06-08T19:45:58.058Z",
+            "durationMs": 95.659
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:45:59.280Z",
+            "endTime": "2026-06-08T19:45:59.280Z",
+            "durationMs": 0.017
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:46:01.838Z",
+            "endTime": "2026-06-08T19:46:01.838Z",
+            "durationMs": 0.015
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:46:02.966Z",
+            "endTime": "2026-06-08T19:46:02.966Z",
+            "durationMs": 0.035
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:46:02.966Z",
+            "endTime": "2026-06-08T19:46:02.966Z",
+            "durationMs": 0.341
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:45:55.692Z",
+            "endTime": "2026-06-08T19:46:03.373Z",
+            "durationMs": 7681.182
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCABSRV8AHA6ZAB51YVQR9",
+      "error": null
+    },
+    {
+      "index": 6,
+      "query": "What are the compliance and policy decisions?",
+      "httpStatus": 200,
+      "wallClockMs": 9077.747300000003,
+      "timingAudit": {
+        "requestId": "01KTMCAM4E0EDN0YBCYW541D7Q",
+        "totalLatency": 9073.554,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:46:05.239Z",
+            "endTime": "2026-06-08T19:46:05.239Z",
+            "durationMs": 0.025
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:46:06.046Z",
+            "endTime": "2026-06-08T19:46:06.047Z",
+            "durationMs": 0.238
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:46:06.846Z",
+            "endTime": "2026-06-08T19:46:07.221Z",
+            "durationMs": 374.245
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:46:07.221Z",
+            "endTime": "2026-06-08T19:46:07.320Z",
+            "durationMs": 99.109
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:46:08.120Z",
+            "endTime": "2026-06-08T19:46:08.121Z",
+            "durationMs": 0.019
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:46:10.748Z",
+            "endTime": "2026-06-08T19:46:10.748Z",
+            "durationMs": 0.036
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:46:11.875Z",
+            "endTime": "2026-06-08T19:46:11.875Z",
+            "durationMs": 0.035
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:46:11.875Z",
+            "endTime": "2026-06-08T19:46:11.876Z",
+            "durationMs": 0.396
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:46:04.883Z",
+            "endTime": "2026-06-08T19:46:12.307Z",
+            "durationMs": 7424.094
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCAMS01QMVNKAETYRNFYD2",
+      "error": null
+    },
+    {
+      "index": 7,
+      "query": "Describe the system architecture and technical design",
+      "httpStatus": 200,
+      "wallClockMs": 8272.30769999999,
+      "timingAudit": {
+        "requestId": "01KTMCAX03ZRM8VYYSBEFT00NA",
+        "totalLatency": 8269.49,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:46:14.179Z",
+            "endTime": "2026-06-08T19:46:14.179Z",
+            "durationMs": 0.01
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:46:14.978Z",
+            "endTime": "2026-06-08T19:46:14.978Z",
+            "durationMs": 0.239
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:46:15.790Z",
+            "endTime": "2026-06-08T19:46:16.101Z",
+            "durationMs": 311.197
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:46:16.101Z",
+            "endTime": "2026-06-08T19:46:16.196Z",
+            "durationMs": 94.811
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:46:17.003Z",
+            "endTime": "2026-06-08T19:46:17.003Z",
+            "durationMs": 0.007
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:46:19.497Z",
+            "endTime": "2026-06-08T19:46:19.497Z",
+            "durationMs": 0.031
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:46:20.411Z",
+            "endTime": "2026-06-08T19:46:20.411Z",
+            "durationMs": 0.035
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:46:20.411Z",
+            "endTime": "2026-06-08T19:46:20.411Z",
+            "durationMs": 0.304
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:46:13.820Z",
+            "endTime": "2026-06-08T19:46:20.764Z",
+            "durationMs": 6942.733
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCAXFFBJ5EFPZJ19RD1EC5",
+      "error": null
+    },
+    {
+      "index": 8,
+      "query": "enterprise pricing policy",
+      "httpStatus": 200,
+      "wallClockMs": 8701.27859999999,
+      "timingAudit": {
+        "requestId": "01KTMCB52PAM5MDGS5V3CPB421",
+        "totalLatency": 8698.622,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:46:22.411Z",
+            "endTime": "2026-06-08T19:46:22.411Z",
+            "durationMs": 0.024
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:46:23.211Z",
+            "endTime": "2026-06-08T19:46:23.211Z",
+            "durationMs": 0.106
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:46:24.008Z",
+            "endTime": "2026-06-08T19:46:24.897Z",
+            "durationMs": 888.8
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:46:24.897Z",
+            "endTime": "2026-06-08T19:46:24.989Z",
+            "durationMs": 92.751
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:46:25.801Z",
+            "endTime": "2026-06-08T19:46:25.801Z",
+            "durationMs": 0.007
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:46:28.211Z",
+            "endTime": "2026-06-08T19:46:28.211Z",
+            "durationMs": 0.037
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:46:29.103Z",
+            "endTime": "2026-06-08T19:46:29.103Z",
+            "durationMs": 0.033
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:46:29.104Z",
+            "endTime": "2026-06-08T19:46:29.104Z",
+            "durationMs": 0.242
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:46:22.057Z",
+            "endTime": "2026-06-08T19:46:29.459Z",
+            "durationMs": 7402.856
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCB5HKR4S329EGJTZZ8DVQ",
+      "error": null
+    },
+    {
+      "index": 9,
+      "query": "customer onboarding workflow steps",
+      "httpStatus": 200,
+      "wallClockMs": 8913.663799999995,
+      "timingAudit": {
+        "requestId": "01KTMCBDJJ1D0JDKBYBADQ45N6",
+        "totalLatency": 8912.371,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:46:31.026Z",
+            "endTime": "2026-06-08T19:46:31.026Z",
+            "durationMs": 0.021
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:46:31.836Z",
+            "endTime": "2026-06-08T19:46:31.836Z",
+            "durationMs": 0.204
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:46:32.632Z",
+            "endTime": "2026-06-08T19:46:32.908Z",
+            "durationMs": 275.556
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:46:32.908Z",
+            "endTime": "2026-06-08T19:46:33.003Z",
+            "durationMs": 95.502
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:46:33.807Z",
+            "endTime": "2026-06-08T19:46:33.807Z",
+            "durationMs": 0.017
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:46:36.455Z",
+            "endTime": "2026-06-08T19:46:36.455Z",
+            "durationMs": 0.018
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:46:37.680Z",
+            "endTime": "2026-06-08T19:46:37.681Z",
+            "durationMs": 0.047
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:46:37.681Z",
+            "endTime": "2026-06-08T19:46:37.681Z",
+            "durationMs": 0.242
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:46:30.671Z",
+            "endTime": "2026-06-08T19:46:38.076Z",
+            "durationMs": 7405.267
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCBDYT02GP92MRVQ1NSE7A",
+      "error": null
+    },
+    {
+      "index": 10,
+      "query": "What operational incidents occurred recently?",
+      "httpStatus": 200,
+      "wallClockMs": 8707.693499999994,
+      "timingAudit": {
+        "requestId": "01KTMCBP94K21V5DM8YPJP1PTA",
+        "totalLatency": 8705.58,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:46:40.220Z",
+            "endTime": "2026-06-08T19:46:40.220Z",
+            "durationMs": 0.026
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:46:41.036Z",
+            "endTime": "2026-06-08T19:46:41.036Z",
+            "durationMs": 0.228
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:46:41.843Z",
+            "endTime": "2026-06-08T19:46:42.274Z",
+            "durationMs": 431.286
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:46:42.274Z",
+            "endTime": "2026-06-08T19:46:42.375Z",
+            "durationMs": 101.033
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:46:43.188Z",
+            "endTime": "2026-06-08T19:46:43.188Z",
+            "durationMs": 0.018
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:46:45.624Z",
+            "endTime": "2026-06-08T19:46:45.624Z",
+            "durationMs": 0.036
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:46:46.548Z",
+            "endTime": "2026-06-08T19:46:46.548Z",
+            "durationMs": 0.035
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:46:46.548Z",
+            "endTime": "2026-06-08T19:46:46.549Z",
+            "durationMs": 0.682
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:46:39.832Z",
+            "endTime": "2026-06-08T19:46:46.999Z",
+            "durationMs": 7166.113
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCBPVXH94DBVKXV6582SRM",
+      "error": null
+    },
+    {
+      "index": 11,
+      "query": "What are the compliance and policy decisions?",
+      "httpStatus": 200,
+      "wallClockMs": 9941.636299999998,
+      "timingAudit": {
+        "requestId": "01KTMCBYS9W09MNDA3GZSSPWPC",
+        "totalLatency": 9938.987,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:46:48.804Z",
+            "endTime": "2026-06-08T19:46:48.804Z",
+            "durationMs": 0.025
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:46:49.613Z",
+            "endTime": "2026-06-08T19:46:49.613Z",
+            "durationMs": 0.238
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:46:50.505Z",
+            "endTime": "2026-06-08T19:46:52.028Z",
+            "durationMs": 1522.549
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:46:52.028Z",
+            "endTime": "2026-06-08T19:46:52.120Z",
+            "durationMs": 92.303
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:46:53.039Z",
+            "endTime": "2026-06-08T19:46:53.039Z",
+            "durationMs": 0.011
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:46:55.774Z",
+            "endTime": "2026-06-08T19:46:55.774Z",
+            "durationMs": 0.038
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:46:56.672Z",
+            "endTime": "2026-06-08T19:46:56.673Z",
+            "durationMs": 0.028
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:46:56.673Z",
+            "endTime": "2026-06-08T19:46:56.673Z",
+            "durationMs": 0.223
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:46:48.454Z",
+            "endTime": "2026-06-08T19:46:57.025Z",
+            "durationMs": 8570.842
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCBZAKT9EQH82WMC4XZ1F8",
+      "error": null
+    },
+    {
+      "index": 12,
+      "query": "Describe the system architecture and technical design",
+      "httpStatus": 200,
+      "wallClockMs": 8664.851200000005,
+      "timingAudit": {
+        "requestId": "01KTMCC8FZPXKEZ4RFTKAAHG75",
+        "totalLatency": 8662.286,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:46:58.683Z",
+            "endTime": "2026-06-08T19:46:58.683Z",
+            "durationMs": 0.017
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:46:59.485Z",
+            "endTime": "2026-06-08T19:46:59.485Z",
+            "durationMs": 0.261
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:47:00.292Z",
+            "endTime": "2026-06-08T19:47:00.704Z",
+            "durationMs": 411.882
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:47:00.704Z",
+            "endTime": "2026-06-08T19:47:00.822Z",
+            "durationMs": 118.284
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:47:01.850Z",
+            "endTime": "2026-06-08T19:47:01.850Z",
+            "durationMs": 0.008
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:47:04.339Z",
+            "endTime": "2026-06-08T19:47:04.339Z",
+            "durationMs": 0.037
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:47:05.326Z",
+            "endTime": "2026-06-08T19:47:05.327Z",
+            "durationMs": 0.027
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:47:05.327Z",
+            "endTime": "2026-06-08T19:47:05.327Z",
+            "durationMs": 0.22
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:46:58.328Z",
+            "endTime": "2026-06-08T19:47:05.687Z",
+            "durationMs": 7358.543
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCC8Z56Q0F8GT35TQYHY1H",
+      "error": null
+    },
+    {
+      "index": 13,
+      "query": "enterprise pricing policy",
+      "httpStatus": 200,
+      "wallClockMs": 9635.998200000002,
+      "timingAudit": {
+        "requestId": "01KTMCCGYSBFPHWFB32140GDRR",
+        "totalLatency": 9632.749,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:47:07.249Z",
+            "endTime": "2026-06-08T19:47:07.249Z",
+            "durationMs": 0.023
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:47:08.060Z",
+            "endTime": "2026-06-08T19:47:08.060Z",
+            "durationMs": 0.188
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:47:08.863Z",
+            "endTime": "2026-06-08T19:47:09.844Z",
+            "durationMs": 980.068
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:47:09.844Z",
+            "endTime": "2026-06-08T19:47:09.939Z",
+            "durationMs": 95.426
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:47:10.960Z",
+            "endTime": "2026-06-08T19:47:10.960Z",
+            "durationMs": 0.019
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:47:13.827Z",
+            "endTime": "2026-06-08T19:47:13.827Z",
+            "durationMs": 0.036
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:47:14.961Z",
+            "endTime": "2026-06-08T19:47:14.961Z",
+            "durationMs": 0.034
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:47:14.961Z",
+            "endTime": "2026-06-08T19:47:14.962Z",
+            "durationMs": 0.304
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:47:06.895Z",
+            "endTime": "2026-06-08T19:47:15.317Z",
+            "durationMs": 8422.233
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCCHAYYVZZ18D2MFHP4H7G",
+      "error": null
+    },
+    {
+      "index": 14,
+      "query": "customer onboarding workflow steps",
+      "httpStatus": 200,
+      "wallClockMs": 8542.402900000016,
+      "timingAudit": {
+        "requestId": "01KTMCCTBXMKPBNTX0DPZVH7M5",
+        "totalLatency": 8539.309,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:47:16.975Z",
+            "endTime": "2026-06-08T19:47:16.975Z",
+            "durationMs": 0.024
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:47:17.777Z",
+            "endTime": "2026-06-08T19:47:17.778Z",
+            "durationMs": 0.203
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:47:18.598Z",
+            "endTime": "2026-06-08T19:47:18.961Z",
+            "durationMs": 363.514
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:47:18.961Z",
+            "endTime": "2026-06-08T19:47:19.058Z",
+            "durationMs": 96.884
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:47:19.969Z",
+            "endTime": "2026-06-08T19:47:19.969Z",
+            "durationMs": 0.014
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:47:22.610Z",
+            "endTime": "2026-06-08T19:47:22.610Z",
+            "durationMs": 0.046
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:47:23.512Z",
+            "endTime": "2026-06-08T19:47:23.512Z",
+            "durationMs": 0.034
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:47:23.512Z",
+            "endTime": "2026-06-08T19:47:23.512Z",
+            "durationMs": 0.303
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:47:16.621Z",
+            "endTime": "2026-06-08T19:47:23.868Z",
+            "durationMs": 7248.709
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCCTTRS8JCFJ83AE0RVD8W",
+      "error": null
+    },
+    {
+      "index": 15,
+      "query": "What operational incidents occurred recently?",
+      "httpStatus": 200,
+      "wallClockMs": 9055.046399999992,
+      "timingAudit": {
+        "requestId": "01KTMCD2PT0QVJNXBH1HZZGA86",
+        "totalLatency": 9052.244,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:47:25.434Z",
+            "endTime": "2026-06-08T19:47:25.434Z",
+            "durationMs": 0.009
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:47:26.236Z",
+            "endTime": "2026-06-08T19:47:26.237Z",
+            "durationMs": 0.151
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:47:27.239Z",
+            "endTime": "2026-06-08T19:47:27.558Z",
+            "durationMs": 318.584
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:47:27.558Z",
+            "endTime": "2026-06-08T19:47:27.672Z",
+            "durationMs": 114.486
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:47:28.762Z",
+            "endTime": "2026-06-08T19:47:28.762Z",
+            "durationMs": 0.015
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:47:31.540Z",
+            "endTime": "2026-06-08T19:47:31.540Z",
+            "durationMs": 0.03
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:47:32.563Z",
+            "endTime": "2026-06-08T19:47:32.563Z",
+            "durationMs": 0.018
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:47:32.563Z",
+            "endTime": "2026-06-08T19:47:32.563Z",
+            "durationMs": 0.13
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:47:25.072Z",
+            "endTime": "2026-06-08T19:47:32.928Z",
+            "durationMs": 7855.204
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCD32TE1B2X6X50WZA3K71",
+      "error": null
+    },
+    {
+      "index": 16,
+      "query": "What are the compliance and policy decisions?",
+      "httpStatus": 200,
+      "wallClockMs": 9361.806499999977,
+      "timingAudit": {
+        "requestId": "01KTMCDBHSR1JF2PYZG45RP33M",
+        "totalLatency": 9360.135,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:47:34.577Z",
+            "endTime": "2026-06-08T19:47:34.577Z",
+            "durationMs": 0.023
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:47:35.394Z",
+            "endTime": "2026-06-08T19:47:35.395Z",
+            "durationMs": 0.24
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:47:36.289Z",
+            "endTime": "2026-06-08T19:47:36.622Z",
+            "durationMs": 333.209
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:47:36.622Z",
+            "endTime": "2026-06-08T19:47:36.719Z",
+            "durationMs": 96.526
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:47:37.581Z",
+            "endTime": "2026-06-08T19:47:37.581Z",
+            "durationMs": 0.012
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:47:40.639Z",
+            "endTime": "2026-06-08T19:47:40.640Z",
+            "durationMs": 0.036
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:47:41.771Z",
+            "endTime": "2026-06-08T19:47:41.771Z",
+            "durationMs": 0.035
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:47:41.771Z",
+            "endTime": "2026-06-08T19:47:41.771Z",
+            "durationMs": 0.305
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:47:34.220Z",
+            "endTime": "2026-06-08T19:47:42.189Z",
+            "durationMs": 7969.251
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCDC0PPTB65XDMEYFRYNG7",
+      "error": null
+    },
+    {
+      "index": 17,
+      "query": "Describe the system architecture and technical design",
+      "httpStatus": 200,
+      "wallClockMs": 11095.162899999996,
+      "timingAudit": {
+        "requestId": "01KTMCDMPBMXY1NSEC8X7JVJD0",
+        "totalLatency": 11093.04,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:47:44.121Z",
+            "endTime": "2026-06-08T19:47:44.121Z",
+            "durationMs": 0.014
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:47:45.027Z",
+            "endTime": "2026-06-08T19:47:45.027Z",
+            "durationMs": 0.238
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:47:45.840Z",
+            "endTime": "2026-06-08T19:47:48.243Z",
+            "durationMs": 2402.714
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:47:48.243Z",
+            "endTime": "2026-06-08T19:47:48.336Z",
+            "durationMs": 93.358
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:47:49.144Z",
+            "endTime": "2026-06-08T19:47:49.144Z",
+            "durationMs": 0.018
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:47:51.918Z",
+            "endTime": "2026-06-08T19:47:51.918Z",
+            "durationMs": 0.038
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:47:53.024Z",
+            "endTime": "2026-06-08T19:47:53.024Z",
+            "durationMs": 0.013
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:47:53.024Z",
+            "endTime": "2026-06-08T19:47:53.024Z",
+            "durationMs": 0.083
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:47:43.623Z",
+            "endTime": "2026-06-08T19:47:53.379Z",
+            "durationMs": 9755.95
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCDN64P83HQCTY7R2AP4F5",
+      "error": null
+    },
+    {
+      "index": 18,
+      "query": "enterprise pricing policy",
+      "httpStatus": 200,
+      "wallClockMs": 8862.820999999996,
+      "timingAudit": {
+        "requestId": "01KTMCDZH3B1PGZTDPC6SNG661",
+        "totalLatency": 8859.889,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:47:55.028Z",
+            "endTime": "2026-06-08T19:47:55.028Z",
+            "durationMs": 0.023
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:47:55.845Z",
+            "endTime": "2026-06-08T19:47:55.845Z",
+            "durationMs": 0.186
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:47:56.635Z",
+            "endTime": "2026-06-08T19:47:57.054Z",
+            "durationMs": 418.62
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:47:57.054Z",
+            "endTime": "2026-06-08T19:47:57.243Z",
+            "durationMs": 189.743
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:47:58.134Z",
+            "endTime": "2026-06-08T19:47:58.134Z",
+            "durationMs": 0.023
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:48:00.681Z",
+            "endTime": "2026-06-08T19:48:00.681Z",
+            "durationMs": 0.017
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:48:01.646Z",
+            "endTime": "2026-06-08T19:48:01.646Z",
+            "durationMs": 0.04
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:48:01.646Z",
+            "endTime": "2026-06-08T19:48:01.647Z",
+            "durationMs": 0.444
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:47:54.672Z",
+            "endTime": "2026-06-08T19:48:02.156Z",
+            "durationMs": 7483.905
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCDZZYC4J75Q6VEJP5A6RW",
+      "error": null
+    },
+    {
+      "index": 19,
+      "query": "customer onboarding workflow steps",
+      "httpStatus": 200,
+      "wallClockMs": 8896.787899999996,
+      "timingAudit": {
+        "requestId": "01KTMCE863XGJ2VAJ6TFWRYMZX",
+        "totalLatency": 8893.819,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:48:03.889Z",
+            "endTime": "2026-06-08T19:48:03.889Z",
+            "durationMs": 0.015
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:48:04.677Z",
+            "endTime": "2026-06-08T19:48:04.677Z",
+            "durationMs": 0.183
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:48:05.465Z",
+            "endTime": "2026-06-08T19:48:06.206Z",
+            "durationMs": 740.729
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:48:06.206Z",
+            "endTime": "2026-06-08T19:48:06.298Z",
+            "durationMs": 92.513
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:48:07.085Z",
+            "endTime": "2026-06-08T19:48:07.085Z",
+            "durationMs": 0.011
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:48:09.634Z",
+            "endTime": "2026-06-08T19:48:09.634Z",
+            "durationMs": 0.036
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:48:10.644Z",
+            "endTime": "2026-06-08T19:48:10.644Z",
+            "durationMs": 0.023
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:48:10.644Z",
+            "endTime": "2026-06-08T19:48:10.644Z",
+            "durationMs": 0.149
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:48:03.538Z",
+            "endTime": "2026-06-08T19:48:11.066Z",
+            "durationMs": 7528.058
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCE8N2Y3H5RA11RKMPKXCR",
+      "error": null
+    },
+    {
+      "index": 20,
+      "query": "What operational incidents occurred recently?",
+      "httpStatus": 200,
+      "wallClockMs": 8814.473700000002,
+      "timingAudit": {
+        "requestId": "01KTMCEGW31DTPTJJ2AQ1K2V3Z",
+        "totalLatency": 8811.787,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:48:13.011Z",
+            "endTime": "2026-06-08T19:48:13.011Z",
+            "durationMs": 0.022
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:48:13.913Z",
+            "endTime": "2026-06-08T19:48:13.913Z",
+            "durationMs": 0.093
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:48:14.698Z",
+            "endTime": "2026-06-08T19:48:15.059Z",
+            "durationMs": 360.365
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:48:15.059Z",
+            "endTime": "2026-06-08T19:48:15.155Z",
+            "durationMs": 96.419
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:48:16.185Z",
+            "endTime": "2026-06-08T19:48:16.185Z",
+            "durationMs": 0.012
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:48:18.708Z",
+            "endTime": "2026-06-08T19:48:18.708Z",
+            "durationMs": 0.013
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:48:19.590Z",
+            "endTime": "2026-06-08T19:48:19.590Z",
+            "durationMs": 0.035
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:48:19.590Z",
+            "endTime": "2026-06-08T19:48:19.590Z",
+            "durationMs": 0.383
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:48:12.582Z",
+            "endTime": "2026-06-08T19:48:19.948Z",
+            "durationMs": 7377.506
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCEHEYMJSG711A4ZRSA2TQ",
+      "error": null
+    },
+    {
+      "index": 21,
+      "query": "What are the compliance and policy decisions?",
+      "httpStatus": 200,
+      "wallClockMs": 9635.353000000003,
+      "timingAudit": {
+        "requestId": "01KTMCESF6N5WJWQGPQG6RYVP7",
+        "totalLatency": 9632.764,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:48:21.501Z",
+            "endTime": "2026-06-08T19:48:21.501Z",
+            "durationMs": 0.019
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:48:22.287Z",
+            "endTime": "2026-06-08T19:48:22.287Z",
+            "durationMs": 0.262
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:48:23.089Z",
+            "endTime": "2026-06-08T19:48:23.503Z",
+            "durationMs": 414.438
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:48:23.503Z",
+            "endTime": "2026-06-08T19:48:23.593Z",
+            "durationMs": 89.848
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:48:24.776Z",
+            "endTime": "2026-06-08T19:48:24.776Z",
+            "durationMs": 0.017
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:48:27.950Z",
+            "endTime": "2026-06-08T19:48:27.950Z",
+            "durationMs": 0.04
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:48:28.974Z",
+            "endTime": "2026-06-08T19:48:28.974Z",
+            "durationMs": 0.032
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:48:28.974Z",
+            "endTime": "2026-06-08T19:48:28.975Z",
+            "durationMs": 0.305
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:48:21.151Z",
+            "endTime": "2026-06-08T19:48:29.355Z",
+            "durationMs": 8203.469
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCESVDMDY50P38S3VSTJ6N",
+      "error": null
+    },
+    {
+      "index": 22,
+      "query": "Describe the system architecture and technical design",
+      "httpStatus": 200,
+      "wallClockMs": 9731.74470000001,
+      "timingAudit": {
+        "requestId": "01KTMCF2WB9N9SPEKEE7FK474F",
+        "totalLatency": 9729.228,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:48:31.516Z",
+            "endTime": "2026-06-08T19:48:31.516Z",
+            "durationMs": 0.009
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:48:32.309Z",
+            "endTime": "2026-06-08T19:48:32.309Z",
+            "durationMs": 0.237
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:48:33.110Z",
+            "endTime": "2026-06-08T19:48:33.400Z",
+            "durationMs": 290.167
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:48:33.400Z",
+            "endTime": "2026-06-08T19:48:33.501Z",
+            "durationMs": 101.19
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:48:34.505Z",
+            "endTime": "2026-06-08T19:48:34.505Z",
+            "durationMs": 0.016
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:48:37.677Z",
+            "endTime": "2026-06-08T19:48:37.677Z",
+            "durationMs": 0.023
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:48:38.701Z",
+            "endTime": "2026-06-08T19:48:38.701Z",
+            "durationMs": 0.021
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:48:38.701Z",
+            "endTime": "2026-06-08T19:48:38.701Z",
+            "durationMs": 0.169
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:48:31.124Z",
+            "endTime": "2026-06-08T19:48:39.111Z",
+            "durationMs": 7986.412
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCF3JAYFRAAM7RYQY7S3RY",
+      "error": null
+    },
+    {
+      "index": 23,
+      "query": "enterprise pricing policy",
+      "httpStatus": 200,
+      "wallClockMs": 8467.518100000016,
+      "timingAudit": {
+        "requestId": "01KTMCFCCE36QA4Q7M72KW983B",
+        "totalLatency": 8465.847,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:48:40.863Z",
+            "endTime": "2026-06-08T19:48:40.863Z",
+            "durationMs": 0.01
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:48:41.651Z",
+            "endTime": "2026-06-08T19:48:41.652Z",
+            "durationMs": 0.091
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:48:42.452Z",
+            "endTime": "2026-06-08T19:48:43.003Z",
+            "durationMs": 550.614
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:48:43.003Z",
+            "endTime": "2026-06-08T19:48:43.103Z",
+            "durationMs": 100.743
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:48:43.895Z",
+            "endTime": "2026-06-08T19:48:43.895Z",
+            "durationMs": 0.007
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:48:46.366Z",
+            "endTime": "2026-06-08T19:48:46.366Z",
+            "durationMs": 0.016
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:48:47.405Z",
+            "endTime": "2026-06-08T19:48:47.406Z",
+            "durationMs": 0.034
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:48:47.406Z",
+            "endTime": "2026-06-08T19:48:47.406Z",
+            "durationMs": 0.27
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:48:40.517Z",
+            "endTime": "2026-06-08T19:48:47.801Z",
+            "durationMs": 7283.987
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCFCRPYTPHD432TR8D0PGC",
+      "error": null
+    },
+    {
+      "index": 24,
+      "query": "customer onboarding workflow steps",
+      "httpStatus": 200,
+      "wallClockMs": 8426.966600000014,
+      "timingAudit": {
+        "requestId": "01KTMCFMN11HHM9978YHS3Z94V",
+        "totalLatency": 8425.087,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:48:49.421Z",
+            "endTime": "2026-06-08T19:48:49.421Z",
+            "durationMs": 0.025
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:48:50.225Z",
+            "endTime": "2026-06-08T19:48:50.226Z",
+            "durationMs": 0.23
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:48:51.038Z",
+            "endTime": "2026-06-08T19:48:51.516Z",
+            "durationMs": 478.275
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:48:51.516Z",
+            "endTime": "2026-06-08T19:48:51.611Z",
+            "durationMs": 95.076
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:48:52.423Z",
+            "endTime": "2026-06-08T19:48:52.423Z",
+            "durationMs": 0.018
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:48:54.843Z",
+            "endTime": "2026-06-08T19:48:54.844Z",
+            "durationMs": 0.037
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:48:55.739Z",
+            "endTime": "2026-06-08T19:48:55.739Z",
+            "durationMs": 0.033
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:48:55.739Z",
+            "endTime": "2026-06-08T19:48:55.739Z",
+            "durationMs": 0.243
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:48:49.073Z",
+            "endTime": "2026-06-08T19:48:56.109Z",
+            "durationMs": 7036.135
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCFN3XJGQTA7YE802A9TVR",
+      "error": null
+    },
+    {
+      "index": 25,
+      "query": "What operational incidents occurred recently?",
+      "httpStatus": 200,
+      "wallClockMs": 10276.628400000016,
+      "timingAudit": {
+        "requestId": "01KTMCFWWDGJ1M4JQR8NZY4G04",
+        "totalLatency": 10274.138,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:48:58.102Z",
+            "endTime": "2026-06-08T19:48:58.102Z",
+            "durationMs": 0.009
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:48:58.902Z",
+            "endTime": "2026-06-08T19:48:58.902Z",
+            "durationMs": 0.082
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:48:59.710Z",
+            "endTime": "2026-06-08T19:49:00.824Z",
+            "durationMs": 1113.965
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:49:00.824Z",
+            "endTime": "2026-06-08T19:49:00.923Z",
+            "durationMs": 98.699
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:49:01.931Z",
+            "endTime": "2026-06-08T19:49:01.931Z",
+            "durationMs": 0.007
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:49:04.711Z",
+            "endTime": "2026-06-08T19:49:04.711Z",
+            "durationMs": 0.035
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:49:05.924Z",
+            "endTime": "2026-06-08T19:49:05.924Z",
+            "durationMs": 0.017
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:49:05.924Z",
+            "endTime": "2026-06-08T19:49:05.924Z",
+            "durationMs": 0.145
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:48:57.748Z",
+            "endTime": "2026-06-08T19:49:06.349Z",
+            "durationMs": 8601.029
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCFXJ8Z1DG701SCM73BHGQ",
+      "error": null
+    },
+    {
+      "index": 26,
+      "query": "What are the compliance and policy decisions?",
+      "httpStatus": 200,
+      "wallClockMs": 8573.349199999997,
+      "timingAudit": {
+        "requestId": "01KTMCG6XH6TZX6J4KCS9R4HP6",
+        "totalLatency": 8572.065,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:49:08.252Z",
+            "endTime": "2026-06-08T19:49:08.252Z",
+            "durationMs": 0.021
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:49:09.048Z",
+            "endTime": "2026-06-08T19:49:09.049Z",
+            "durationMs": 0.237
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:49:09.847Z",
+            "endTime": "2026-06-08T19:49:10.116Z",
+            "durationMs": 268.904
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:49:10.116Z",
+            "endTime": "2026-06-08T19:49:10.215Z",
+            "durationMs": 98.321
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:49:11.013Z",
+            "endTime": "2026-06-08T19:49:11.013Z",
+            "durationMs": 0.017
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:49:13.722Z",
+            "endTime": "2026-06-08T19:49:13.722Z",
+            "durationMs": 0.036
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:49:14.715Z",
+            "endTime": "2026-06-08T19:49:14.715Z",
+            "durationMs": 0.034
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:49:14.715Z",
+            "endTime": "2026-06-08T19:49:14.715Z",
+            "durationMs": 0.305
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:49:07.886Z",
+            "endTime": "2026-06-08T19:49:15.067Z",
+            "durationMs": 7181.08
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCG7F02T14S3G52N1N85DB",
+      "error": null
+    },
+    {
+      "index": 27,
+      "query": "Describe the system architecture and technical design",
+      "httpStatus": 200,
+      "wallClockMs": 9200.296299999987,
+      "timingAudit": {
+        "requestId": "01KTMCGF9FM1K1BS4YHJDC6MDH",
+        "totalLatency": 9198.895,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:49:16.720Z",
+            "endTime": "2026-06-08T19:49:16.720Z",
+            "durationMs": 0.02
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:49:17.544Z",
+            "endTime": "2026-06-08T19:49:17.544Z",
+            "durationMs": 0.244
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:49:18.444Z",
+            "endTime": "2026-06-08T19:49:18.958Z",
+            "durationMs": 514.74
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:49:18.958Z",
+            "endTime": "2026-06-08T19:49:19.264Z",
+            "durationMs": 305.163
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:49:20.201Z",
+            "endTime": "2026-06-08T19:49:20.201Z",
+            "durationMs": 0.01
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:49:22.726Z",
+            "endTime": "2026-06-08T19:49:22.726Z",
+            "durationMs": 0.034
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:49:23.752Z",
+            "endTime": "2026-06-08T19:49:23.752Z",
+            "durationMs": 0.018
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:49:23.752Z",
+            "endTime": "2026-06-08T19:49:23.752Z",
+            "durationMs": 0.134
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:49:16.361Z",
+            "endTime": "2026-06-08T19:49:24.278Z",
+            "durationMs": 7904.987
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCGFRG38MDPFSVW0X2DH72",
+      "error": null
+    },
+    {
+      "index": 28,
+      "query": "enterprise pricing policy",
+      "httpStatus": 200,
+      "wallClockMs": 10517.981800000009,
+      "timingAudit": {
+        "requestId": "01KTMCGR9CCXDK3JZ0F97CEDH6",
+        "totalLatency": 10516.423,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:49:27.206Z",
+            "endTime": "2026-06-08T19:49:27.206Z",
+            "durationMs": 0.021
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:49:28.025Z",
+            "endTime": "2026-06-08T19:49:28.025Z",
+            "durationMs": 0.268
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:49:28.991Z",
+            "endTime": "2026-06-08T19:49:29.407Z",
+            "durationMs": 415.949
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:49:29.407Z",
+            "endTime": "2026-06-08T19:49:29.705Z",
+            "durationMs": 297.187
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:49:30.617Z",
+            "endTime": "2026-06-08T19:49:30.618Z",
+            "durationMs": 0.017
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:49:33.111Z",
+            "endTime": "2026-06-08T19:49:33.111Z",
+            "durationMs": 0.013
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:49:34.029Z",
+            "endTime": "2026-06-08T19:49:34.029Z",
+            "durationMs": 0.028
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:49:34.029Z",
+            "endTime": "2026-06-08T19:49:34.029Z",
+            "durationMs": 0.211
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:49:26.660Z",
+            "endTime": "2026-06-08T19:49:34.398Z",
+            "durationMs": 7737.829
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCGSQGXZJMGZJ96AXZAF0S",
+      "error": null
+    },
+    {
+      "index": 29,
+      "query": "customer onboarding workflow steps",
+      "httpStatus": 200,
+      "wallClockMs": 9021.342800000042,
+      "timingAudit": {
+        "requestId": "01KTMCH2J2ZE4RCQZGJN3CDNV5",
+        "totalLatency": 9020.204,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:49:36.472Z",
+            "endTime": "2026-06-08T19:49:36.472Z",
+            "durationMs": 0.008
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:49:37.290Z",
+            "endTime": "2026-06-08T19:49:37.291Z",
+            "durationMs": 0.206
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:49:38.111Z",
+            "endTime": "2026-06-08T19:49:38.498Z",
+            "durationMs": 386.805
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:49:38.498Z",
+            "endTime": "2026-06-08T19:49:38.599Z",
+            "durationMs": 101.05
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:49:39.425Z",
+            "endTime": "2026-06-08T19:49:39.425Z",
+            "durationMs": 0.007
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:49:42.495Z",
+            "endTime": "2026-06-08T19:49:42.495Z",
+            "durationMs": 0.012
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:49:43.426Z",
+            "endTime": "2026-06-08T19:49:43.426Z",
+            "durationMs": 0.022
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:49:43.426Z",
+            "endTime": "2026-06-08T19:49:43.426Z",
+            "durationMs": 0.15
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:49:36.109Z",
+            "endTime": "2026-06-08T19:49:43.795Z",
+            "durationMs": 7686.408
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCH31GXDZCP7FJNZW2DFSN",
+      "error": null
+    },
+    {
+      "index": 30,
+      "query": "What operational incidents occurred recently?",
+      "httpStatus": 200,
+      "wallClockMs": 9011.519900000014,
+      "timingAudit": {
+        "requestId": "01KTMCHBC0SWT54CFGQGB7HYBT",
+        "totalLatency": 9010.06,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:49:45.683Z",
+            "endTime": "2026-06-08T19:49:45.683Z",
+            "durationMs": 0.015
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:49:46.583Z",
+            "endTime": "2026-06-08T19:49:46.583Z",
+            "durationMs": 0.234
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:49:47.628Z",
+            "endTime": "2026-06-08T19:49:48.052Z",
+            "durationMs": 424.432
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:49:48.052Z",
+            "endTime": "2026-06-08T19:49:48.174Z",
+            "durationMs": 121.866
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:49:49.083Z",
+            "endTime": "2026-06-08T19:49:49.083Z",
+            "durationMs": 0.017
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:49:51.581Z",
+            "endTime": "2026-06-08T19:49:51.581Z",
+            "durationMs": 0.035
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:49:52.482Z",
+            "endTime": "2026-06-08T19:49:52.482Z",
+            "durationMs": 0.033
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:49:52.482Z",
+            "endTime": "2026-06-08T19:49:52.482Z",
+            "durationMs": 0.442
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:49:45.274Z",
+            "endTime": "2026-06-08T19:49:52.835Z",
+            "durationMs": 7561.49
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCHBZDRDAEC64QM8SY0B4B",
+      "error": null
+    },
+    {
+      "index": 31,
+      "query": "What are the compliance and policy decisions?",
+      "httpStatus": 200,
+      "wallClockMs": 8451.84659999999,
+      "timingAudit": {
+        "requestId": "01KTMCHM5K0NH3A4HX03DVH18T",
+        "totalLatency": 8450.029,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:49:54.402Z",
+            "endTime": "2026-06-08T19:49:54.402Z",
+            "durationMs": 0.02
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:49:55.211Z",
+            "endTime": "2026-06-08T19:49:55.212Z",
+            "durationMs": 0.443
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:49:56.015Z",
+            "endTime": "2026-06-08T19:49:56.328Z",
+            "durationMs": 313.119
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:49:56.328Z",
+            "endTime": "2026-06-08T19:49:56.427Z",
+            "durationMs": 99.121
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:49:57.340Z",
+            "endTime": "2026-06-08T19:49:57.340Z",
+            "durationMs": 0.018
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:50:00.025Z",
+            "endTime": "2026-06-08T19:50:00.025Z",
+            "durationMs": 0.078
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:50:00.919Z",
+            "endTime": "2026-06-08T19:50:00.919Z",
+            "durationMs": 0.015
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:50:00.919Z",
+            "endTime": "2026-06-08T19:50:00.919Z",
+            "durationMs": 0.086
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:49:54.037Z",
+            "endTime": "2026-06-08T19:50:01.276Z",
+            "durationMs": 7238.786
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCHMHYG47FGS58WVDKN7K9",
+      "error": null
+    },
+    {
+      "index": 32,
+      "query": "Describe the system architecture and technical design",
+      "httpStatus": 200,
+      "wallClockMs": 8915.7169,
+      "timingAudit": {
+        "requestId": "01KTMCHWDRRAPGAXXGDX67PJA7",
+        "totalLatency": 8913.321,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:50:02.944Z",
+            "endTime": "2026-06-08T19:50:02.944Z",
+            "durationMs": 0.023
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:50:03.769Z",
+            "endTime": "2026-06-08T19:50:03.769Z",
+            "durationMs": 0.236
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:50:04.590Z",
+            "endTime": "2026-06-08T19:50:04.922Z",
+            "durationMs": 331.71
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:50:04.922Z",
+            "endTime": "2026-06-08T19:50:05.040Z",
+            "durationMs": 117.885
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:50:06.265Z",
+            "endTime": "2026-06-08T19:50:06.265Z",
+            "durationMs": 0.014
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:50:08.891Z",
+            "endTime": "2026-06-08T19:50:08.891Z",
+            "durationMs": 0.019
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:50:09.811Z",
+            "endTime": "2026-06-08T19:50:09.812Z",
+            "durationMs": 0.035
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:50:09.812Z",
+            "endTime": "2026-06-08T19:50:09.812Z",
+            "durationMs": 0.373
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:50:02.585Z",
+            "endTime": "2026-06-08T19:50:10.180Z",
+            "durationMs": 7595.279
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCHWX2PX8QGBVBGAN3EAQD",
+      "error": null
+    },
+    {
+      "index": 33,
+      "query": "enterprise pricing policy",
+      "httpStatus": 200,
+      "wallClockMs": 9159.951100000006,
+      "timingAudit": {
+        "requestId": "01KTMCJ54B2QSHJG5EKPX66P36",
+        "totalLatency": 9157.985,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:50:11.862Z",
+            "endTime": "2026-06-08T19:50:11.862Z",
+            "durationMs": 0.021
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:50:12.693Z",
+            "endTime": "2026-06-08T19:50:12.694Z",
+            "durationMs": 0.132
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:50:13.522Z",
+            "endTime": "2026-06-08T19:50:13.863Z",
+            "durationMs": 341.156
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:50:13.863Z",
+            "endTime": "2026-06-08T19:50:13.960Z",
+            "durationMs": 96.17
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:50:14.784Z",
+            "endTime": "2026-06-08T19:50:14.784Z",
+            "durationMs": 0.006
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:50:17.321Z",
+            "endTime": "2026-06-08T19:50:17.321Z",
+            "durationMs": 0.013
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:50:18.756Z",
+            "endTime": "2026-06-08T19:50:18.756Z",
+            "durationMs": 0.019
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:50:18.756Z",
+            "endTime": "2026-06-08T19:50:18.756Z",
+            "durationMs": 0.128
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:50:11.497Z",
+            "endTime": "2026-06-08T19:50:19.277Z",
+            "durationMs": 7782.544
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCJ5KGA9BAPGWE8MDHCXYK",
+      "error": null
+    },
+    {
+      "index": 34,
+      "query": "customer onboarding workflow steps",
+      "httpStatus": 200,
+      "wallClockMs": 8872.639300000039,
+      "timingAudit": {
+        "requestId": "01KTMCJE2JY4XKVEBSZYE5EDFY",
+        "totalLatency": 8870.757,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:50:21.085Z",
+            "endTime": "2026-06-08T19:50:21.085Z",
+            "durationMs": 0.009
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:50:21.906Z",
+            "endTime": "2026-06-08T19:50:21.906Z",
+            "durationMs": 0.065
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:50:22.740Z",
+            "endTime": "2026-06-08T19:50:23.254Z",
+            "durationMs": 513.441
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:50:23.254Z",
+            "endTime": "2026-06-08T19:50:23.355Z",
+            "durationMs": 100.806
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:50:24.384Z",
+            "endTime": "2026-06-08T19:50:24.384Z",
+            "durationMs": 0.006
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:50:26.919Z",
+            "endTime": "2026-06-08T19:50:26.919Z",
+            "durationMs": 0.014
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:50:27.840Z",
+            "endTime": "2026-06-08T19:50:27.840Z",
+            "durationMs": 0.021
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:50:27.840Z",
+            "endTime": "2026-06-08T19:50:27.841Z",
+            "durationMs": 0.071
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:50:20.701Z",
+            "endTime": "2026-06-08T19:50:28.209Z",
+            "durationMs": 7507.211
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCJEJJP4N4YKYKBWH40FVK",
+      "error": null
+    },
+    {
+      "index": 35,
+      "query": "What operational incidents occurred recently?",
+      "httpStatus": 200,
+      "wallClockMs": 8433.959399999992,
+      "timingAudit": {
+        "requestId": "01KTMCJPQTHN47E9XNAFBGZMNZ",
+        "totalLatency": 8432.131,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:50:29.882Z",
+            "endTime": "2026-06-08T19:50:29.882Z",
+            "durationMs": 0.018
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:50:30.705Z",
+            "endTime": "2026-06-08T19:50:30.705Z",
+            "durationMs": 0.235
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:50:31.525Z",
+            "endTime": "2026-06-08T19:50:31.837Z",
+            "durationMs": 311.63
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:50:31.837Z",
+            "endTime": "2026-06-08T19:50:31.932Z",
+            "durationMs": 95.599
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:50:32.851Z",
+            "endTime": "2026-06-08T19:50:32.851Z",
+            "durationMs": 0.008
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:50:35.333Z",
+            "endTime": "2026-06-08T19:50:35.333Z",
+            "durationMs": 0.041
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:50:36.267Z",
+            "endTime": "2026-06-08T19:50:36.267Z",
+            "durationMs": 0.087
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:50:36.267Z",
+            "endTime": "2026-06-08T19:50:36.268Z",
+            "durationMs": 0.393
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:50:29.525Z",
+            "endTime": "2026-06-08T19:50:36.636Z",
+            "durationMs": 7111.118
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCJQ6V7PC3TYZRZDG333TC",
+      "error": null
+    },
+    {
+      "index": 36,
+      "query": "What are the compliance and policy decisions?",
+      "httpStatus": 200,
+      "wallClockMs": 8291.663399999961,
+      "timingAudit": {
+        "requestId": "01KTMCJYZE2FXVW8J62B9ZT0CV",
+        "totalLatency": 8289.106,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:50:38.249Z",
+            "endTime": "2026-06-08T19:50:38.249Z",
+            "durationMs": 0.024
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:50:39.067Z",
+            "endTime": "2026-06-08T19:50:39.068Z",
+            "durationMs": 0.211
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:50:39.885Z",
+            "endTime": "2026-06-08T19:50:40.259Z",
+            "durationMs": 374.033
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:50:40.259Z",
+            "endTime": "2026-06-08T19:50:40.354Z",
+            "durationMs": 95.667
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:50:41.175Z",
+            "endTime": "2026-06-08T19:50:41.175Z",
+            "durationMs": 0.007
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:50:43.656Z",
+            "endTime": "2026-06-08T19:50:43.656Z",
+            "durationMs": 0.033
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:50:44.571Z",
+            "endTime": "2026-06-08T19:50:44.571Z",
+            "durationMs": 0.016
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:50:44.571Z",
+            "endTime": "2026-06-08T19:50:44.571Z",
+            "durationMs": 0.081
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:50:37.881Z",
+            "endTime": "2026-06-08T19:50:44.933Z",
+            "durationMs": 7051.367
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCJZBYNV4CBXK9A7JERVZR",
+      "error": null
+    },
+    {
+      "index": 37,
+      "query": "Describe the system architecture and technical design",
+      "httpStatus": 200,
+      "wallClockMs": 9038.06839999999,
+      "timingAudit": {
+        "requestId": "01KTMCK72HBGVRD1G1R6HWK1EZ",
+        "totalLatency": 9036.294,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:50:46.620Z",
+            "endTime": "2026-06-08T19:50:46.620Z",
+            "durationMs": 0.024
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:50:47.446Z",
+            "endTime": "2026-06-08T19:50:47.446Z",
+            "durationMs": 0.072
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:50:48.361Z",
+            "endTime": "2026-06-08T19:50:48.906Z",
+            "durationMs": 544.838
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:50:48.906Z",
+            "endTime": "2026-06-08T19:50:49.002Z",
+            "durationMs": 95.616
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:50:49.986Z",
+            "endTime": "2026-06-08T19:50:49.986Z",
+            "durationMs": 0.013
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:50:52.683Z",
+            "endTime": "2026-06-08T19:50:52.683Z",
+            "durationMs": 0.014
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:50:53.610Z",
+            "endTime": "2026-06-08T19:50:53.610Z",
+            "durationMs": 0.022
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:50:53.610Z",
+            "endTime": "2026-06-08T19:50:53.610Z",
+            "durationMs": 0.41
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:50:46.258Z",
+            "endTime": "2026-06-08T19:50:53.978Z",
+            "durationMs": 7719.841
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCK7HSJ4SQ55XH15RR84EP",
+      "error": null
+    },
+    {
+      "index": 38,
+      "query": "enterprise pricing policy",
+      "httpStatus": 200,
+      "wallClockMs": 10958.46769999998,
+      "timingAudit": {
+        "requestId": "01KTMCKFWZ3BXV2D1CB520SS95",
+        "totalLatency": 10956.514,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:50:56.887Z",
+            "endTime": "2026-06-08T19:50:56.887Z",
+            "durationMs": 0.009
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:50:57.691Z",
+            "endTime": "2026-06-08T19:50:57.691Z",
+            "durationMs": 0.188
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:50:58.499Z",
+            "endTime": "2026-06-08T19:50:59.011Z",
+            "durationMs": 511.136
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:50:59.011Z",
+            "endTime": "2026-06-08T19:50:59.279Z",
+            "durationMs": 268.394
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:51:00.227Z",
+            "endTime": "2026-06-08T19:51:00.227Z",
+            "durationMs": 0.017
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:51:03.285Z",
+            "endTime": "2026-06-08T19:51:03.285Z",
+            "durationMs": 0.038
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:51:04.211Z",
+            "endTime": "2026-06-08T19:51:04.211Z",
+            "durationMs": 0.019
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:51:04.211Z",
+            "endTime": "2026-06-08T19:51:04.211Z",
+            "durationMs": 0.184
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:50:56.357Z",
+            "endTime": "2026-06-08T19:51:04.571Z",
+            "durationMs": 8213.287
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCKHAK0NEMM9GC30BY9M87",
+      "error": null
+    },
+    {
+      "index": 39,
+      "query": "customer onboarding workflow steps",
+      "httpStatus": 200,
+      "wallClockMs": 9155.415299999993,
+      "timingAudit": {
+        "requestId": "01KTMCKTKEVDEX9WJTNY903Q57",
+        "totalLatency": 9152.742,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:51:06.614Z",
+            "endTime": "2026-06-08T19:51:06.614Z",
+            "durationMs": 0.023
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:51:07.449Z",
+            "endTime": "2026-06-08T19:51:07.449Z",
+            "durationMs": 0.099
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:51:08.420Z",
+            "endTime": "2026-06-08T19:51:08.907Z",
+            "durationMs": 486.887
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:51:08.907Z",
+            "endTime": "2026-06-08T19:51:09.034Z",
+            "durationMs": 127.256
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:51:09.997Z",
+            "endTime": "2026-06-08T19:51:09.997Z",
+            "durationMs": 0.006
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:51:12.722Z",
+            "endTime": "2026-06-08T19:51:12.722Z",
+            "durationMs": 0.049
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:51:13.720Z",
+            "endTime": "2026-06-08T19:51:13.720Z",
+            "durationMs": 0.023
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:51:13.720Z",
+            "endTime": "2026-06-08T19:51:13.721Z",
+            "durationMs": 0.252
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:51:06.251Z",
+            "endTime": "2026-06-08T19:51:14.085Z",
+            "durationMs": 7833.412
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCKV2RH83CV8T5YD3CP4SB",
+      "error": null
+    },
+    {
+      "index": 40,
+      "query": "What operational incidents occurred recently?",
+      "httpStatus": 200,
+      "wallClockMs": 9398.46530000004,
+      "timingAudit": {
+        "requestId": "01KTMCM3HKH29YAK5YHF2AK928",
+        "totalLatency": 9395.818,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:51:15.776Z",
+            "endTime": "2026-06-08T19:51:15.776Z",
+            "durationMs": 0.01
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:51:16.596Z",
+            "endTime": "2026-06-08T19:51:16.596Z",
+            "durationMs": 0.188
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:51:17.424Z",
+            "endTime": "2026-06-08T19:51:18.000Z",
+            "durationMs": 576.004
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:51:18.000Z",
+            "endTime": "2026-06-08T19:51:18.143Z",
+            "durationMs": 143.093
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:51:19.299Z",
+            "endTime": "2026-06-08T19:51:19.299Z",
+            "durationMs": 0.007
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:51:22.024Z",
+            "endTime": "2026-06-08T19:51:22.024Z",
+            "durationMs": 0.013
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:51:23.058Z",
+            "endTime": "2026-06-08T19:51:23.058Z",
+            "durationMs": 0.013
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:51:23.058Z",
+            "endTime": "2026-06-08T19:51:23.058Z",
+            "durationMs": 0.09
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:51:15.416Z",
+            "endTime": "2026-06-08T19:51:23.464Z",
+            "durationMs": 8050.869
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCM4122SAH777Z4R20ME0Q",
+      "error": null
+    },
+    {
+      "index": 41,
+      "query": "What are the compliance and policy decisions?",
+      "httpStatus": 200,
+      "wallClockMs": 9003.094599999953,
+      "timingAudit": {
+        "requestId": "01KTMCMCQ5XXZ6WNBHSRW79PRX",
+        "totalLatency": 9000.777,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:51:25.096Z",
+            "endTime": "2026-06-08T19:51:25.096Z",
+            "durationMs": 0.023
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:51:25.908Z",
+            "endTime": "2026-06-08T19:51:25.908Z",
+            "durationMs": 0.233
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:51:26.716Z",
+            "endTime": "2026-06-08T19:51:26.989Z",
+            "durationMs": 272.51
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:51:26.989Z",
+            "endTime": "2026-06-08T19:51:27.087Z",
+            "durationMs": 97.996
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:51:27.907Z",
+            "endTime": "2026-06-08T19:51:27.907Z",
+            "durationMs": 0.011
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:51:30.534Z",
+            "endTime": "2026-06-08T19:51:30.534Z",
+            "durationMs": 0.013
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:51:31.764Z",
+            "endTime": "2026-06-08T19:51:31.764Z",
+            "durationMs": 0.021
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:51:31.764Z",
+            "endTime": "2026-06-08T19:51:31.764Z",
+            "durationMs": 0.278
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:51:24.736Z",
+            "endTime": "2026-06-08T19:51:32.275Z",
+            "durationMs": 7538.491
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCMD4EH7QZC321PKKHHXQN",
+      "error": null
+    },
+    {
+      "index": 42,
+      "query": "Describe the system architecture and technical design",
+      "httpStatus": 200,
+      "wallClockMs": 9066.680600000022,
+      "timingAudit": {
+        "requestId": "01KTMCMNGKDBDHJ873C7DBSC3F",
+        "totalLatency": 9062.983,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:51:34.163Z",
+            "endTime": "2026-06-08T19:51:34.163Z",
+            "durationMs": 0.01
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:51:34.976Z",
+            "endTime": "2026-06-08T19:51:34.977Z",
+            "durationMs": 0.227
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:51:35.796Z",
+            "endTime": "2026-06-08T19:51:36.436Z",
+            "durationMs": 640.34
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:51:36.436Z",
+            "endTime": "2026-06-08T19:51:36.577Z",
+            "durationMs": 140.821
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:51:37.497Z",
+            "endTime": "2026-06-08T19:51:37.497Z",
+            "durationMs": 0.007
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:51:39.954Z",
+            "endTime": "2026-06-08T19:51:39.954Z",
+            "durationMs": 0.024
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:51:40.980Z",
+            "endTime": "2026-06-08T19:51:40.980Z",
+            "durationMs": 0.024
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:51:40.980Z",
+            "endTime": "2026-06-08T19:51:40.980Z",
+            "durationMs": 0.327
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:51:33.812Z",
+            "endTime": "2026-06-08T19:51:41.492Z",
+            "durationMs": 7679.666
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCMNZ77R8M7N9K19PK9V81",
+      "error": null
+    },
+    {
+      "index": 43,
+      "query": "enterprise pricing policy",
+      "httpStatus": 200,
+      "wallClockMs": 8939.07759999996,
+      "timingAudit": {
+        "requestId": "01KTMCMYBYGYZHPZRZQ9N0PF78",
+        "totalLatency": 8936.562,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:51:43.249Z",
+            "endTime": "2026-06-08T19:51:43.249Z",
+            "durationMs": 0.023
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:51:44.079Z",
+            "endTime": "2026-06-08T19:51:44.079Z",
+            "durationMs": 0.06
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:51:45.084Z",
+            "endTime": "2026-06-08T19:51:45.801Z",
+            "durationMs": 717.457
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:51:45.801Z",
+            "endTime": "2026-06-08T19:51:45.901Z",
+            "durationMs": 99.77
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:51:46.730Z",
+            "endTime": "2026-06-08T19:51:46.730Z",
+            "durationMs": 0.007
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:51:49.218Z",
+            "endTime": "2026-06-08T19:51:49.218Z",
+            "durationMs": 0.014
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:51:50.132Z",
+            "endTime": "2026-06-08T19:51:50.132Z",
+            "durationMs": 0.01
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:51:50.132Z",
+            "endTime": "2026-06-08T19:51:50.133Z",
+            "durationMs": 0.123
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:51:42.883Z",
+            "endTime": "2026-06-08T19:51:50.495Z",
+            "durationMs": 7612.03
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCMYVBS1PF25SYV09W3MRB",
+      "error": null
+    },
+    {
+      "index": 44,
+      "query": "customer onboarding workflow steps",
+      "httpStatus": 200,
+      "wallClockMs": 8828.012700000021,
+      "timingAudit": {
+        "requestId": "01KTMCN7381SB8D64VX2CFM3HW",
+        "totalLatency": 8826.795,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:51:52.174Z",
+            "endTime": "2026-06-08T19:51:52.174Z",
+            "durationMs": 0.017
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:51:53.003Z",
+            "endTime": "2026-06-08T19:51:53.003Z",
+            "durationMs": 0.195
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:51:53.833Z",
+            "endTime": "2026-06-08T19:51:54.536Z",
+            "durationMs": 702.316
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:51:54.536Z",
+            "endTime": "2026-06-08T19:51:54.633Z",
+            "durationMs": 97.433
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:51:55.464Z",
+            "endTime": "2026-06-08T19:51:55.464Z",
+            "durationMs": 0.007
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:51:58.030Z",
+            "endTime": "2026-06-08T19:51:58.030Z",
+            "durationMs": 0.015
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:51:58.955Z",
+            "endTime": "2026-06-08T19:51:58.955Z",
+            "durationMs": 0.023
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:51:58.955Z",
+            "endTime": "2026-06-08T19:51:58.956Z",
+            "durationMs": 0.277
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:51:51.810Z",
+            "endTime": "2026-06-08T19:51:59.317Z",
+            "durationMs": 7506.908
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCN7JBDKXP1JXQMQ9AFAMQ",
+      "error": null
+    },
+    {
+      "index": 45,
+      "query": "What operational incidents occurred recently?",
+      "httpStatus": 200,
+      "wallClockMs": 9688.759999999951,
+      "timingAudit": {
+        "requestId": "01KTMCNFQ4KS4972ZGTHKT9H1G",
+        "totalLatency": 9686.591,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:52:00.911Z",
+            "endTime": "2026-06-08T19:52:00.911Z",
+            "durationMs": 0.024
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:52:01.738Z",
+            "endTime": "2026-06-08T19:52:01.738Z",
+            "durationMs": 0.225
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:52:02.689Z",
+            "endTime": "2026-06-08T19:52:03.104Z",
+            "durationMs": 415.196
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:52:03.104Z",
+            "endTime": "2026-06-08T19:52:03.281Z",
+            "durationMs": 176.086
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:52:04.314Z",
+            "endTime": "2026-06-08T19:52:04.314Z",
+            "durationMs": 0.007
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:52:06.988Z",
+            "endTime": "2026-06-08T19:52:06.988Z",
+            "durationMs": 0.014
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:52:08.205Z",
+            "endTime": "2026-06-08T19:52:08.205Z",
+            "durationMs": 0.009
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:52:08.205Z",
+            "endTime": "2026-06-08T19:52:08.205Z",
+            "durationMs": 0.1
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:52:00.547Z",
+            "endTime": "2026-06-08T19:52:08.659Z",
+            "durationMs": 8111.62
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCNG3HD0ESY7ENPC2HKVQX",
+      "error": null
+    },
+    {
+      "index": 46,
+      "query": "What are the compliance and policy decisions?",
+      "httpStatus": 200,
+      "wallClockMs": 10096.767299999949,
+      "timingAudit": {
+        "requestId": "01KTMCNS5Y82JRES3XCZ0GDBWJ",
+        "totalLatency": 10094.603,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:52:11.174Z",
+            "endTime": "2026-06-08T19:52:11.174Z",
+            "durationMs": 0.022
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:52:12.109Z",
+            "endTime": "2026-06-08T19:52:12.109Z",
+            "durationMs": 0.233
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:52:13.281Z",
+            "endTime": "2026-06-08T19:52:14.441Z",
+            "durationMs": 1159.607
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:52:14.441Z",
+            "endTime": "2026-06-08T19:52:14.538Z",
+            "durationMs": 97.121
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:52:15.360Z",
+            "endTime": "2026-06-08T19:52:15.360Z",
+            "durationMs": 0.009
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:52:17.815Z",
+            "endTime": "2026-06-08T19:52:17.815Z",
+            "durationMs": 0.014
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:52:18.743Z",
+            "endTime": "2026-06-08T19:52:18.743Z",
+            "durationMs": 0.029
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:52:18.743Z",
+            "endTime": "2026-06-08T19:52:18.743Z",
+            "durationMs": 0.297
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:52:10.778Z",
+            "endTime": "2026-06-08T19:52:19.102Z",
+            "durationMs": 8330.414
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCNSW08F4TM2ECQJK9FPX6",
+      "error": null
+    },
+    {
+      "index": 47,
+      "query": "Describe the system architecture and technical design",
+      "httpStatus": 200,
+      "wallClockMs": 9206.163,
+      "timingAudit": {
+        "requestId": "01KTMCP318FHTBMSDPJQTF99R5",
+        "totalLatency": 9204.453,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:52:20.701Z",
+            "endTime": "2026-06-08T19:52:20.701Z",
+            "durationMs": 0.024
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:52:21.527Z",
+            "endTime": "2026-06-08T19:52:21.527Z",
+            "durationMs": 0.075
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:52:22.356Z",
+            "endTime": "2026-06-08T19:52:22.810Z",
+            "durationMs": 454.327
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:52:22.810Z",
+            "endTime": "2026-06-08T19:52:22.956Z",
+            "durationMs": 145.605
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:52:23.879Z",
+            "endTime": "2026-06-08T19:52:23.879Z",
+            "durationMs": 0.012
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:52:26.527Z",
+            "endTime": "2026-06-08T19:52:26.527Z",
+            "durationMs": 0.014
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:52:27.646Z",
+            "endTime": "2026-06-08T19:52:27.646Z",
+            "durationMs": 0.019
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:52:27.646Z",
+            "endTime": "2026-06-08T19:52:27.646Z",
+            "durationMs": 0.142
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:52:20.337Z",
+            "endTime": "2026-06-08T19:52:28.179Z",
+            "durationMs": 7842.387
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCP3DQNMVWHVKE0C8729HG",
+      "error": null
+    },
+    {
+      "index": 48,
+      "query": "enterprise pricing policy",
+      "httpStatus": 200,
+      "wallClockMs": 8590.380400000024,
+      "timingAudit": {
+        "requestId": "01KTMCPC10ZZP2QFP6W4VN0QYA",
+        "totalLatency": 8588.018,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:52:29.984Z",
+            "endTime": "2026-06-08T19:52:29.984Z",
+            "durationMs": 0.017
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:52:30.804Z",
+            "endTime": "2026-06-08T19:52:30.804Z",
+            "durationMs": 0.122
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:52:31.625Z",
+            "endTime": "2026-06-08T19:52:31.930Z",
+            "durationMs": 305.285
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:52:31.930Z",
+            "endTime": "2026-06-08T19:52:32.026Z",
+            "durationMs": 95.516
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:52:32.854Z",
+            "endTime": "2026-06-08T19:52:32.854Z",
+            "durationMs": 0.006
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:52:35.448Z",
+            "endTime": "2026-06-08T19:52:35.448Z",
+            "durationMs": 0.013
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:52:36.473Z",
+            "endTime": "2026-06-08T19:52:36.473Z",
+            "durationMs": 0.012
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:52:36.473Z",
+            "endTime": "2026-06-08T19:52:36.473Z",
+            "durationMs": 0.119
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:52:29.623Z",
+            "endTime": "2026-06-08T19:52:36.903Z",
+            "durationMs": 7279.483
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCPCFZMXAT9136P4P2QXK2",
+      "error": null
+    },
+    {
+      "index": 49,
+      "query": "customer onboarding workflow steps",
+      "httpStatus": 200,
+      "wallClockMs": 8368.669799999974,
+      "timingAudit": {
+        "requestId": "01KTMCPMDEX2S5RKSBTH7QDYFG",
+        "totalLatency": 8366.866,
+        "stages": [
+          {
+            "stage": "metadata_filtering",
+            "startTime": "2026-06-08T19:52:38.498Z",
+            "endTime": "2026-06-08T19:52:38.498Z",
+            "durationMs": 0.015
+          },
+          {
+            "stage": "intent_extraction",
+            "startTime": "2026-06-08T19:52:39.320Z",
+            "endTime": "2026-06-08T19:52:39.320Z",
+            "durationMs": 0.193
+          },
+          {
+            "stage": "vector_search:embedding",
+            "startTime": "2026-06-08T19:52:40.148Z",
+            "endTime": "2026-06-08T19:52:40.466Z",
+            "durationMs": 318.212
+          },
+          {
+            "stage": "vector_search:pgvector",
+            "startTime": "2026-06-08T19:52:40.466Z",
+            "endTime": "2026-06-08T19:52:40.563Z",
+            "durationMs": 97.388
+          },
+          {
+            "stage": "reranking",
+            "startTime": "2026-06-08T19:52:41.386Z",
+            "endTime": "2026-06-08T19:52:41.386Z",
+            "durationMs": 0.017
+          },
+          {
+            "stage": "context_assembly",
+            "startTime": "2026-06-08T19:52:43.982Z",
+            "endTime": "2026-06-08T19:52:43.982Z",
+            "durationMs": 0.037
+          },
+          {
+            "stage": "graph_traversal",
+            "startTime": "2026-06-08T19:52:44.900Z",
+            "endTime": "2026-06-08T19:52:44.900Z",
+            "durationMs": 0.023
+          },
+          {
+            "stage": "keyword_search",
+            "startTime": "2026-06-08T19:52:44.900Z",
+            "endTime": "2026-06-08T19:52:44.901Z",
+            "durationMs": 0.252
+          },
+          {
+            "stage": "retrieval",
+            "startTime": "2026-06-08T19:52:38.137Z",
+            "endTime": "2026-06-08T19:52:45.266Z",
+            "durationMs": 7129.515
+          }
+        ]
+      },
+      "retrievalTraceId": "01KTMCPMSY061F1H2GT4RMTHX9",
+      "error": null
+    }
+  ],
+  "failures": 0
+}

@@ -34,6 +34,15 @@ export {
   type RunRetrievalResult,
 } from "./pipeline.js";
 export {
+  buildQueryEmbeddingCacheKey,
+  getDefaultQueryEmbeddingCache,
+  QueryEmbeddingCache,
+  resetDefaultQueryEmbeddingCache,
+  resolveQueryEmbedding,
+  type QueryEmbeddingCacheOptions,
+  type QueryEmbeddingCacheResult,
+} from "./query-embedding-cache.js";
+export {
   buildDomainVectorScope,
   filterRelationshipsByNeighborhoodConstraints,
   resolveDomainRetrievalScope,
@@ -42,6 +51,32 @@ export {
   type RelationshipRowForFilter,
 } from "./domain-scope.js";
 export { appendDomainScopeConditions } from "./domain-scope-sql.js";
+export { buildVectorSearchSql, type VectorSearchSqlQuery } from "./vector-search-sql.js";
+export {
+  buildLexicalSearchSql,
+  type LexicalSearchSqlQuery,
+} from "./lexical-search-sql.js";
+export {
+  scoreBm25Documents,
+  tokenizeForBm25,
+  type Bm25Document,
+  type Bm25ScoredDocument,
+  type Bm25ScoreOptions,
+} from "./bm25-score.js";
+export {
+  createInMemoryLexicalSearchStore,
+  type LexicalSearchCandidate,
+  type LexicalSearchStore,
+} from "./lexical-search-store.js";
+export {
+  RRF_K,
+  buildLexicalChannelShadow,
+  buildRrfMergePreview,
+  evaluateParallelBm25Channel,
+  runLexicalChannelSearch,
+  type ParallelBm25ChannelInput,
+  type ParallelBm25ChannelResult,
+} from "./parallel-bm25-channel.js";
 export {
   applyRetrievalExpansion,
   buildContextualNeighborHints,

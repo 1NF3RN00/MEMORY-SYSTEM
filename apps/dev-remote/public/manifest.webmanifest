@@ -1,0 +1,18 @@
+{
+  "name": "Semantic Core Dev Remote",
+  "short_name": "Dev Remote",
+  "description": "Phone control plane for perf waves and SDK agents",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

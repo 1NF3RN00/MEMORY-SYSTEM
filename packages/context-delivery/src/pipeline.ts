@@ -1,4 +1,5 @@
-import type { EventEmitter } from "@memory-middleware/observability";
+import type { EventEmitter, ExecutionTimingCollector } from "@memory-middleware/observability";
+import { measurePipelineStage, resolvePipelineCollector } from "@memory-middleware/observability";
 import type { ChunkMetadataLookup } from "@memory-middleware/domain-engine";
 import type {
   ContextPackageInput,
@@ -40,6 +41,7 @@ export interface RunContextRenderInput {
   metadataByChunkId?: Map<string, ChunkMetadataLookup>;
   events: EventEmitter;
   onStage?: (stages: ContextRenderStageRecord[]) => void;
+  timingCollector?: ExecutionTimingCollector;
 }
 
 export interface RunContextRenderResult {
@@ -75,6 +77,8 @@ export async function runContextRenderPipeline(
   input: RunContextRenderInput,
 ): Promise<RunContextRenderResult> {
   const deliveryId = input.deliveryId ?? newUlid();
+  const timing = resolvePipelineCollector(deliveryId, input.timingCollector);
+  return measurePipelineStage(deliveryId, "context_rendering", timing, async () => {
   const mode = input.mode ?? DEFAULT_DELIVERY_MODE;
   const stages: ContextRenderStageRecord[] = [];
   const pipelineStarted = Date.now();
@@ -103,11 +107,13 @@ export async function runContextRenderPipeline(
       pushStage(stages, "fact_precedence", "started", new Date().toISOString());
       await notify();
 
-      const prepared = prepareContextPackageForDelivery({
-        contextPackage: preparedPackage,
-        executionContext: input.executionContext,
-        ...(input.metadataByChunkId ? { metadataByChunkId: input.metadataByChunkId } : {}),
-      });
+      const prepared = await measurePipelineStage(deliveryId, "fact_resolution", timing, async () =>
+        prepareContextPackageForDelivery({
+          contextPackage: preparedPackage,
+          executionContext: input.executionContext,
+          ...(input.metadataByChunkId ? { metadataByChunkId: input.metadataByChunkId } : {}),
+        }),
+      );
       preparedPackage = prepared.contextPackage;
       instructionSections = prepared.instructionSections;
 
@@ -268,4 +274,5 @@ export async function runContextRenderPipeline(
       error: message,
     };
   }
+  });
 }

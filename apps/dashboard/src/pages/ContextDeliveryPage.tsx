@@ -180,7 +180,7 @@ export function ContextDeliveryPage() {
                 status: string;
                 hasContextPackage: boolean;
               }>;
-            }>(`/retrieval?workspaceId=${workspaceId}&limit=30`)
+            }>(`/retrieval?workspaceId=${workspaceId}&limit=30&fields=retrievalTraceId,query,status,hasContextPackage`)
           : Promise.resolve({ traces: [] }),
         workspaceId
           ? apiGet<{
@@ -189,7 +189,7 @@ export function ContextDeliveryPage() {
                 retrievalTraceId: string;
                 status: string;
               }>;
-            }>(`/compression?workspaceId=${workspaceId}&limit=30`)
+            }>(`/compression?workspaceId=${workspaceId}&limit=30&fields=compressionTraceId,retrievalTraceId,status`)
           : Promise.resolve({ traces: [] }),
       ])
         .then(([renderData, retrievalData, compressionData]) => {

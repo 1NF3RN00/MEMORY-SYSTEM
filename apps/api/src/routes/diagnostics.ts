@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { getDbOperationLeaderboard, runWithLlmCallAsync } from "@memory-middleware/observability";
 import { createOpenAiAbstractionClient, runCompressionPipeline } from "@memory-middleware/compression";
 import { runContextRenderPipeline } from "@memory-middleware/context-delivery";
 import { createOpenAiEmbeddingClient } from "@memory-middleware/ingestion";
@@ -33,6 +34,8 @@ import {
   newUlid,
 } from "@memory-middleware/shared-types";
 import { loadEnv } from "../config/env.js";
+import { loadDbObservabilityEnv } from "../config/db-observability-env.js";
+import { queryDbOperationHistoryFromEventLog } from "../lib/db-operation-history.js";
 import {
   buildReportInputFromTrace,
   getCalibrationView,
@@ -65,6 +68,80 @@ import {
 
 export async function registerDiagnosticsRoutes(app: FastifyInstance): Promise<void> {
   const env = loadEnv();
+  const dbEnv = loadDbObservabilityEnv();
+
+  app.get<{
+    Querystring: { limit?: string; scopeType?: string; source?: string; offset?: string };
+  }>("/diagnostics/db-operations", async (request, reply) => {
+    const parsedLimit = Number(request.query.limit ?? 20);
+    const limit = Number.isFinite(parsedLimit)
+      ? Math.min(Math.max(1, Math.trunc(parsedLimit)), 100)
+      : 20;
+    const parsedOffset = Number(request.query.offset ?? 0);
+    const offset = Number.isFinite(parsedOffset) ? Math.max(0, Math.trunc(parsedOffset)) : 0;
+    const scopeType = request.query.scopeType?.trim();
+    const source = request.query.source?.trim().toLowerCase() ?? "memory";
+
+    if (source !== "memory" && source !== "history") {
+      return reply.status(400).send({
+        error: "Invalid source query parameter; use memory or history",
+      });
+    }
+
+    if (source === "history") {
+      const history = await queryDbOperationHistoryFromEventLog(app.prisma, {
+        limit,
+        offset,
+        windowSize: dbEnv.DB_LEADERBOARD_HISTORY_WINDOW,
+        ...(scopeType ? { scopeType } : {}),
+      });
+
+      return {
+        generatedAt: new Date().toISOString(),
+        source: "history",
+        entries: history.entries,
+        pagination: {
+          limit,
+          offset,
+          windowSize: history.windowSize,
+          scannedCount: history.scannedCount,
+        },
+        limitations: {
+          boundedWindow: true,
+          coldStartSurvives: true,
+          description:
+            "Historical leaderboard from EventLog database.scope.completed events within the most recent window. Uses an index-backed fetch on eventType + timestamp (bounded take), then sorts by totalDbTime in-process. Does not scan the full EventLog table.",
+          comparison: {
+            memory:
+              "Default in-memory source: live process ring buffer, resets on cold start, reflects scopes since boot only.",
+            history:
+              "EventLog history source: survives restarts, bounded to recent window, may omit older high-DB-time scopes outside the window.",
+          },
+        },
+      };
+    }
+
+    const leaderboard = getDbOperationLeaderboard(dbEnv.DB_LEADERBOARD_SIZE);
+    const entries = leaderboard.getTop(limit, scopeType || undefined);
+
+    return {
+      generatedAt: new Date().toISOString(),
+      source: "memory",
+      entries,
+      limitations: {
+        inMemoryOnly: true,
+        coldStartClears: true,
+        description:
+          "Leaderboard is held in process memory and resets on cold start or deploy. Use ?source=history for cross-restart EventLog-backed history.",
+        comparison: {
+          memory:
+            "Default in-memory source: live process ring buffer, resets on cold start, reflects scopes since boot only.",
+          history:
+            "EventLog history source: survives restarts via GET /diagnostics/db-operations?source=history.",
+        },
+      },
+    };
+  });
 
   app.get<{ Params: { traceId: string } }>(
     "/diagnostics/report/:traceId",
@@ -246,6 +323,7 @@ export async function registerDiagnosticsRoutes(app: FastifyInstance): Promise<v
   });
 
   app.post("/calibration/benchmark", async (request, reply) => {
+    return runWithLlmCallAsync(request.llmCallCollector, async () => {
     const body = request.body as CalibrationBenchmarkRequest | undefined;
     if (!body?.workspaceId || !body?.retrievalTraceId) {
       return reply.status(400).send({
@@ -503,5 +581,6 @@ export async function registerDiagnosticsRoutes(app: FastifyInstance): Promise<v
     );
 
     return { benchmark: result };
+    });
   });
 }

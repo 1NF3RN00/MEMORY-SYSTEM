@@ -1,41 +1,11 @@
-import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { staggerContainer, staggerItem } from "../../design-system/motion.js";
+import { useTelemetryMetrics } from "../../context/WorkspaceTelemetryContext.js";
 import { MetricCell } from "../ui/MetricCell.js";
-import {
-  emptyWorkspaceTelemetry,
-  fetchWorkspaceTelemetry,
-  type WorkspaceTelemetry,
-} from "../../lib/workspaceTelemetry.js";
 
 export function MetricsSidebar() {
-  const [telemetry, setTelemetry] = useState<WorkspaceTelemetry>(emptyWorkspaceTelemetry());
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const refresh = () => {
-      void fetchWorkspaceTelemetry().then((data) => {
-        if (!cancelled) {
-          setTelemetry(data ?? emptyWorkspaceTelemetry());
-          setLoading(false);
-        }
-      });
-    };
-
-    refresh();
-    const interval = window.setInterval(refresh, 20_000);
-    window.addEventListener("mms:data-cleared", refresh);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(interval);
-      window.removeEventListener("mms:data-cleared", refresh);
-    };
-  }, []);
-
-  const { metrics, activityFeed } = telemetry;
+  const { metrics, activityFeed, loading } = useTelemetryMetrics();
+  const showLoading = loading;
 
   return (
     <aside className="hidden w-[var(--metrics-sidebar-width)] shrink-0 border-l border-[var(--color-border-subtle)] bg-[var(--color-surface-0)] xl:block">
@@ -58,33 +28,41 @@ export function MetricsSidebar() {
           <motion.div variants={staggerItem}>
             <MetricCell
               label="Retrievals (24h)"
-              value={loading ? "—" : metrics.retrievalOps24h.toLocaleString()}
+              value={showLoading ? "—" : metrics.retrievalOps24h.toLocaleString()}
               accent
             />
           </motion.div>
           <motion.div variants={staggerItem}>
             <MetricCell
               label="Avg Latency"
-              value={loading ? "—" : `${metrics.avgLatencyMs}ms`}
+              value={showLoading ? "—" : `${metrics.avgLatencyMs}ms`}
             />
           </motion.div>
           <motion.div variants={staggerItem}>
             <MetricCell
               label="Token Efficiency"
-              value={loading ? "—" : metrics.tokenEfficiency.toFixed(2)}
-              subValue="Mean ranking score"
+              value={
+                showLoading
+                  ? "—"
+                  : metrics.tokenEfficiency !== null
+                    ? metrics.tokenEfficiency.toFixed(2)
+                    : "—"
+              }
+              subValue={
+                metrics.tokenEfficiency !== null ? "Mean ranking score" : "Load Observability for breakdown"
+              }
             />
           </motion.div>
           <motion.div variants={staggerItem}>
             <MetricCell
               label="Memory Objects"
-              value={loading ? "—" : metrics.memoryObjects.toLocaleString()}
+              value={showLoading ? "—" : metrics.memoryObjects.toLocaleString()}
             />
           </motion.div>
           <motion.div variants={staggerItem}>
             <MetricCell
               label="Compression Ratio"
-              value={loading ? "—" : metrics.compressionRatio.toFixed(2)}
+              value={showLoading ? "—" : metrics.compressionRatio.toFixed(2)}
             />
           </motion.div>
           <motion.div variants={staggerItem}>

@@ -1,6 +1,12 @@
 import { motion } from "framer-motion";
+import type { ExecutionTimingAudit } from "@memory-middleware/shared-types";
 import { Badge, statusToBadge } from "../ui/Badge.js";
 import { cn } from "../../lib/cn.js";
+import {
+  formatDurationMs,
+  formatTimingStageLabel,
+  resolveTimelineStages,
+} from "../../lib/timelineTiming.js";
 
 export interface StageRecord {
   stage: string;
@@ -13,36 +19,55 @@ export interface StageRecord {
 }
 
 interface RetrievalTimelineProps {
-  stages: StageRecord[];
+  stages?: StageRecord[];
+  timingAudit?: ExecutionTimingAudit;
   totalLatencyMs?: number;
   className?: string;
 }
 
-export function RetrievalTimeline({ stages, totalLatencyMs, className }: RetrievalTimelineProps) {
-  const maxLatency = Math.max(...stages.map((s) => s.latencyMs ?? 0), 1);
+export function RetrievalTimeline({
+  stages,
+  timingAudit,
+  totalLatencyMs,
+  className,
+}: RetrievalTimelineProps) {
+  const resolved = resolveTimelineStages({
+    ...(timingAudit ? { timingAudit } : {}),
+    ...(stages ? { legacyStages: stages } : {}),
+    ...(totalLatencyMs != null ? { legacyTotalLatencyMs: totalLatencyMs } : {}),
+  });
+
+  const displayStages = resolved.stages;
+  const maxLatency = Math.max(...displayStages.map((s) => s.latencyMs ?? 0), 1);
 
   return (
     <div className={cn("space-y-4", className)}>
-      {totalLatencyMs != null && (
-        <div className="flex items-baseline justify-between">
-          <span className="font-metric text-[0.625rem] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
-            Total Pipeline Latency
-          </span>
+      {resolved.totalLatencyMs != null && (
+        <div className="flex items-baseline justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <span className="font-metric text-[0.625rem] uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
+              Total Pipeline Latency
+            </span>
+            {resolved.source === "hrtime" && (
+              <Badge variant="accent">hrtime</Badge>
+            )}
+          </div>
           <span className="font-metric text-lg font-semibold tabular-nums text-[var(--color-text-primary)]">
-            {totalLatencyMs}
+            {formatDurationMs(resolved.totalLatencyMs)}
             <span className="ml-0.5 text-sm font-normal text-[var(--color-text-tertiary)]">ms</span>
           </span>
         </div>
       )}
 
       <div className="relative space-y-0">
-        {stages.map((stage, i) => (
+        {displayStages.map((stage, i) => (
           <TimelineStage
             key={`${stage.stage}-${i}`}
             stage={stage}
             index={i}
-            isLast={i === stages.length - 1}
+            isLast={i === displayStages.length - 1}
             maxLatency={maxLatency}
+            useHrtimeFormatting={resolved.source === "hrtime"}
           />
         ))}
       </div>
@@ -55,13 +80,18 @@ function TimelineStage({
   index,
   isLast,
   maxLatency,
+  useHrtimeFormatting,
 }: {
   stage: StageRecord;
   index: number;
   isLast: boolean;
   maxLatency: number;
+  useHrtimeFormatting: boolean;
 }) {
   const latencyPct = stage.latencyMs ? (stage.latencyMs / maxLatency) * 100 : 0;
+  const stageLabel = useHrtimeFormatting
+    ? formatTimingStageLabel(stage.stage)
+    : { primary: formatStageName(stage.stage) };
 
   return (
     <motion.div
@@ -94,15 +124,23 @@ function TimelineStage({
       {/* Content */}
       <div className="min-w-0 flex-1 pt-0.5">
         <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-[var(--color-text-primary)]">
-              {formatStageName(stage.stage)}
-            </span>
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="min-w-0">
+              <span className="text-sm font-medium text-[var(--color-text-primary)]">
+                {stageLabel.primary}
+              </span>
+              {stageLabel.sub && (
+                <span className="ml-1.5 font-metric text-[0.625rem] text-[var(--color-text-tertiary)]">
+                  · {stageLabel.sub}
+                </span>
+              )}
+            </div>
             <Badge variant={statusToBadge(stage.status)}>{stage.status}</Badge>
           </div>
           {stage.latencyMs != null && (
             <span className="font-metric text-xs tabular-nums text-[var(--color-text-tertiary)]">
-              {stage.latencyMs}ms
+              {useHrtimeFormatting ? formatDurationMs(stage.latencyMs) : stage.latencyMs}
+              ms
             </span>
           )}
         </div>

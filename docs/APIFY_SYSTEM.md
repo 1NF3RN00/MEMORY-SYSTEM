@@ -1,10 +1,5 @@
-# FACEBOOK
-
-> **Security:** Never commit Apify API tokens. Use env `APIFY_API_TOKEN`. See [observation-system/APIFY_ACTORS.md](./observation-system/APIFY_ACTORS.md).
-
-```ts
-import { ApifyClient } from 'apify-client';
-```
+#FACEBOOK
+apify_api_HDdx2rhKhsrFb04Qvw5npQ43fpMaqZ31oZAimport { ApifyClient } from 'apify-client';
 
 // Initialize the ApifyClient with API token
 const client = new ApifyClient({
@@ -211,6 +206,48 @@ const input = {
 (async () => {
     // Run the Actor and wait for it to finish
     const run = await client.actor("YNcgn7yiLc72ayYeB").call(input);
+
+    // Fetch and print Actor results from the run's dataset (if any)
+    console.log('Results from dataset');
+    const { items } = await client.dataset(run.defaultDatasetId).listItems();
+    items.forEach((item) => {
+        console.dir(item);
+    });
+})();
+
+#SEO Audit Tool
+import { ApifyClient } from 'apify-client';
+
+// Initialize the ApifyClient with API token
+const client = new ApifyClient({
+    token: '<YOUR_API_TOKEN>',
+});
+
+// Prepare Actor input
+const input = {
+    "startUrls": [
+        "https://example.com"
+    ],
+    "crawlPages": true,
+    "maxPages": 5,
+    "maxConcurrency": 5,
+    "respectRobotsTxt": true,
+    "excludeUrlPatterns": [],
+    "includeSubdomains": false,
+    "auditMetaTags": true,
+    "auditHeadings": true,
+    "auditContent": true,
+    "auditTechnical": true,
+    "auditPerformance": true,
+    "auditSchema": true,
+    "auditLinks": true,
+    "auditImages": true,
+    "auditAccessibility": true
+};
+
+(async () => {
+    // Run the Actor and wait for it to finish
+    const run = await client.actor("UFSUQD7pWNwN3jExC").call(input);
 
     // Fetch and print Actor results from the run's dataset (if any)
     console.log('Results from dataset');

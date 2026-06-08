@@ -83,6 +83,16 @@ export interface RelationshipGraphView {
   };
 }
 
+export interface RelationshipGraphLiteView {
+  workspaceId: string;
+  nodes: RelationshipGraphNode[];
+  edges: RelationshipGraphEdge[];
+}
+
+export interface RelationshipGraphOptions {
+  lite?: boolean;
+}
+
 const RELATIONSHIP_ORIGINS: Record<string, string> = {
   same_lineage: "Lineage derivation — shared ingestion trace",
   chunk_adjacency: "Structural adjacency — sequential chunk linkage",
@@ -142,12 +152,116 @@ function extractExplainability(
   };
 }
 
+function buildGraphEdges(relationships: Awaited<ReturnType<PrismaClient["memoryRelationship"]["findMany"]>>) {
+  return relationships
+    .filter(
+      (rel) =>
+        rel.sourceMemoryId !== rel.targetMemoryId ||
+        rel.relationshipType === "chunk_adjacency",
+    )
+    .map((rel) => {
+      const meta = (rel.metadata ?? {}) as Record<string, unknown>;
+      const explain = extractExplainability(
+        rel.relationshipType as RelationshipType,
+        rel.weight,
+        meta,
+      );
+
+      return {
+        id: rel.id,
+        source: rel.sourceMemoryId,
+        target: rel.targetMemoryId,
+        relationshipType: rel.relationshipType as RelationshipType,
+        weight: rel.weight,
+        ...explain,
+        ...(rel.compressionTraceId ? { compressionTraceId: rel.compressionTraceId } : {}),
+        createdAt: rel.createdAt.toISOString(),
+      };
+    });
+}
+
+async function buildLiteRelationshipGraph(
+  prisma: PrismaClient,
+  workspaceId: string,
+): Promise<RelationshipGraphLiteView> {
+  const [relationships, memories] = await Promise.all([
+    prisma.memoryRelationship.findMany({
+      where: { workspaceId },
+      orderBy: { weight: "desc" },
+    }),
+    prisma.memory.findMany({
+      where: { workspaceId, archived: false },
+      select: {
+        id: true,
+        title: true,
+        memoryType: true,
+        sourceType: true,
+        archived: true,
+        retrievalEligible: true,
+        createdAt: true,
+        scoring: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 200,
+    }),
+  ]);
+
+  const memoryIdsInGraph = new Set<string>();
+  for (const rel of relationships) {
+    memoryIdsInGraph.add(rel.sourceMemoryId);
+    memoryIdsInGraph.add(rel.targetMemoryId);
+  }
+  for (const memory of memories) {
+    memoryIdsInGraph.add(memory.id);
+  }
+
+  const memoryById = new Map(memories.map((memory) => [memory.id, memory]));
+
+  const nodes: RelationshipGraphNode[] = [...memoryIdsInGraph].map((id) => {
+    const memory = memoryById.get(id);
+    const scoring = (memory?.scoring ?? {}) as Record<string, unknown>;
+    const memoryType = memory?.memoryType ?? "unknown";
+    const sourceType = memory?.sourceType ?? "unknown";
+    const domain = deriveDomain(memoryType, sourceType);
+
+    return {
+      id,
+      label: memory?.title ?? id.slice(0, 12),
+      memoryType,
+      sourceType,
+      domain,
+      accessCount: 0,
+      averageRank: 0,
+      averageScore: 0,
+      reinforcementScore: Number(scoring.reinforcementScore ?? 0),
+      semanticDensity: 0,
+      rankingInfluence: 0,
+      archived: memory?.archived ?? false,
+      retrievalEligible: memory?.retrievalEligible ?? true,
+      clusterId: domain,
+      chunkCount: 0,
+      createdAt: memory?.createdAt.toISOString() ?? new Date().toISOString(),
+    };
+  });
+
+  return {
+    workspaceId,
+    nodes,
+    edges: buildGraphEdges(relationships),
+  };
+}
+
 export async function getWorkspaceRelationshipGraph(
   prisma: PrismaClient,
   workspaceId: string,
-): Promise<RelationshipGraphView | null> {
+  options?: RelationshipGraphOptions,
+): Promise<RelationshipGraphView | RelationshipGraphLiteView | null> {
   const workspace = await prisma.workspace.findUnique({ where: { id: workspaceId } });
   if (!workspace) return null;
+
+  if (options?.lite) {
+    return buildLiteRelationshipGraph(prisma, workspaceId);
+  }
 
   const [relationships, memories, heatmapEntries, retrievalOps, compressionOps] =
     await Promise.all([
@@ -234,31 +348,7 @@ export async function getWorkspaceRelationshipGraph(
     };
   });
 
-  const edges: RelationshipGraphEdge[] = relationships
-    .filter(
-      (rel) =>
-        rel.sourceMemoryId !== rel.targetMemoryId ||
-        rel.relationshipType === "chunk_adjacency",
-    )
-    .map((rel) => {
-      const meta = (rel.metadata ?? {}) as Record<string, unknown>;
-      const explain = extractExplainability(
-        rel.relationshipType as RelationshipType,
-        rel.weight,
-        meta,
-      );
-
-      return {
-        id: rel.id,
-        source: rel.sourceMemoryId,
-        target: rel.targetMemoryId,
-        relationshipType: rel.relationshipType as RelationshipType,
-        weight: rel.weight,
-        ...explain,
-        ...(rel.compressionTraceId ? { compressionTraceId: rel.compressionTraceId } : {}),
-        createdAt: rel.createdAt.toISOString(),
-      };
-    });
+  const edges: RelationshipGraphEdge[] = buildGraphEdges(relationships);
 
   const domainMap = new Map<string, { nodes: string[]; weights: number[] }>();
   for (const node of nodes) {

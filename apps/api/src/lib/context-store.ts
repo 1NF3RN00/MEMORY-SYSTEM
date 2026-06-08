@@ -8,6 +8,7 @@ import type {
   RenderingDecisions,
 } from "@memory-middleware/shared-types";
 import { DEFAULT_DELIVERY_MODE } from "@memory-middleware/shared-types";
+import { recordContextRenderMetrics } from "./metrics-aggregation-store.js";
 import { getCompressionTrace } from "./compression-store.js";
 import { getRetrievalTrace } from "./retrieval-store.js";
 
@@ -101,6 +102,12 @@ export async function completeContextRenderOperation(
   stored: StoredContextRenderResult,
   status: "completed" | "failed",
 ): Promise<void> {
+  const op = await prisma.contextRenderOperation.findFirst({
+    where: { deliveryId },
+    orderBy: { createdAt: "desc" },
+    select: { workspaceId: true },
+  });
+
   await prisma.contextRenderOperation.updateMany({
     where: { deliveryId },
     data: {
@@ -109,6 +116,10 @@ export async function completeContextRenderOperation(
       result: JSON.parse(JSON.stringify(stored)) as Prisma.InputJsonValue,
     },
   });
+
+  if (op) {
+    await recordContextRenderMetrics(prisma, op.workspaceId, status);
+  }
 }
 
 export async function resolveContextPackageForRender(

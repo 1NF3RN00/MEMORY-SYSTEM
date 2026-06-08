@@ -1,7 +1,10 @@
+import { recordLlmCall } from "@memory-middleware/observability";
 import type { CompressionStageTrace } from "@memory-middleware/shared-types";
 import type { ResolvedCompressionConfig } from "./config.js";
 import type { MergedChunk } from "./merge.js";
 import { estimateTokens } from "./token-estimator.js";
+
+const ABSTRACTION_MODEL = "gpt-4o-mini";
 
 export interface AbstractionClient {
   summarize(text: string, maxTokens: number): Promise<string>;
@@ -141,6 +144,7 @@ function deterministicExtract(content: string, targetTokens: number): string {
 export function createOpenAiAbstractionClient(apiKey: string): AbstractionClient {
   return {
     async summarize(text: string, maxTokens: number): Promise<string> {
+      const started = Date.now();
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -148,7 +152,7 @@ export function createOpenAiAbstractionClient(apiKey: string): AbstractionClient
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "gpt-4o-mini",
+          model: ABSTRACTION_MODEL,
           temperature: 0,
           max_tokens: Math.min(maxTokens, 512),
           messages: [
@@ -170,7 +174,16 @@ export function createOpenAiAbstractionClient(apiKey: string): AbstractionClient
 
       const data = (await response.json()) as {
         choices: Array<{ message: { content: string } }>;
+        usage?: { prompt_tokens?: number; completion_tokens?: number };
       };
+
+      recordLlmCall({
+        operation: "compression_abstraction",
+        model: ABSTRACTION_MODEL,
+        promptTokens: data.usage?.prompt_tokens ?? 0,
+        completionTokens: data.usage?.completion_tokens ?? 0,
+        latencyMs: Date.now() - started,
+      });
 
       return data.choices[0]?.message?.content?.trim() ?? text;
     },

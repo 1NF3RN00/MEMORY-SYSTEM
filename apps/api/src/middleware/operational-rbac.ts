@@ -54,6 +54,7 @@ export function roleMeetsMinimum(actor: OperationalRole, minimum: OperationalRol
 export type DomainEnginePermission =
   | "domain_read"
   | "domain_write"
+  | "package_catalog_read"
   | "package_catalog"
   | "package_workspace"
   | "package_clone"
@@ -62,6 +63,7 @@ export type DomainEnginePermission =
 const PERMISSION_MIN_ROLE: Record<DomainEnginePermission, OperationalRole> = {
   domain_read: "workspace_user",
   domain_write: "workspace_admin",
+  package_catalog_read: "workspace_admin",
   package_catalog: "middleware_admin",
   package_workspace: "workspace_admin",
   package_clone: "platform_admin",
@@ -143,7 +145,7 @@ export async function enforceOperationalPermission(
     return false;
   }
 
-  if (permission === "package_catalog") {
+  if (permission === "package_catalog" || permission === "package_catalog_read") {
     return true;
   }
 

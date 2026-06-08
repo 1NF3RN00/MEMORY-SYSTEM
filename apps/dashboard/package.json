@@ -7,12 +7,14 @@
     "dev": "vite",
     "build": "tsc -p tsconfig.json && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npx --yes vitest@3.2.4 run --config vitest.config.ts"
   },
   "dependencies": {
+    "@memory-middleware/ingestion": "*",
     "@memory-middleware/shared-types": "*",
     "@supabase/supabase-js": "^2.49.8",
-    "@memory-middleware/ingestion": "*",
+    "@tanstack/react-query": "^5.101.0",
     "d3-force": "^3.0.0",
     "framer-motion": "^12.40.0",
     "jspdf": "^4.2.1",
@@ -24,11 +26,12 @@
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.0",
     "@types/d3-force": "^3.0.10",
-    "@types/react": "^19.1.6",
-    "@types/react-dom": "^19.1.5",
-    "@vitejs/plugin-react": "^4.5.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^4.7.0",
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",
-    "vite": "^6.3.5"
+    "vite": "^6.4.3",
+    "vitest": "^3.2.6"
   }
 }

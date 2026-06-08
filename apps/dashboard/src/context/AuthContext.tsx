@@ -33,6 +33,8 @@ interface AuthState {
   session: Session | null;
   user: AuthUser | null;
   workspace: AuthWorkspace | null;
+  /** Resolved workspace id after auth/profile load; null while unauthenticated or loading. */
+  workspaceId: string | null;
   profileError: string | null;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -135,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const err = consumeLastProfileFetchError() ?? profile.error;
     setProfileError(err);
-    if (profile.transient && hasProfileRef.current) {
+    if (hasProfileRef.current) {
       return { ok: true, error: err };
     }
     hasProfileRef.current = false;
@@ -196,18 +198,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setWorkspace(null);
   }, []);
 
+  const workspaceId = workspace?.workspaceId ?? null;
+
   const value = useMemo(
     () => ({
       loading,
       session,
       user,
       workspace,
+      workspaceId,
       profileError,
       signIn,
       signOut,
       refreshProfile,
     }),
-    [loading, session, user, workspace, profileError, signIn, signOut, refreshProfile],
+    [loading, session, user, workspace, workspaceId, profileError, signIn, signOut, refreshProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,47 +1,37 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import {
-  emptyWorkspaceTelemetry,
-  fetchWorkspaceTelemetry,
-  type WorkspaceTelemetry,
-} from "../../lib/workspaceTelemetry.js";
+  useTelemetryAnalyticsState,
+  useTelemetryEvents,
+  useTelemetryIndicators,
+  useTelemetryPanelData,
+} from "../../context/WorkspaceTelemetryContext.js";
 
 export function useOperationalHomeData() {
-  const [telemetry, setTelemetry] = useState<WorkspaceTelemetry>(emptyWorkspaceTelemetry());
-  const [loading, setLoading] = useState(true);
+  const { indicators, loading: indicatorsLoading } = useTelemetryIndicators();
+  const { panelData, loading: panelLoading } = useTelemetryPanelData();
+  const { events, loading: eventsLoading } = useTelemetryEvents();
+  const { analyticsLoaded, analyticsLoading, requestAnalytics } = useTelemetryAnalyticsState();
 
-  useEffect(() => {
-    let cancelled = false;
+  const loading = indicatorsLoading || panelLoading || eventsLoading;
 
-    async function load() {
-      const data = await fetchWorkspaceTelemetry();
-      if (cancelled) return;
-      setTelemetry(data ?? emptyWorkspaceTelemetry());
-      setLoading(false);
-    }
-
-    void load();
-    const interval = window.setInterval(() => {
-      void fetchWorkspaceTelemetry().then((data) => {
-        if (!cancelled && data) setTelemetry(data);
-      });
-    }, 15_000);
-
-    const onDataCleared = () => {
-      void load();
-    };
-    window.addEventListener("mms:data-cleared", onDataCleared);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(interval);
-      window.removeEventListener("mms:data-cleared", onDataCleared);
-    };
-  }, []);
-
-  return {
-    loading,
-    indicators: telemetry.indicators,
-    panelData: telemetry.panelData,
-    events: telemetry.events,
-  };
+  return useMemo(
+    () => ({
+      loading,
+      indicators,
+      panelData,
+      events,
+      analyticsLoaded,
+      analyticsLoading,
+      requestAnalytics,
+    }),
+    [
+      loading,
+      indicators,
+      panelData,
+      events,
+      analyticsLoaded,
+      analyticsLoading,
+      requestAnalytics,
+    ],
+  );
 }

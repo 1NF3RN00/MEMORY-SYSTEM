@@ -326,7 +326,7 @@ export async function registerPackageRoutes(app: FastifyInstance): Promise<void>
   );
 
   app.get("/platform/packages", async (request, reply) => {
-    if (!(await enforceOperationalPermission(request, reply, "package_catalog"))) return;
+    if (!(await enforceOperationalPermission(request, reply, "package_catalog_read"))) return;
     const publishedOnly = (request.query as Record<string, string>).published === "true";
     const store = createPrismaDomainEngineStore(app.prisma);
     const packages = await store.listPackageDefinitions(publishedOnly);

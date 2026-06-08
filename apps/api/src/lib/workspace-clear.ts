@@ -40,6 +40,9 @@ export async function clearWorkspaceData(
     deleted.compressionArtifacts = (
       await tx.compressionArtifact.deleteMany({ where: { workspaceId } })
     ).count;
+    deleted.workspaceMetricsSummaries = (
+      await tx.workspaceMetricsSummary.deleteMany({ where: { workspaceId } })
+    ).count;
   });
 
   return {

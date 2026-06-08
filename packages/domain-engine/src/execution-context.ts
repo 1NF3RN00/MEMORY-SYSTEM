@@ -1,4 +1,5 @@
-import type { EventEmitter } from "@memory-middleware/observability";
+import type { EventEmitter, ExecutionTimingCollector } from "@memory-middleware/observability";
+import { measurePipelineStage, resolvePipelineCollector } from "@memory-middleware/observability";
 import type { DomainExecutionContext } from "@memory-middleware/shared-types";
 import {
   DEFAULT_RELATIONSHIP_NEIGHBORHOOD_CONSTRAINT,
@@ -18,16 +19,17 @@ export interface ResolveExecutionContextDeps {
   store: DomainEngineStore;
   events?: EventEmitter;
   traceId?: string;
+  timingCollector?: ExecutionTimingCollector;
 }
 
 export async function resolveDomainExecutionContext(
   deps: ResolveExecutionContextDeps,
   input: ResolveExecutionContextInput,
 ): Promise<DomainExecutionContext> {
-  const loaded = await deps.store.loadExecutionContextData(
-    input.workspaceId,
-    input.domainKey,
-    input.domainAction,
+  const traceId = deps.traceId ?? input.workspaceId;
+  const timing = resolvePipelineCollector(traceId, deps.timingCollector);
+  const loaded = await measurePipelineStage(traceId, "domain_resolution", timing, () =>
+    deps.store.loadExecutionContextData(input.workspaceId, input.domainKey, input.domainAction),
   );
 
   if (input.domainKey && !loaded.domain) {

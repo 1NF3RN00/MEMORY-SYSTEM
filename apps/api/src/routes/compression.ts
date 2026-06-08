@@ -1,5 +1,6 @@
 import { Prisma } from "@prisma/client";
 import type { FastifyInstance } from "fastify";
+import { runWithTimingAsync } from "@memory-middleware/observability";
 import {
   createOpenAiAbstractionClient,
   runCompressionPipeline,
@@ -12,9 +13,14 @@ import {
 } from "@memory-middleware/shared-types";
 import { loadEnv } from "../config/env.js";
 import {
+  parseListFieldsQuery,
+  projectListRows,
+} from "../lib/list-field-projection.js";
+import {
   completeCompressionOperation,
   createCompressionOperation,
   getCompressionTrace,
+  getCompressionTraceSummary,
   getWorkspaceCompressionConfig,
   listCompressionTraces,
   parseCompressionBody,
@@ -29,6 +35,9 @@ export async function registerCompressionRoutes(app: FastifyInstance): Promise<v
   const env = loadEnv();
 
   app.post("/compress", async (request, reply) => {
+    return runWithTimingAsync(
+      request.timingCollector,
+      async () => {
     const parsed = parseCompressionBody(request.body);
     if ("error" in parsed) {
       return reply.status(400).send({ error: parsed.error });
@@ -40,8 +49,8 @@ export async function registerCompressionRoutes(app: FastifyInstance): Promise<v
     }
 
     const contextResult = await resolveContextPackage(app.prisma, parsed);
-    if ("error" in contextResult) {
-      return reply.status(400).send({ error: contextResult.error });
+    if ("code" in contextResult) {
+      return reply.status(400).send(contextResult);
     }
 
     const fidelityMode =
@@ -92,6 +101,7 @@ export async function registerCompressionRoutes(app: FastifyInstance): Promise<v
         events: app.events,
         abstractionClient,
         runtimeOverrides: workspace.compression?.runtime,
+        timingCollector: request.timingCollector,
         onStage: async (stages) => {
           const existing = await app.prisma.compressionOperation.findFirst({
             where: { traceId },
@@ -159,6 +169,8 @@ export async function registerCompressionRoutes(app: FastifyInstance): Promise<v
         optimizedContextPackage: result.optimizedContextPackage,
         fidelityReport: result.fidelityReport,
         failed: result.failed,
+        timingAudit: request.timingCollector.toAudit(),
+        llmCallAudit: request.llmCallCollector.toAudit(),
         ...(result.error ? { error: result.error } : {}),
       };
     } catch (error) {
@@ -215,27 +227,42 @@ export async function registerCompressionRoutes(app: FastifyInstance): Promise<v
         error: message,
         compressionTraceId: traceId,
         optimizedContextPackage: stored.optimizedContextPackage,
+        llmCallAudit: request.llmCallCollector.toAudit(),
       });
     }
+    },
+      request.llmCallCollector,
+    );
   });
 
-  app.get<{ Querystring: { workspaceId?: string; limit?: string } }>(
+  app.get<{ Querystring: { workspaceId?: string; limit?: string; fields?: string } }>(
     "/compression",
-    async (request) => {
+    async (request, reply) => {
+      const fieldProjection = parseListFieldsQuery("compression", request.query.fields);
+      if (!fieldProjection.ok) {
+        return reply.status(400).send({
+          error: fieldProjection.error,
+          invalidFields: fieldProjection.invalidFields,
+        });
+      }
+
       const limit = Number(request.query.limit ?? 50);
       const traces = await listCompressionTraces(
         app.prisma,
         request.query.workspaceId,
         limit,
       );
-      return { traces };
+      return { traces: projectListRows(traces, fieldProjection.fields) };
     },
   );
 
-  app.get<{ Params: { traceId: string } }>(
+  app.get<{ Params: { traceId: string }; Querystring: { summary?: string } }>(
     "/compression/:traceId",
     async (request, reply) => {
-      const trace = await getCompressionTrace(app.prisma, request.params.traceId);
+      const summary = request.query.summary === "true";
+      const trace = summary
+        ? await getCompressionTraceSummary(app.prisma, request.params.traceId)
+        : await getCompressionTrace(app.prisma, request.params.traceId);
       if (!trace) {
         return reply.status(404).send({ error: "Compression trace not found" });
       }
@@ -262,7 +289,7 @@ export async function registerCompressionRoutes(app: FastifyInstance): Promise<v
     },
   );
 
-  app.get<{ Querystring: { workspaceId?: string } }>(
+  app.get<{ Querystring: { workspaceId?: string; lite?: string } }>(
     "/relationships/graph",
     async (request, reply) => {
       const workspaceId = request.query.workspaceId;
@@ -270,7 +297,10 @@ export async function registerCompressionRoutes(app: FastifyInstance): Promise<v
         return reply.status(400).send({ error: "workspaceId query parameter required" });
       }
 
-      const graph = await getWorkspaceRelationshipGraph(app.prisma, workspaceId);
+      const lite = request.query.lite === "true";
+      const graph = await request.timingCollector.measureAsync("graph_traversal", () =>
+        getWorkspaceRelationshipGraph(app.prisma, workspaceId, { lite }),
+      );
       if (!graph) {
         return reply.status(404).send({ error: "Workspace not found" });
       }

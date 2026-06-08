@@ -1,6 +1,7 @@
 import type { EmbeddingClient } from "@memory-middleware/ingestion";
 import { createOpenAiEmbeddingClient } from "@memory-middleware/ingestion";
-import type { EventEmitter } from "@memory-middleware/observability";
+import type { EventEmitter, ExecutionTimingCollector } from "@memory-middleware/observability";
+import { measurePipelineStage, resolvePipelineCollector } from "@memory-middleware/observability";
 import type {
   ContextPackage,
   DomainExecutionContext,
@@ -49,6 +50,16 @@ import {
   filterRelationshipsByNeighborhoodConstraints,
   resolveDomainRetrievalScope,
 } from "./domain-scope.js";
+import {
+  buildQueryEmbeddingCacheKey,
+  getDefaultQueryEmbeddingCache,
+  type QueryEmbeddingCache,
+} from "./query-embedding-cache.js";
+import {
+  buildLexicalChannelShadow,
+  runLexicalChannelSearch,
+} from "./parallel-bm25-channel.js";
+import type { LexicalSearchStore } from "./lexical-search-store.js";
 
 export interface RunRetrievalInput {
   query: RetrievalQuery;
@@ -91,6 +102,19 @@ export interface RunRetrievalInput {
   loadTargetMemoryMetadata?: (
     memoryIds: string[],
   ) => Promise<Map<string, Record<string, unknown>>>;
+  /** Request-scoped high-resolution timing collector */
+  timingCollector?: ExecutionTimingCollector;
+  /** Optional query embedding cache (defaults to process-wide LRU/TTL cache) */
+  queryEmbeddingCache?: QueryEmbeddingCache;
+  /**
+   * Sprint 37 — parallel BM25 lexical channel (V2 spike).
+   * Default off; when enabled, runs lexical search in parallel with vector embed/search
+   * and attaches shadow metadata only (V1 ranking unchanged).
+   */
+  parallelBm25V2?: {
+    enabled: boolean;
+    lexicalStore?: LexicalSearchStore;
+  };
 }
 
 export interface RunRetrievalResult {
@@ -129,6 +153,8 @@ export async function runRetrievalPipeline(
   input: RunRetrievalInput,
 ): Promise<RunRetrievalResult> {
   const traceId = input.traceId ?? newUlid();
+  const timing = resolvePipelineCollector(traceId, input.timingCollector);
+  return measurePipelineStage(traceId, "retrieval", timing, async () => {
   const config = input.config ?? mergeRetrievalConfig();
   const stages: RetrievalStageRecord[] = [];
   const pipelineStarted = Date.now();
@@ -147,8 +173,22 @@ export async function runRetrievalPipeline(
     throw new Error(`Invalid retrieval scope: ${scope.errors.join("; ")}`);
   }
 
-  const domainScope = resolveDomainRetrievalScope(input.query, input.executionContext);
+  pushStage(stages, "metadata_filtering", "started", new Date().toISOString());
+  await notify();
+  const metadataFilterStarted = Date.now();
+  const domainScope = await measurePipelineStage(traceId, "metadata_filtering", timing, async () =>
+    resolveDomainRetrievalScope(input.query, input.executionContext),
+  );
   const effectiveQuery = domainScope.query;
+  pushStage(stages, "metadata_filtering", "completed", new Date().toISOString(), {
+    metadata: {
+      filter_count: domainScope.filter.domainScope?.metadataFilters?.length ?? 0,
+      rule_count: domainScope.filter.domainScope?.rules?.length ?? 0,
+      memory_types: domainScope.filter.memoryTypes ?? [],
+      duration_ms: Date.now() - metadataFilterStarted,
+    },
+  });
+  await notify();
 
   await emitRetrievalStarted(input.events, {
     traceId,
@@ -180,6 +220,7 @@ export async function runRetrievalPipeline(
   pushStage(stages, "preprocessing", "started", new Date().toISOString());
   await notify();
 
+  const preprocessStarted = Date.now();
   const preprocessOptions: import("./preprocessing.js").PreprocessQueryOptions = {
     ...(input.retrievalPlan?.expansionTerms?.length
       ? { expansionTerms: input.retrievalPlan.expansionTerms }
@@ -188,13 +229,14 @@ export async function runRetrievalPipeline(
       ? { decomposition: input.retrievalPlan.decomposition }
       : {}),
   };
-  const preprocessed = preprocessQuery(effectiveQuery.query, preprocessOptions);
+  const preprocessed = await measurePipelineStage(traceId, "intent_extraction", timing, async () =>
+    preprocessQuery(effectiveQuery.query, preprocessOptions),
+  );
   const calibratedParams = resolveCalibratedRetrievalParams(
     input.calibration,
     input.query.retrievalMode,
     config,
   );
-  const preprocessStarted = Date.now();
   pushStage(stages, "preprocessing", "completed", new Date().toISOString(), {
     metadata: {
       keywords: preprocessed.keywords,
@@ -227,13 +269,66 @@ export async function runRetrievalPipeline(
   pushStage(stages, "vector_retrieval", "started", new Date().toISOString());
   await notify();
 
+  const topK = calibratedParams.topK;
+  const similarityThreshold = calibratedParams.similarityThreshold;
+
+  const expansionKeywords = [
+    ...preprocessed.keywords,
+    ...(preprocessed.operationalConcepts ?? []).slice(0, 8),
+    ...(preprocessed.domains ?? []),
+    ...(input.retrievalPlan?.expansionTerms ?? []).slice(0, 12),
+  ];
+
+  const parallelBm25Enabled =
+    input.parallelBm25V2?.enabled === true && input.parallelBm25V2.lexicalStore !== undefined;
+  const lexicalChannelStarted = Date.now();
+  let lexicalCandidatesPromise:
+    | ReturnType<typeof runLexicalChannelSearch>
+    | undefined;
+
+  if (parallelBm25Enabled) {
+    pushStage(stages, "lexical_channel_v2", "started", new Date().toISOString());
+    await notify();
+    lexicalCandidatesPromise = measurePipelineStage(
+      traceId,
+      "lexical_channel_v2",
+      timing,
+      () =>
+        runLexicalChannelSearch({
+          queryText: effectiveQuery.query,
+          queryTerms: preprocessed.keywords,
+          filter: domainScope.filter,
+          topK,
+          lexicalStore: input.parallelBm25V2!.lexicalStore!,
+        }),
+    );
+  }
+
   const vectorStarted = Date.now();
   let queryEmbedding: number[];
+  let embeddingCacheHit = false;
   try {
     const embeddingInput = preprocessed.embeddingText ?? preprocessed.normalizedQuery;
-    const vectors = await input.embeddingClient.embed([embeddingInput]);
-    queryEmbedding = vectors[0] ?? [];
-    if (queryEmbedding.length === 0) throw new Error("Empty query embedding returned");
+    const cache = input.queryEmbeddingCache ?? getDefaultQueryEmbeddingCache();
+    const cacheKey = buildQueryEmbeddingCacheKey(
+      input.query.workspaceId,
+      preprocessed.normalizedQuery,
+      embeddingInput,
+    );
+
+    const cached = cache.get(cacheKey);
+    if (cached) {
+      queryEmbedding = cached;
+      embeddingCacheHit = true;
+    } else {
+      queryEmbedding = await measurePipelineStage(traceId, "vector_search:embedding", timing, async () => {
+        const vectors = await input.embeddingClient!.embed([embeddingInput]);
+        const embedding = vectors[0] ?? [];
+        if (embedding.length === 0) throw new Error("Empty query embedding returned");
+        cache.set(cacheKey, embedding);
+        return embedding;
+      });
+    }
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     pushStage(stages, "vector_retrieval", "failed", new Date().toISOString(), { error: message });
@@ -246,24 +341,36 @@ export async function runRetrievalPipeline(
     throw error;
   }
 
-  const topK = calibratedParams.topK;
-  const similarityThreshold = calibratedParams.similarityThreshold;
-
-  const expansionKeywords = [
-    ...preprocessed.keywords,
-    ...(preprocessed.operationalConcepts ?? []).slice(0, 8),
-    ...(preprocessed.domains ?? []),
-    ...(input.retrievalPlan?.expansionTerms ?? []).slice(0, 12),
-  ];
-  const scannedCandidates = await input.vectorStore.search(
-    queryEmbedding,
-    domainScope.filter,
-    topK,
+  const scannedCandidates = await measurePipelineStage(traceId, "vector_search:pgvector", timing, () =>
+    input.vectorStore.search(queryEmbedding, domainScope.filter, topK),
   );
 
   const thresholdResult = applySimilarityThreshold(scannedCandidates, similarityThreshold);
   const vectorCandidates = thresholdResult.candidates;
   const rejected: RejectedCandidate[] = [...thresholdResult.rejected];
+
+  let lexicalChannelV2Shadow:
+    | ReturnType<typeof buildLexicalChannelShadow>
+    | undefined;
+
+  if (lexicalCandidatesPromise) {
+    const lexicalCandidates = await lexicalCandidatesPromise;
+    lexicalChannelV2Shadow = buildLexicalChannelShadow(
+      lexicalCandidates,
+      vectorCandidates,
+      lexicalChannelStarted,
+    );
+    pushStage(stages, "lexical_channel_v2", "completed", new Date().toISOString(), {
+      metadata: {
+        candidate_count: lexicalChannelV2Shadow.candidateCount,
+        overlap_with_vector: lexicalChannelV2Shadow.mergePreview.overlapWithVector,
+        merge_strategy: lexicalChannelV2Shadow.mergePreview.strategy,
+        shadow_only: true,
+        duration_ms: lexicalChannelV2Shadow.durationMs,
+      },
+    });
+    await notify();
+  }
 
   if (scannedCandidates.length === 0) {
     rejected.push({
@@ -294,6 +401,7 @@ export async function runRetrievalPipeline(
       threshold_mode: calibratedParams.thresholdMode,
       breadth_multiplier: calibratedParams.breadthMultiplier,
       precision_weighting: calibratedParams.precisionWeighting,
+      embedding_cache_hit: embeddingCacheHit,
       ...(thresholdResult.retried ? { threshold_retried: true } : {}),
     },
   });
@@ -319,18 +427,25 @@ export async function runRetrievalPipeline(
   }));
 
   const rerankStarted = Date.now();
-  let { ranked, breakdown } = rankChunks(
-    rankable,
-        config,
-        input.retrievalPlan?.weightingAdjustments,
-        calibratedParams.precisionWeighting,
-      );
+  let { ranked, breakdown } = await measurePipelineStage(traceId, "reranking", timing, async () =>
+    rankChunks(
+      rankable,
+      config,
+      input.retrievalPlan?.weightingAdjustments,
+      calibratedParams.precisionWeighting,
+    ),
+  );
 
   let relationshipAugmentation: RelationshipAugmentationResult | undefined;
 
   if (input.loadRelationshipsForMemories && ranked.length > 0) {
+    pushStage(stages, "relationship_expansion", "started", new Date().toISOString());
+    await notify();
+    const relationshipStarted = Date.now();
     const topMemoryIds = [...new Set(ranked.slice(0, 20).map((r) => r.memoryId))];
-    let relationships = await input.loadRelationshipsForMemories(topMemoryIds);
+    let relationships = await measurePipelineStage(traceId, "relationship_expansion", timing, () =>
+      input.loadRelationshipsForMemories!(topMemoryIds),
+    );
 
     if (input.executionContext && relationships.length > 0) {
       const neighborIds = new Set<string>();
@@ -389,6 +504,15 @@ export async function runRetrievalPipeline(
         });
       }
     }
+    pushStage(stages, "relationship_expansion", "completed", new Date().toISOString(), {
+      metadata: {
+        duration_ms: Date.now() - relationshipStarted,
+        ...(relationshipAugmentation?.augmentationApplied
+          ? { neighbor_count: relationshipAugmentation.neighborCount }
+          : { skipped: true }),
+      },
+    });
+    await notify();
   }
 
   pushStage(stages, "reranking", "completed", new Date().toISOString(), {
@@ -489,7 +613,8 @@ export async function runRetrievalPipeline(
   await notify();
 
   const assemblyStarted = Date.now();
-  const contextPackage = assembleContextPackage({
+  const contextPackage = await measurePipelineStage(traceId, "context_assembly", timing, async () =>
+    assembleContextPackage({
     query: effectiveQuery.query,
     workspaceId: effectiveQuery.workspaceId,
     retrievalTraceId: traceId,
@@ -503,7 +628,8 @@ export async function runRetrievalPipeline(
     retrievalLatencyMs: Date.now() - pipelineStarted,
     retrievedChunkCount: vectorCandidates.length,
     maxTokens: effectiveQuery.tokenBudget,
-  });
+    }),
+  );
 
   if (input.executionContext) {
     contextPackage.retrievalMetadata = {
@@ -512,6 +638,13 @@ export async function runRetrievalPipeline(
       ...(input.executionContext.domainAction
         ? { domainAction: input.executionContext.domainAction }
         : {}),
+    };
+  }
+
+  if (lexicalChannelV2Shadow) {
+    contextPackage.retrievalMetadata = {
+      ...contextPackage.retrievalMetadata,
+      lexicalChannelV2Shadow,
     };
   }
 
@@ -536,13 +669,18 @@ export async function runRetrievalPipeline(
   });
 
   if (input.loadAdjacencyForChunks || input.loadMemoryMetadata) {
+    pushStage(stages, "keyword_search", "started", new Date().toISOString());
+    await notify();
+    const keywordStarted = Date.now();
     const retrievedChunkIds = contextPackage.memories.flatMap((m) =>
       m.chunks.map((c) => c.chunkId),
     );
     const memoryIds = contextPackage.memories.map((m) => m.memoryId);
 
     const adjacencyByChunkId = input.loadAdjacencyForChunks
-      ? await input.loadAdjacencyForChunks(retrievedChunkIds)
+      ? await measurePipelineStage(traceId, "graph_traversal", timing, () =>
+          input.loadAdjacencyForChunks!(retrievedChunkIds),
+        )
       : new Map<string, ChunkAdjacencyLookup>();
 
     const memories = input.loadMemoryMetadata
@@ -553,19 +691,29 @@ export async function runRetrievalPipeline(
           memoryType: m.memoryType,
         }));
 
-    const expansion = applyRetrievalExpansion({
-      query: effectiveQuery.query,
-      keywords: expansionKeywords,
-      retrievedChunkIds,
-      memories,
-      adjacencyByChunkId,
-      ...(input.retrievalPlan?.decomposition
-        ? { decomposition: input.retrievalPlan.decomposition }
-        : {}),
-      ...(input.calibration?.expansionWeighting !== undefined
-        ? { expansionWeighting: input.calibration.expansionWeighting }
-        : {}),
+    const expansion = await measurePipelineStage(traceId, "keyword_search", timing, async () =>
+      applyRetrievalExpansion({
+        query: effectiveQuery.query,
+        keywords: expansionKeywords,
+        retrievedChunkIds,
+        memories,
+        adjacencyByChunkId,
+        ...(input.retrievalPlan?.decomposition
+          ? { decomposition: input.retrievalPlan.decomposition }
+          : {}),
+        ...(input.calibration?.expansionWeighting !== undefined
+          ? { expansionWeighting: input.calibration.expansionWeighting }
+          : {}),
+      }),
+    );
+    pushStage(stages, "keyword_search", "completed", new Date().toISOString(), {
+      metadata: {
+        duration_ms: Date.now() - keywordStarted,
+        keyword_count: expansionKeywords.length,
+        expansion_applied: expansion.expansionApplied,
+      },
     });
+    await notify();
 
     if (expansion.expansionApplied) {
       await emitRetrievalExpansionApplied(input.events, {
@@ -593,6 +741,7 @@ export async function runRetrievalPipeline(
     ...(relationshipAugmentation ? { relationshipAugmentation } : {}),
     ...(input.executionContext ? { executionContext: input.executionContext } : {}),
   };
+  });
 }
 
 export { createOpenAiEmbeddingClient, mergeRetrievalConfig };

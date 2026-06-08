@@ -1,4 +1,5 @@
-import type { EventEmitter } from "@memory-middleware/observability";
+import type { EventEmitter, ExecutionTimingCollector } from "@memory-middleware/observability";
+import { measurePipelineStage, resolvePipelineCollector } from "@memory-middleware/observability";
 import { normalizeContent } from "@memory-middleware/normalization";
 import { newUlid } from "@memory-middleware/shared-types";
 import type {
@@ -84,6 +85,8 @@ export interface PipelineOptions {
   events: EventEmitter;
   store: PipelineStore;
   embeddingClient: EmbeddingClient | null;
+  /** Request-scoped high-resolution timing collector */
+  timingCollector?: ExecutionTimingCollector;
 }
 
 function stage(
@@ -108,6 +111,8 @@ export async function runIngestionPipeline(
   input: PipelineJobInput,
   options: PipelineOptions,
 ): Promise<{ memory: CanonicalMemoryObject; status: IngestionState; lineageId: string }> {
+  const timing = resolvePipelineCollector(input.traceId, options.timingCollector);
+  return measurePipelineStage(input.traceId, "ingestion", timing, async () => {
   const pipelineStarted = Date.now();
   const stages: IngestionStageRecord[] = [];
   const normalizationTraceId = newUlid();
@@ -119,45 +124,55 @@ export async function runIngestionPipeline(
     workspaceId: input.workspaceId,
   });
 
-  let rawSource = input.rawContent ?? "";
-  let sourceTruthRaw = rawSource;
-  let crawlerOutput: Record<string, unknown> | undefined;
   const normStageStart = new Date().toISOString();
 
   try {
-    if (input.sourceType === "website") {
-      const url = input.url ?? input.sourceUrl;
-      if (!url) throw new Error("Website ingestion requires url");
-      const crawl = await crawlWebsite(url);
-      sourceTruthRaw = crawl.rawHtml;
-      crawlerOutput = {
-        url: crawl.url,
-        extractedTitle: crawl.extractedTitle,
-        cleanedHtml: crawl.cleanedHtml,
-        markdown: crawl.markdown,
-        fetchedAt: crawl.fetchedAt,
-      };
-      rawSource = crawl.markdown;
-    }
-
     const normStarted = Date.now();
-    const normalized = await normalizeContent({
-      sourceType: input.sourceType === "website" ? "markdown" : input.sourceType,
-      rawContent: rawSource,
-      ...(input.title ? { title: input.title } : {}),
-      ...((input.sourceUrl ?? input.url)
-        ? { sourceUrl: (input.sourceUrl ?? input.url) as string }
-        : {}),
-      useLlmStructuring: input.useLlmStructuring ?? false,
-    });
+    const { normalized } = await measurePipelineStage(
+      input.traceId,
+      "normalization",
+      timing,
+      async () => {
+        let rawSource = input.rawContent ?? "";
+        let truthRaw = rawSource;
+        let crawlMeta: Record<string, unknown> | undefined;
 
-    await options.store.persistSourceTruth({
-      traceId: input.traceId,
-      workspaceId: input.workspaceId,
-      rawSource: sourceTruthRaw,
-      ...(crawlerOutput ? { crawlerOutput } : {}),
-      normalizationTransformations: normalized.transformations,
-    });
+        if (input.sourceType === "website") {
+          const url = input.url ?? input.sourceUrl;
+          if (!url) throw new Error("Website ingestion requires url");
+          const crawl = await crawlWebsite(url);
+          truthRaw = crawl.rawHtml;
+          crawlMeta = {
+            url: crawl.url,
+            extractedTitle: crawl.extractedTitle,
+            cleanedHtml: crawl.cleanedHtml,
+            markdown: crawl.markdown,
+            fetchedAt: crawl.fetchedAt,
+          };
+          rawSource = crawl.markdown;
+        }
+
+        const normalizedContent = await normalizeContent({
+          sourceType: input.sourceType === "website" ? "markdown" : input.sourceType,
+          rawContent: rawSource,
+          ...(input.title ? { title: input.title } : {}),
+          ...((input.sourceUrl ?? input.url)
+            ? { sourceUrl: (input.sourceUrl ?? input.url) as string }
+            : {}),
+          useLlmStructuring: input.useLlmStructuring ?? false,
+        });
+
+        await options.store.persistSourceTruth({
+          traceId: input.traceId,
+          workspaceId: input.workspaceId,
+          rawSource: truthRaw,
+          ...(crawlMeta ? { crawlerOutput: crawlMeta } : {}),
+          normalizationTransformations: normalizedContent.transformations,
+        });
+
+        return { normalized: normalizedContent };
+      },
+    );
 
     stages.push(
       stage("normalized", "completed", normStageStart, new Date().toISOString(), Date.now() - normStarted),
@@ -185,87 +200,96 @@ export async function runIngestionPipeline(
     const chunkStageStart = new Date().toISOString();
     const chunkStarted = Date.now();
 
-    const pendingMemoryId = input.memoryId ?? "pending";
-    let preChunks: CanonicalMemoryObject["chunks"];
-    let avgDensity = 0;
-    let structuralMeta: {
-      chunkingStrategy: string;
-      fallbackUsed: boolean;
-      fallbackReason?: string;
-    };
+    const { preChunks, avgDensity, structuralMeta } = await measurePipelineStage(
+      input.traceId,
+      "chunking",
+      timing,
+      async () => {
+        const pendingMemoryId = input.memoryId ?? "pending";
+        let chunks: CanonicalMemoryObject["chunks"];
+        let density = 0;
+        let meta: {
+          chunkingStrategy: string;
+          fallbackUsed: boolean;
+          fallbackReason?: string;
+        };
 
-    if (input.fixedChunks?.length) {
-      preChunks = input.fixedChunks.map((chunk, index) => ({
-        ...chunk,
-        memoryId: pendingMemoryId,
-        chunkIndex: index,
-      }));
-      structuralMeta = {
-        chunkingStrategy: "observation-v1",
-        fallbackUsed: false,
-      };
-    } else {
-      const structuralResult = structureAwareChunk({
-        memoryId: pendingMemoryId,
-        normalizedContent: normalized.normalizedContent,
-        sourceType: input.sourceType === "website" ? "markdown" : input.sourceType,
-      });
+        if (input.fixedChunks?.length) {
+          chunks = input.fixedChunks.map((chunk, index) => ({
+            ...chunk,
+            memoryId: pendingMemoryId,
+            chunkIndex: index,
+          }));
+          meta = {
+            chunkingStrategy: "observation-v1",
+            fallbackUsed: false,
+          };
+        } else {
+          const structuralResult = structureAwareChunk({
+            memoryId: pendingMemoryId,
+            normalizedContent: normalized.normalizedContent,
+            sourceType: input.sourceType === "website" ? "markdown" : input.sourceType,
+          });
 
-      await emitStructureParsingCompleted(options.events, {
-        traceId: input.traceId,
-        workspaceId: input.workspaceId,
-        latencyMs: structuralResult.structureParseLatencyMs,
-        extra: {
-          strategy: structuralResult.strategy,
-          fallback_used: structuralResult.fallbackUsed,
-          section_count: structuralResult.segmentationReasons.length,
-        },
-      });
+          await emitStructureParsingCompleted(options.events, {
+            traceId: input.traceId,
+            workspaceId: input.workspaceId,
+            latencyMs: structuralResult.structureParseLatencyMs,
+            extra: {
+              strategy: structuralResult.strategy,
+              fallback_used: structuralResult.fallbackUsed,
+              section_count: structuralResult.segmentationReasons.length,
+            },
+          });
 
-      if (structuralResult.fallbackUsed && structuralResult.fallbackReason) {
-        await emitStructuralFallback(options.events, {
-          traceId: input.traceId,
-          workspaceId: input.workspaceId,
-          reason: structuralResult.fallbackReason,
-          extra: { chunk_count: structuralResult.chunks.length },
-        });
-      } else {
-        await emitSemanticSegmentationCompleted(options.events, {
-          traceId: input.traceId,
-          workspaceId: input.workspaceId,
-          extra: {
-            chunk_count: structuralResult.chunks.length,
-            segmentation_reasons: structuralResult.segmentationReasons.length,
-          },
-        });
-        await emitAdjacencyGenerationCompleted(options.events, {
-          traceId: input.traceId,
-          workspaceId: input.workspaceId,
-          extra: { chunk_count: structuralResult.chunks.length },
-        });
-      }
+          if (structuralResult.fallbackUsed && structuralResult.fallbackReason) {
+            await emitStructuralFallback(options.events, {
+              traceId: input.traceId,
+              workspaceId: input.workspaceId,
+              reason: structuralResult.fallbackReason,
+              extra: { chunk_count: structuralResult.chunks.length },
+            });
+          } else {
+            await emitSemanticSegmentationCompleted(options.events, {
+              traceId: input.traceId,
+              workspaceId: input.workspaceId,
+              extra: {
+                chunk_count: structuralResult.chunks.length,
+                segmentation_reasons: structuralResult.segmentationReasons.length,
+              },
+            });
+            await emitAdjacencyGenerationCompleted(options.events, {
+              traceId: input.traceId,
+              workspaceId: input.workspaceId,
+              extra: { chunk_count: structuralResult.chunks.length },
+            });
+          }
 
-      avgDensity = averageDensityScore(
-        structuralResult.chunks.map((c) => c.densityDetail),
-      );
-      await emitSemanticDensityScored(options.events, {
-        traceId: input.traceId,
-        workspaceId: input.workspaceId,
-        extra: { average_density: avgDensity, chunk_count: structuralResult.chunks.length },
-      });
+          density = averageDensityScore(
+            structuralResult.chunks.map((c) => c.densityDetail),
+          );
+          await emitSemanticDensityScored(options.events, {
+            traceId: input.traceId,
+            workspaceId: input.workspaceId,
+            extra: { average_density: density, chunk_count: structuralResult.chunks.length },
+          });
 
-      preChunks = toCanonicalChunks(pendingMemoryId, structuralResult, {
-        ...(input.tags ? { tags: input.tags } : {}),
-        memoryType: input.memoryType,
-      });
-      structuralMeta = {
-        chunkingStrategy: structuralResult.strategy,
-        fallbackUsed: structuralResult.fallbackUsed,
-        ...(structuralResult.fallbackReason
-          ? { fallbackReason: structuralResult.fallbackReason }
-          : {}),
-      };
-    }
+          chunks = toCanonicalChunks(pendingMemoryId, structuralResult, {
+            ...(input.tags ? { tags: input.tags } : {}),
+            memoryType: input.memoryType,
+          });
+          meta = {
+            chunkingStrategy: structuralResult.strategy,
+            fallbackUsed: structuralResult.fallbackUsed,
+            ...(structuralResult.fallbackReason
+              ? { fallbackReason: structuralResult.fallbackReason }
+              : {}),
+          };
+        }
+
+        return { preChunks: chunks, avgDensity: density, structuralMeta: meta };
+      },
+    );
 
     stages.push(
       stage("chunked", "completed", chunkStageStart, new Date().toISOString(), Date.now() - chunkStarted),
@@ -311,8 +335,12 @@ export async function runIngestionPipeline(
     await options.store.persistMemory(memory, lineageId);
 
     const embedStageStart = new Date().toISOString();
-    const embedStarted = Date.now();
-    const embedResult = await embedChunks(memory.chunks, options.embeddingClient);
+    const embedResult = await measurePipelineStage(
+      input.traceId,
+      "embedding_generation",
+      timing,
+      async () => embedChunks(memory.chunks, options.embeddingClient),
+    );
     memory.chunks = embedResult.chunks;
     memory.observability.embeddingLatencyMs = embedResult.embeddingLatencyMs;
 
@@ -374,4 +402,5 @@ export async function runIngestionPipeline(
     });
     throw error;
   }
+  });
 }

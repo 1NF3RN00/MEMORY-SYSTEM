@@ -1,7 +1,7 @@
 {
   "packageKey": "competitive-intelligence",
   "name": "Competitive Intelligence",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Competitor benchmarking domains with gap analysis workflow",
   "domains": [
     {
@@ -30,8 +30,8 @@
       },
       "instructions": [
         {
-          "actionKey": "analyze",
-          "title": "Competitor Analysis Instructions",
+          "actionKey": "ci-competitor-analyze",
+          "title": "Competitive Analysis Instructions",
           "content": "Compare subject metrics against competitor observations with matching competitorId.",
           "status": "active"
         }
@@ -56,7 +56,7 @@
       },
       "instructions": [
         {
-          "actionKey": "audit",
+          "actionKey": "ci-website-benchmark",
           "title": "Website Benchmark Instructions",
           "content": "Collect subject website metrics for competitor comparison.",
           "status": "active"
@@ -82,8 +82,8 @@
       },
       "instructions": [
         {
-          "actionKey": "review",
-          "title": "Reputation Review Instructions",
+          "actionKey": "ci-reputation-review",
+          "title": "Reputation Benchmark Instructions",
           "content": "Assess review volume and rating against competitors.",
           "status": "active"
         }
@@ -108,7 +108,7 @@
       },
       "instructions": [
         {
-          "actionKey": "review",
+          "actionKey": "ci-social-benchmark",
           "title": "Social Benchmark Instructions",
           "content": "Compare engagement rates across platforms.",
           "status": "active"
@@ -118,7 +118,7 @@
   ],
   "workflows": [
     {
-      "workflowKey": "competitive-gap-analysis",
+      "workflowKey": "ci-competitive-gap-analysis",
       "name": "Competitive Gap Analysis",
       "description": "Numeric gaps between subject business and competitors",
       "domains": ["competitor", "website", "reputation", "social"],

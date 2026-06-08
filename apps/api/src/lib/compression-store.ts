@@ -1,8 +1,10 @@
 import { Prisma, type PrismaClient } from "@prisma/client";
 import type {
+  CompressionContextResolveError,
   CompressionRequest,
   CompressionStageRecord,
   CompressionStageTrace,
+  CompressionTraceSummaryView,
   CompressionTraceView,
   ContextPackage,
   FidelityMode,
@@ -19,6 +21,7 @@ import {
   DEFAULT_NUANCE_PRESERVATION,
   DEFAULT_TOKEN_OPTIMIZATION,
 } from "@memory-middleware/shared-types";
+import { recordCompressionMetrics } from "./metrics-aggregation-store.js";
 import { getRetrievalTrace } from "./retrieval-store.js";
 
 export interface StoredCompressionResult {
@@ -74,6 +77,12 @@ export async function completeCompressionOperation(
   stored: StoredCompressionResult,
   status: "completed" | "failed",
 ): Promise<void> {
+  const op = await prisma.compressionOperation.findFirst({
+    where: { traceId },
+    orderBy: { createdAt: "desc" },
+    select: { workspaceId: true },
+  });
+
   await prisma.compressionOperation.updateMany({
     where: { traceId },
     data: {
@@ -82,6 +91,10 @@ export async function completeCompressionOperation(
       result: JSON.parse(JSON.stringify(stored)) as Prisma.InputJsonValue,
     },
   });
+
+  if (op) {
+    await recordCompressionMetrics(prisma, op.workspaceId, status);
+  }
 }
 
 export async function getCompressionTrace(
@@ -122,6 +135,52 @@ export async function getCompressionTrace(
     ...(result.error ? { error: result.error } : {}),
     createdAt: op.createdAt.toISOString(),
     ...(op.completedAt ? { completedAt: op.completedAt.toISOString() } : {}),
+  };
+}
+
+export async function getCompressionTraceSummary(
+  prisma: PrismaClient,
+  traceId: string,
+): Promise<CompressionTraceSummaryView | null> {
+  const op = await prisma.compressionOperation.findFirst({
+    where: { traceId },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (!op) return null;
+
+  const result = (op.result ?? {}) as unknown as StoredCompressionResult;
+  const meta = result.optimizedContextPackage?.compressionMetadata;
+
+  return {
+    compressionTraceId: op.traceId,
+    workspaceId: op.workspaceId,
+    retrievalTraceId: op.retrievalTraceId,
+    status: op.status as CompressionTraceSummaryView["status"],
+    fidelityMode: result.fidelityMode ?? DEFAULT_COMPRESSION_FIDELITY,
+    nuancePreservation: result.nuancePreservation ?? DEFAULT_NUANCE_PRESERVATION,
+    tokenOptimization: result.tokenOptimization ?? DEFAULT_TOKEN_OPTIMIZATION,
+    ...(result.targetTokenBudget !== undefined
+      ? { targetTokenBudget: result.targetTokenBudget }
+      : {}),
+    createdAt: op.createdAt.toISOString(),
+    ...(op.completedAt ? { completedAt: op.completedAt.toISOString() } : {}),
+    ...(meta
+      ? {
+          compressionMetadata: {
+            originalTokens: meta.originalTokens,
+            optimizedTokens: meta.optimizedTokens,
+            tokenSavings: meta.tokenSavings,
+            fidelityScore: meta.fidelityScore,
+          },
+        }
+      : {}),
+    ...(result.fidelityReport
+      ? { fidelityReport: { fidelityScore: result.fidelityReport.fidelityScore } }
+      : {}),
+    mergeCount: result.mergeDecisions?.length ?? 0,
+    trimCount: result.trimmingDecisions?.length ?? 0,
+    ...(result.error ? { error: result.error } : {}),
   };
 }
 
@@ -343,16 +402,33 @@ export function parseCompressionBody(
   return parsed;
 }
 
+export function buildCompressionTraceIdMismatchError(
+  compressionTraceId: string,
+  retrievalTraceId: string,
+): CompressionContextResolveError {
+  return {
+    error: `This is a compression trace ID, not a retrieval trace ID. Use retrieval trace ${retrievalTraceId} to compress again, or open /compression-traces/${compressionTraceId} to view the existing result.`,
+    code: "compression_trace_id_provided",
+    suppliedTraceId: compressionTraceId,
+    compressionTraceId,
+    retrievalTraceId,
+  };
+}
+
 export async function resolveContextPackage(
   prisma: PrismaClient,
   request: CompressionRequest,
-): Promise<ContextPackage | { error: string }> {
+): Promise<ContextPackage | CompressionContextResolveError> {
   if (request.contextPackage) {
     return request.contextPackage;
   }
 
   if (!request.retrievalTraceId) {
-    return { error: "contextPackage or retrievalTraceId is required" };
+    return {
+      error: "contextPackage or retrievalTraceId is required",
+      code: "retrieval_trace_not_found",
+      suppliedTraceId: "",
+    };
   }
 
   const traceId = request.retrievalTraceId.trim();
@@ -365,14 +441,26 @@ export async function resolveContextPackage(
     });
 
     if (compressionOp) {
-      return {
-        error: `This is a compression trace ID, not a retrieval trace ID. Use retrieval trace ${compressionOp.retrievalTraceId} to compress again, or open /compression-traces/${traceId} to view the existing result.`,
-      };
+      return buildCompressionTraceIdMismatchError(traceId, compressionOp.retrievalTraceId);
     }
 
     if (trace && trace.status === "failed") {
       return {
-        error: "Retrieval failed — no context package to compress. Run a successful retrieval first.",
+        error:
+          "Retrieval failed — no context package to compress. Run a successful retrieval first.",
+        code: "retrieval_failed",
+        suppliedTraceId: traceId,
+        retrievalTraceId: traceId,
+      };
+    }
+
+    if (trace && trace.status === "processing") {
+      return {
+        error:
+          "Retrieval is still in progress. Wait for it to finish, then compress using the retrievalTraceId from the completed run.",
+        code: "retrieval_incomplete",
+        suppliedTraceId: traceId,
+        retrievalTraceId: traceId,
       };
     }
 
@@ -380,16 +468,27 @@ export async function resolveContextPackage(
       return {
         error:
           "Retrieval trace is marked completed but its context package was lost (known race condition in older runs). Re-run the retrieval query on Retrieval Traces, then compress the new trace.",
+        code: "context_package_lost",
+        suppliedTraceId: traceId,
+        retrievalTraceId: traceId,
       };
     }
 
     return {
-      error: "Retrieval trace not found. Run POST /retrieve first, then use the retrievalTraceId (not a compression trace ID).",
+      error:
+        "Retrieval trace not found. Run POST /retrieve first, then use the retrievalTraceId (not a compression trace ID).",
+      code: "retrieval_trace_not_found",
+      suppliedTraceId: traceId,
     };
   }
 
   if (trace.workspaceId !== request.workspaceId) {
-    return { error: "Retrieval trace workspace mismatch" };
+    return {
+      error: "Retrieval trace workspace mismatch",
+      code: "workspace_mismatch",
+      suppliedTraceId: traceId,
+      retrievalTraceId: traceId,
+    };
   }
 
   return trace.contextPackage;

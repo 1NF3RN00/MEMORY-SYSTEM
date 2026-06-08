@@ -6,6 +6,8 @@ export {
 export {
   buildOperationalDiagnostics,
   buildTokenInflationReport,
+  toOperationalDiagnosticsSlimReport,
+  type TraceDiagnosticInput,
 } from "./diagnostics.js";
 export { detectDrift } from "./drift-detection.js";
 export {

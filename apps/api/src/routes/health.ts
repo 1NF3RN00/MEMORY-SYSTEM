@@ -18,11 +18,15 @@ export async function registerHealthRoutes(app: FastifyInstance): Promise<void> 
       database = "disconnected";
     }
 
-    await app.events.emit({
-      event_type: "system.health.checked",
-      trace_id: request.traceId,
-      metadata: { database },
-    });
+    try {
+      await app.events.emit({
+        event_type: "system.health.checked",
+        trace_id: request.traceId,
+        metadata: { database },
+      });
+    } catch {
+      // Health must stay available even when the event sink or DB write path fails.
+    }
 
     return {
       status: database === "connected" ? "ok" : "degraded",

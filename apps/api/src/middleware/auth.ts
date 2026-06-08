@@ -5,7 +5,7 @@ import {
   resolveOperationalRoleForApiKey,
   resolveOperationalRoleFromMembership,
 } from "./operational-rbac.js";
-import { PLATFORM_EVENT_TYPES } from "@memory-middleware/shared-types";
+import { OPERATIONAL_STREAM_PATH_SUFFIX, PLATFORM_EVENT_TYPES } from "@memory-middleware/shared-types";
 import { parsePermissions, verifyApiKey } from "../lib/api-keys.js";
 import { emitPlatformEvent, recordSecurityEvent } from "../lib/platform-events.js";
 import { platformAdminEmails } from "../lib/platform-admin-env.js";
@@ -36,6 +36,8 @@ declare module "fastify" {
 const PUBLIC_PREFIXES = [
   "/health",
   "/access/request",
+  "/perf/trigger",
+  "/perf/status",
 ];
 
 const SESSION_ONLY_PREFIXES = [
@@ -55,13 +57,35 @@ function requiresSessionOnly(url: string): boolean {
 
 function bearerToken(request: FastifyRequest): string | null {
   const header = request.headers.authorization;
-  if (!header?.startsWith("Bearer ")) return null;
-  return header.slice(7).trim();
+  if (header?.startsWith("Bearer ")) {
+    return header.slice(7).trim();
+  }
+
+  const path = request.url.split("?")[0] ?? request.url;
+  if (path.endsWith(OPERATIONAL_STREAM_PATH_SUFFIX)) {
+    const query = request.query as Record<string, unknown>;
+    const accessToken = query.access_token;
+    if (typeof accessToken === "string" && accessToken.trim()) {
+      return accessToken.trim();
+    }
+  }
+
+  return null;
 }
 
 function apiKeyHeader(request: FastifyRequest): string | null {
   const key = request.headers["x-api-key"];
   if (typeof key === "string" && key.trim()) return key.trim();
+
+  const path = request.url.split("?")[0] ?? request.url;
+  if (path.endsWith(OPERATIONAL_STREAM_PATH_SUFFIX)) {
+    const query = request.query as Record<string, unknown>;
+    const apiKey = query.api_key;
+    if (typeof apiKey === "string" && apiKey.trim()) {
+      return apiKey.trim();
+    }
+  }
+
   return null;
 }
 
@@ -72,6 +96,13 @@ function queryWorkspaceId(request: FastifyRequest): string | null {
   const fromBody = body?.workspaceId;
   if (typeof fromQuery === "string" && fromQuery) return fromQuery;
   if (typeof fromBody === "string" && fromBody) return fromBody;
+
+  const path = request.url.split("?")[0] ?? request.url;
+  const workspaceMatch = path.match(/\/workspaces\/([^/]+)\//);
+  if (workspaceMatch?.[1]) {
+    return workspaceMatch[1];
+  }
+
   return null;
 }
 

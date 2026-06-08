@@ -1,6 +1,11 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { apiGet, apiPost } from "../lib/api.js";
+import { ApiError, apiGet, apiPost } from "../lib/api.js";
+import {
+  buildCompressionTraceIdHint,
+  type CompressionTraceIdHint,
+  validateRetrievalTraceIdForCompress,
+} from "../lib/compressionTraceId.js";
 import { StatusPanel } from "../components/StatusPanel.js";
 import { SelectField } from "../components/SelectField.js";
 import { Button } from "../components/ui/Button.js";
@@ -169,6 +174,7 @@ export function CompressionTracesPage() {
   const [nuancePreservation, setNuancePreservation] = useState(0.85);
   const [tokenOptimization, setTokenOptimization] = useState(0.3);
   const [submitting, setSubmitting] = useState(false);
+  const [traceIdHint, setTraceIdHint] = useState<CompressionTraceIdHint | null>(null);
 
   useEffect(() => {
     apiGet<{ id: string }>("/workspaces/default")
@@ -207,7 +213,7 @@ export function CompressionTracesPage() {
         apiGet<{ traces: TraceSummary[] }>("/compression?limit=50"),
         workspaceId
           ? apiGet<{ traces: RetrievalTraceOption[] }>(
-              `/retrieval?workspaceId=${workspaceId}&limit=30`,
+              `/retrieval?workspaceId=${workspaceId}&limit=30&fields=retrievalTraceId,query,status,hasContextPackage`,
             )
           : Promise.resolve({ traces: [] }),
       ])
@@ -226,7 +232,18 @@ export function CompressionTracesPage() {
 
   useEffect(() => {
     const id = retrievalTraceId.trim();
-    if (!id) return;
+    if (!id) {
+      setTraceIdHint(null);
+      return;
+    }
+
+    const localMismatch = validateRetrievalTraceIdForCompress(id, traces);
+    if (localMismatch) {
+      setTraceIdHint(localMismatch);
+      return;
+    }
+
+    setTraceIdHint(null);
 
     apiGet<{
       trace: { contextPackage?: { tokenBudget: { usedTokens: number } } };
@@ -237,17 +254,36 @@ export function CompressionTracesPage() {
           setTargetTokenBudget(Math.max(64, Math.floor(used * 0.85)));
         }
       })
-      .catch(() => {
-        /* manual ID entry — keep current target */
+      .catch(async () => {
+        const compressionSummary = await apiGet<{
+          trace?: { compressionTraceId: string; retrievalTraceId: string };
+        }>(`/compression/${id}?summary=true`).catch(() => null);
+
+        if (compressionSummary?.trace) {
+          setTraceIdHint(
+            buildCompressionTraceIdHint({
+              compressionTraceId: compressionSummary.trace.compressionTraceId,
+              retrievalTraceId: compressionSummary.trace.retrievalTraceId,
+            }),
+          );
+        }
       });
-  }, [retrievalTraceId]);
+  }, [retrievalTraceId, traces]);
 
   async function handleCompress(e: FormEvent) {
     e.preventDefault();
     if (!workspaceId || !retrievalTraceId.trim()) return;
 
+    const clientHint = validateRetrievalTraceIdForCompress(retrievalTraceId, traces);
+    if (clientHint) {
+      setTraceIdHint(clientHint);
+      setError(clientHint.message);
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
+    setTraceIdHint(null);
     try {
       const result = await apiPost<{ compressionTraceId: string }>("/compress", {
         workspaceId,
@@ -259,6 +295,18 @@ export function CompressionTracesPage() {
       });
       navigate(`/compression-traces/${result.compressionTraceId}`);
     } catch (err) {
+      if (
+        err instanceof ApiError &&
+        err.code === "compression_trace_id_provided" &&
+        err.compressionTraceId &&
+        err.retrievalTraceId
+      ) {
+        setTraceIdHint({
+          message: err.message,
+          compressionTraceId: err.compressionTraceId,
+          retrievalTraceId: err.retrievalTraceId,
+        });
+      }
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setSubmitting(false);
@@ -311,8 +359,32 @@ export function CompressionTracesPage() {
               value={retrievalTraceId}
               onChange={(e) => setRetrievalTraceId(e.target.value)}
               placeholder="ULID from Retrieval Traces (not Compression Traces)"
+              hint="Retrieval traces come from POST /retrieve or the Retrieval Traces page. Compression trace IDs open existing results — they cannot be re-compressed directly."
               required
             />
+            {traceIdHint && (
+              <div className="full-width panel" role="alert">
+                <p className="error-text">{traceIdHint.message}</p>
+                <p className="muted">
+                  Retrieval trace to use:{" "}
+                  <button
+                    type="button"
+                    className="text-[var(--color-accent)] underline"
+                    onClick={() => setRetrievalTraceId(traceIdHint.retrievalTraceId)}
+                  >
+                    {traceIdHint.retrievalTraceId}
+                  </button>{" "}
+                  ·{" "}
+                  <Link to={`/retrieval-traces/${traceIdHint.retrievalTraceId}`}>
+                    View retrieval
+                  </Link>{" "}
+                  ·{" "}
+                  <Link to={`/compression-traces/${traceIdHint.compressionTraceId}`}>
+                    View compression result
+                  </Link>
+                </p>
+              </div>
+            )}
             <TextField
               label="Target token budget"
               type="number"

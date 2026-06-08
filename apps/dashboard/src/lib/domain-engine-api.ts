@@ -5,6 +5,7 @@ import type {
   Instruction,
   NormalizedObservation,
   OperationalObject,
+  PackageDefinitionRecord,
   PackageManifest,
   PackageManifestDiff,
   Workflow,
@@ -300,6 +301,24 @@ export async function fetchInstalledPackages(workspaceId: string): Promise<Insta
     `/packages/installed?workspaceId=${workspaceId}`,
   );
   return data.packages;
+}
+
+export async function fetchCatalogPackages(): Promise<PackageDefinitionRecord[]> {
+  const data = await apiGet<{ packages: PackageDefinitionRecord[] }>("/platform/packages");
+  return data.packages;
+}
+
+export async function installPackageByKeyApi(
+  workspaceId: string,
+  packageKey: string,
+  failOnConflict = true,
+): Promise<InstalledPackage> {
+  const data = await apiPost<{ installed: InstalledPackage }>("/packages/install", {
+    workspaceId,
+    packageKey,
+    failOnConflict,
+  });
+  return data.installed;
 }
 
 export async function exportPackageApi(

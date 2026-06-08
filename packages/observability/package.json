@@ -13,7 +13,8 @@
   },
   "scripts": {
     "build": "tsc -b --force",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test dist/timing/collector.test.js dist/llm/collector.test.js dist/database/fingerprint.test.js dist/database/aggregator.test.js dist/database/scope.test.js dist/database/instrument-prisma.test.js dist/database/explain-on-slow.test.js dist/database/overhead.test.js dist/database/leaderboard.test.js dist/database/emit.test.js dist/database/history.test.js dist/database/sprint-08-verify.test.js dist/database/sprint-26-verify.test.js"
   },
   "dependencies": {
     "@memory-middleware/shared-types": "*",

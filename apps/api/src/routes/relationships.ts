@@ -31,18 +31,22 @@ export async function registerRelationshipRoutes(app: FastifyInstance): Promise<
     Params: { memoryId: string };
     Querystring: { workspaceId?: string; confidenceThreshold?: string; maxNeighbors?: string };
   }>("/relationships/:memoryId/neighborhood", async (request, reply) => {
-    const neighborhood = await getMemoryNeighborhood(
-      app.prisma,
-      request.params.memoryId,
-      request.query.workspaceId,
-      {
-        ...(request.query.confidenceThreshold
-          ? { confidenceThreshold: Number(request.query.confidenceThreshold) }
-          : {}),
-        ...(request.query.maxNeighbors
-          ? { maxNeighbors: Number(request.query.maxNeighbors) }
-          : {}),
-      },
+    const neighborhood = await request.timingCollector.measureAsync(
+      "graph_traversal",
+      () =>
+        getMemoryNeighborhood(
+          app.prisma,
+          request.params.memoryId,
+          request.query.workspaceId,
+          {
+            ...(request.query.confidenceThreshold
+              ? { confidenceThreshold: Number(request.query.confidenceThreshold) }
+              : {}),
+            ...(request.query.maxNeighbors
+              ? { maxNeighbors: Number(request.query.maxNeighbors) }
+              : {}),
+          },
+        ),
     );
 
     if (!neighborhood) {
@@ -92,7 +96,9 @@ export async function registerRelationshipRoutes(app: FastifyInstance): Promise<
   app.get<{ Params: { workspaceId: string } }>(
     "/clusters/:workspaceId",
     async (request, reply) => {
-      const clusters = await getWorkspaceClusters(app.prisma, request.params.workspaceId);
+      const clusters = await request.timingCollector.measureAsync("graph_traversal", () =>
+        getWorkspaceClusters(app.prisma, request.params.workspaceId),
+      );
       if (!clusters) {
         return reply.status(404).send({ error: "Workspace not found" });
       }

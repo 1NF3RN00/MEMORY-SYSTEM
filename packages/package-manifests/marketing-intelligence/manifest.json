@@ -1,8 +1,8 @@
 {
   "packageKey": "marketing-intelligence",
   "name": "Marketing Intelligence",
-  "version": "1.0.0",
-  "description": "SEO, social, reputation, and competitor observation domains with audit workflows",
+  "version": "1.1.0",
+  "description": "Full-stack marketing observation domains with bundled audit workflows",
   "globalFacts": [
     {
       "scope": "global",
@@ -35,7 +35,7 @@
       "facts": [
         {
           "scope": "domain",
-          "key": "target-word-count",
+          "key": "mi-target-word-count",
           "title": "Target Word Count",
           "content": "Service pages should exceed 600 words.",
           "priority": 5,
@@ -44,8 +44,8 @@
       ],
       "instructions": [
         {
-          "actionKey": "audit",
-          "title": "SEO Audit Instructions",
+          "actionKey": "mi-website-audit",
+          "title": "Marketing Website Audit",
           "content": "Focus on technical SEO, Core Web Vitals, and title tag coverage.",
           "status": "active"
         }
@@ -78,8 +78,8 @@
       },
       "instructions": [
         {
-          "actionKey": "analyze",
-          "title": "Competitor Analysis Instructions",
+          "actionKey": "mi-competitor-analyze",
+          "title": "Marketing Competitor Analysis",
           "content": "Compare subject metrics against competitor observations with matching competitorId.",
           "status": "active"
         }
@@ -105,8 +105,8 @@
       },
       "instructions": [
         {
-          "actionKey": "review",
-          "title": "Reputation Review Instructions",
+          "actionKey": "mi-reputation-review",
+          "title": "Marketing Reputation Review",
           "content": "Assess review volume, rating, and velocity trends.",
           "status": "active"
         }
@@ -132,8 +132,8 @@
       },
       "instructions": [
         {
-          "actionKey": "review",
-          "title": "Social Review Instructions",
+          "actionKey": "mi-social-review",
+          "title": "Marketing Social Review",
           "content": "Compare follower growth, posting cadence, and engagement by platform.",
           "status": "active"
         }
@@ -155,17 +155,17 @@
       "facts": [
         {
           "scope": "domain",
-          "key": "primary-growth-goal",
-          "title": "Primary Growth Goal",
-          "content": "Increase qualified leads from organic search by 20% year over year.",
+          "key": "mi-strategy-goal",
+          "title": "Marketing Strategy Goal",
+          "content": "Align cross-channel findings with the primary growth goal.",
           "priority": 10,
           "status": "active"
         }
       ],
       "instructions": [
         {
-          "actionKey": "plan",
-          "title": "Strategy Planning Instructions",
+          "actionKey": "mi-strategy-plan",
+          "title": "Marketing Strategy Planning",
           "content": "Align findings with stated growth goals and prioritize by business impact.",
           "status": "active"
         }
@@ -187,7 +187,7 @@
       "facts": [
         {
           "scope": "domain",
-          "key": "posting-cadence-target",
+          "key": "mi-posting-cadence-target",
           "title": "Posting Cadence Target",
           "content": "Publish at least 12 social posts per month across active platforms.",
           "priority": 5,
@@ -196,8 +196,8 @@
       ],
       "instructions": [
         {
-          "actionKey": "align",
-          "title": "Brand Alignment Instructions",
+          "actionKey": "mi-brand-align",
+          "title": "Marketing Brand Alignment",
           "content": "Evaluate whether observed social activity aligns with brand cadence targets.",
           "status": "active"
         }
@@ -206,24 +206,24 @@
   ],
   "workflows": [
     {
-      "workflowKey": "seo-audit",
-      "name": "SEO Audit",
+      "workflowKey": "mi-seo-audit",
+      "name": "Marketing SEO Audit",
       "description": "Technical SEO and performance audit from website and PageSpeed observations",
       "domains": ["website", "competitor", "strategy"],
       "outputTypes": ["report"],
       "analysisSpecKey": "seo_audit_v1"
     },
     {
-      "workflowKey": "competitive-gap-analysis",
-      "name": "Competitive Gap Analysis",
+      "workflowKey": "mi-competitive-gap-analysis",
+      "name": "Marketing Competitive Gap Analysis",
       "description": "Numeric gaps between subject business and competitors",
       "domains": ["competitor", "website", "reputation", "social"],
       "outputTypes": ["report"],
       "analysisSpecKey": "competitive_gap_v1"
     },
     {
-      "workflowKey": "monthly-marketing-review",
-      "name": "Monthly Marketing Review",
+      "workflowKey": "mi-monthly-marketing-review",
+      "name": "Marketing Monthly Review",
       "description": "Month-over-month marketing health across social, reputation, and visibility",
       "domains": ["brand", "strategy", "social", "website", "reputation"],
       "outputTypes": ["report", "recommendations"],

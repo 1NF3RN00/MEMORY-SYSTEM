@@ -1,4 +1,6 @@
 import type { FastifyInstance } from "fastify";
+import type { OperationalStreamHub } from "../lib/operational-stream-hub.js";
+import { registerOperationalStreamRoutes } from "./operational-stream.js";
 import { registerHealthRoutes } from "./health.js";
 import { registerIngestRoutes } from "./ingest.js";
 import { registerIngestionRoutes } from "./ingestion.js";
@@ -21,13 +23,19 @@ import { registerObjectRoutes } from "./objects.js";
 import { registerWorkflowRoutes } from "./workflows.js";
 import { registerObservationRoutes } from "./observations.js";
 import { registerObservationProviderRoutes } from "./observation-providers.js";
+import { registerPerfTriggerRoutes } from "./perf-trigger.js";
 
-export async function registerRoutes(app: FastifyInstance): Promise<void> {
+export async function registerRoutes(
+  app: FastifyInstance,
+  operationalStreamHub: OperationalStreamHub,
+): Promise<void> {
   await registerHealthRoutes(app);
+  await registerPerfTriggerRoutes(app);
   await registerAccessRoutes(app);
   await registerAuthRoutes(app);
   await registerPlatformRoutes(app);
   await registerWorkspaceRoutes(app);
+  await registerOperationalStreamRoutes(app, operationalStreamHub);
   await registerSearchRoutes(app);
   await registerIngestRoutes(app);
   await registerObservationRoutes(app);

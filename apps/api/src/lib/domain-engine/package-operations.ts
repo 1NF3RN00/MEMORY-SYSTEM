@@ -28,6 +28,18 @@ import { newUlid } from "@memory-middleware/shared-types";
 
 export type PackageManifestDomainInput = PackageManifest["domains"][number];
 
+async function installedPackageKey(
+  tx: Prisma.TransactionClient,
+  installedPackageId: string | null | undefined,
+): Promise<string | null> {
+  if (!installedPackageId) return null;
+  const row = await tx.installedPackage.findUnique({
+    where: { id: installedPackageId },
+    select: { packageKey: true },
+  });
+  return row?.packageKey ?? null;
+}
+
 function factToManifestGlobal(fact: Fact): ManifestGlobalFact {
   return {
     scope: "global",
@@ -143,15 +155,17 @@ export async function applyWorkflowsFromManifest(
     };
 
     if (existing) {
-      if (
-        failOnConflict &&
-        existing.sourcePackageId &&
-        existing.sourcePackageId !== sourcePackageId
-      ) {
-        throw new DomainEngineError(
-          `Workflow key conflict: ${workflowRef.workflowKey}`,
-          "conflict",
-        );
+      if (existing.sourcePackageId && existing.sourcePackageId !== sourcePackageId) {
+        if (failOnConflict) {
+          const ownerKey = await installedPackageKey(tx, existing.sourcePackageId);
+          const ownerLabel = ownerKey ? `package "${ownerKey}"` : "another installed package";
+          throw new DomainEngineError(
+            `Workflow key conflict: "${workflowRef.workflowKey}" already exists from ${ownerLabel}. ` +
+              "Archive that package, rename workflowKey in your manifest, or install with failOnConflict: false to skip duplicates.",
+            "conflict",
+          );
+        }
+        continue;
       }
       await tx.workflow.update({
         where: { id: existing.id },
@@ -296,7 +310,13 @@ export async function applyManifestToWorkspace(
       where: { workspaceId_key: { workspaceId, key: gf.key } },
     });
     if (conflict && failOnConflict) {
-      throw new DomainEngineError(`Global fact key conflict: ${gf.key}`, "conflict");
+      const ownerKey = await installedPackageKey(tx, conflict.sourcePackageId);
+      const ownerLabel = ownerKey ? `package "${ownerKey}"` : "another installed package";
+      throw new DomainEngineError(
+        `Global fact key conflict: "${gf.key}" already exists from ${ownerLabel}. ` +
+          "Archive that package, rename the key in your manifest, or install with failOnConflict: false to skip duplicates.",
+        "conflict",
+      );
     }
     if (!conflict) {
       await tx.globalFact.create({
@@ -404,7 +424,13 @@ export async function upsertDomainFromManifest(
       where: { domainId_key: { domainId, key: f.key } },
     });
     if (conflict && failOnConflict) {
-      throw new DomainEngineError(`Domain fact key conflict: ${f.key}`, "conflict");
+      const ownerKey = await installedPackageKey(tx, conflict.sourcePackageId);
+      const ownerLabel = ownerKey ? `package "${ownerKey}"` : "another installed package";
+      throw new DomainEngineError(
+        `Domain fact key conflict: domain "${md.domainKey}" fact "${f.key}" already exists from ${ownerLabel}. ` +
+          "Archive that package, rename the key, or install with failOnConflict: false to skip duplicates.",
+        "conflict",
+      );
     }
     if (!conflict) {
       await tx.domainFact.create({
@@ -440,8 +466,11 @@ export async function upsertDomainFromManifest(
       where: { domainId, actionKey: ins.actionKey, isActive: true },
     });
     if (active && failOnConflict && active.sourcePackageId !== sourcePackageId) {
+      const ownerKey = await installedPackageKey(tx, active.sourcePackageId);
+      const ownerLabel = ownerKey ? `package "${ownerKey}"` : "another installed package";
       throw new DomainEngineError(
-        `Instruction actionKey conflict: ${ins.actionKey}`,
+        `Instruction actionKey conflict: domain "${md.domainKey}" action "${ins.actionKey}" is already active from ${ownerLabel}. ` +
+          "Each domain allows one active instruction per actionKey. Archive the other package, rename actionKey in your manifest, or install with failOnConflict: false to skip conflicting instructions.",
         "conflict",
       );
     }

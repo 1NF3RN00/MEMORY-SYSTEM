@@ -36,15 +36,30 @@ async function emitStartupOnce(runtime: ApiRuntime): Promise<void> {
   }
 }
 
+function sendHandlerError(res: ServerResponse, error: unknown): void {
+  const message = error instanceof Error ? error.message : String(error);
+  if (!res.headersSent) {
+    res.statusCode = 500;
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ error: message }));
+    return;
+  }
+  res.end();
+}
+
 /** Vercel / serverless entry — routes must be registered before ready(). */
 export default async function handler(
   req: IncomingMessage,
   res: ServerResponse,
 ): Promise<void> {
-  const runtime = await loadRuntime();
-  await emitStartupOnce(runtime);
-  await runtime.app.ready();
-  runtime.app.server.emit("request", req, res);
+  try {
+    const runtime = await loadRuntime();
+    await emitStartupOnce(runtime);
+    await runtime.app.ready();
+    runtime.app.server.emit("request", req, res);
+  } catch (error) {
+    sendHandlerError(res, error);
+  }
 }
 
 function isLocalServer(): boolean {

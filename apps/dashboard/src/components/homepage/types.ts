@@ -31,7 +31,8 @@ export interface IntelligencePanelData {
     strategicMemoriesActive: number;
   };
   retrievalConfidence: {
-    contextualConfidence: number;
+    /** Mean ranking score; null when ranking breakdown was not fetched on home load. */
+    contextualConfidence: number | null;
     lowConfidenceCount: number;
   };
   workspaceState: {

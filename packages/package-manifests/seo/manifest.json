@@ -1,13 +1,13 @@
 {
   "packageKey": "seo",
   "name": "SEO",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Website and competitor SEO observation domains with SEO audit workflow",
   "globalFacts": [
     {
       "scope": "global",
-      "key": "primary-growth-goal",
-      "title": "Primary Growth Goal",
+      "key": "seo-growth-goal",
+      "title": "SEO Growth Goal",
       "content": "Increase qualified leads from organic search by 20% year over year.",
       "priority": 10,
       "status": "active"
@@ -34,8 +34,8 @@
       "facts": [
         {
           "scope": "domain",
-          "key": "target-word-count",
-          "title": "Target Word Count",
+          "key": "seo-target-word-count",
+          "title": "SEO Target Word Count",
           "content": "Service pages should exceed 600 words.",
           "priority": 5,
           "status": "active"
@@ -43,7 +43,7 @@
       ],
       "instructions": [
         {
-          "actionKey": "audit",
+          "actionKey": "seo-audit",
           "title": "SEO Audit Instructions",
           "content": "Focus on technical SEO, Core Web Vitals, and title tag coverage.",
           "status": "active"
@@ -69,8 +69,8 @@
       },
       "instructions": [
         {
-          "actionKey": "analyze",
-          "title": "Competitor Analysis Instructions",
+          "actionKey": "seo-competitor-analyze",
+          "title": "SEO Competitor Analysis",
           "content": "Compare subject SEO metrics against competitor observations.",
           "status": "active"
         }
@@ -91,18 +91,18 @@
       "facts": [
         {
           "scope": "domain",
-          "key": "primary-growth-goal",
-          "title": "Primary Growth Goal",
-          "content": "Increase qualified leads from organic search by 20% year over year.",
+          "key": "seo-strategy-goal",
+          "title": "SEO Strategy Goal",
+          "content": "Prioritize organic search improvements that support qualified lead growth.",
           "priority": 10,
           "status": "active"
         }
       ],
       "instructions": [
         {
-          "actionKey": "plan",
-          "title": "Strategy Planning Instructions",
-          "content": "Align SEO findings with growth goals.",
+          "actionKey": "seo-strategy-plan",
+          "title": "SEO Strategy Planning",
+          "content": "Align SEO findings with the SEO growth goal.",
           "status": "active"
         }
       ]

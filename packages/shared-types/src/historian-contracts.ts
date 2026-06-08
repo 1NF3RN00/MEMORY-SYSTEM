@@ -222,6 +222,21 @@ export interface OperationalDiagnosticsReport {
   generatedAt: string;
 }
 
+export interface OperationalDiagnosticsCounts {
+  failedRetrievals: number;
+  lowConfidenceRetrievals: number;
+  tokenWaste: number;
+  contextualDegradation: number;
+}
+
+/** Counts-only operational diagnostics for dashboard telemetry (no per-trace arrays). */
+export interface OperationalDiagnosticsSlimReport {
+  mode: "slim";
+  workspaceId: string;
+  counts: OperationalDiagnosticsCounts;
+  generatedAt: string;
+}
+
 export type RetentionMode =
   | "operational"
   | "historical"

@@ -1,0 +1,1017 @@
+{
+  "auditDate": "2026-06-08",
+  "auditVersion": "V1",
+  "primarySource": "docs/PERFORMANCE-AUDITS/",
+  "overallScores": {
+    "systemHealth": {
+      "score": 71,
+      "maxScore": 100,
+      "reasoning": "Execution timing and LLM call audits implemented with traceId correlation. Database query observability is planned but not shipped (bare PrismaClient). Dashboard over-fetches without deduplication.",
+      "evidenceType": "inferred"
+    },
+    "performance": {
+      "score": 59,
+      "maxScore": 100,
+      "reasoning": "Mock retrieval test shows 81% time in vector search stages. Dashboard loads 14-16 requests and estimated 300KB-8MB JSON. No production p95/p99 measurements in audit artifacts.",
+      "evidenceType": "mixed"
+    },
+    "stability": {
+      "score": 64,
+      "maxScore": 100,
+      "reasoning": "Known compression context-package race for older runs. Confirmed N+1 on /diagnostics/operational. ALS gaps for some LLM routes. No failure-rate time series in evidence.",
+      "evidenceType": "inferred"
+    },
+    "maintainability": {
+      "score": 62,
+      "maxScore": 100,
+      "reasoning": "Clean monorepo package separation but monolithic fetchWorkspaceTelemetry, duplicated pushStage helpers in legacy paths, no React Query/SWR data layer.",
+      "evidenceType": "inferred"
+    },
+    "developerExperience": {
+      "score": 74,
+      "maxScore": 100,
+      "reasoning": "timingAudit and llmCallAudit on key endpoints improve debugging. Thorough audit documentation. Missing live measurement results and DB leaderboard.",
+      "evidenceType": "inferred"
+    }
+  },
+  "majorFindings": [
+    {
+      "id": "MF-001",
+      "title": "Vector search dominates retrieval latency in measured mock baseline",
+      "category": "retrieval",
+      "type": "measured",
+      "severity": "high",
+      "summary": "pgvector (15.03ms, 54.6%) plus embedding (7.29ms, 26.5%) account for 81% of mock retrieval time.",
+      "evidence": ["EXECUTION_TIMING_AUDIT_SYSTEM.md", "packages/retrieval/src/pipeline-timing.test.ts"],
+      "confidence": "high"
+    },
+    {
+      "id": "MF-002",
+      "title": "Dashboard home page over-fetches API data",
+      "category": "frontend",
+      "type": "inferred",
+      "severity": "high",
+      "summary": "14-16 HTTP requests on / with duplicate workspace and health calls; 15s full telemetry re-poll.",
+      "evidence": ["DASHBOARD_LOAD_AUDIT.md"],
+      "confidence": "high"
+    },
+    {
+      "id": "MF-003",
+      "title": "Database query observability not implemented",
+      "category": "database",
+      "type": "measured",
+      "severity": "critical",
+      "summary": "Prisma client has no instrumentation hook; dbObservability payload does not exist in codebase.",
+      "evidence": ["DATABASE_QUERY_OBSERVABILITY.md", "apps/api/src/lib/database.ts"],
+      "confidence": "high"
+    },
+    {
+      "id": "MF-004",
+      "title": "LLM per-request cost is low; embedding call count is high",
+      "category": "llm",
+      "type": "measured",
+      "severity": "medium",
+      "summary": "Unit test fixture totals 352ms latency and ~$0.000389 cost across three call types. Embeddings dominate invocation count.",
+      "evidence": ["LLM_CALL_AUDIT.md", "packages/observability/src/llm/collector.test.ts"],
+      "confidence": "high"
+    },
+    {
+      "id": "MF-005",
+      "title": "Observability sprint partially complete",
+      "category": "observability",
+      "type": "inferred",
+      "severity": "medium",
+      "summary": "Timing and LLM audits shipped; DB observability and dashboard live measurements remain.",
+      "evidence": ["README.md", "DATABASE_QUERY_OBSERVABILITY.md"],
+      "confidence": "high"
+    },
+    {
+      "id": "MF-006",
+      "title": "No production latency percentiles captured",
+      "category": "measurement-gap",
+      "type": "measured",
+      "severity": "high",
+      "summary": "Audit artifacts contain mock unit test baselines only; no staging/production p95/p99 data.",
+      "evidence": ["EXECUTION_TIMING_AUDIT_SYSTEM.md", "DASHBOARD_LOAD_AUDIT.md measurement checklist"],
+      "confidence": "high"
+    }
+  ],
+  "latencyFindings": [
+    {
+      "id": "LAT-001",
+      "stage": "vector_search:pgvector",
+      "avgMs": 15.03,
+      "p95Ms": null,
+      "p99Ms": null,
+      "worstCaseMs": null,
+      "percentOfRetrieval": 54.6,
+      "rank": 1,
+      "evidenceType": "measured",
+      "source": "pipeline-timing.test.ts",
+      "environment": "mock"
+    },
+    {
+      "id": "LAT-002",
+      "stage": "vector_search:embedding",
+      "avgMs": 7.29,
+      "p95Ms": null,
+      "p99Ms": null,
+      "worstCaseMs": null,
+      "percentOfRetrieval": 26.5,
+      "rank": 2,
+      "evidenceType": "measured",
+      "source": "pipeline-timing.test.ts",
+      "environment": "mock"
+    },
+    {
+      "id": "LAT-003",
+      "stage": "retrieval_umbrella",
+      "avgMs": 27.54,
+      "p95Ms": null,
+      "p99Ms": null,
+      "worstCaseMs": null,
+      "percentOfRetrieval": 100,
+      "rank": null,
+      "evidenceType": "measured",
+      "source": "pipeline-timing.test.ts",
+      "environment": "mock"
+    },
+    {
+      "id": "LAT-004",
+      "stage": "request_total",
+      "avgMs": 29.35,
+      "p95Ms": null,
+      "p99Ms": null,
+      "worstCaseMs": null,
+      "percentOfRetrieval": null,
+      "rank": null,
+      "evidenceType": "measured",
+      "source": "pipeline-timing.test.ts",
+      "environment": "mock"
+    },
+    {
+      "id": "LAT-005",
+      "stage": "intent_extraction",
+      "avgMs": 0.74,
+      "p95Ms": null,
+      "p99Ms": null,
+      "worstCaseMs": null,
+      "percentOfRetrieval": 2.7,
+      "rank": 3,
+      "evidenceType": "measured",
+      "source": "pipeline-timing.test.ts",
+      "environment": "mock"
+    },
+    {
+      "id": "LAT-006",
+      "stage": "keyword_search",
+      "avgMs": 0.69,
+      "p95Ms": null,
+      "p99Ms": null,
+      "worstCaseMs": null,
+      "percentOfRetrieval": 2.5,
+      "rank": 4,
+      "evidenceType": "measured",
+      "source": "pipeline-timing.test.ts",
+      "environment": "mock"
+    },
+    {
+      "id": "LAT-007",
+      "stage": "context_assembly",
+      "avgMs": 0.29,
+      "p95Ms": null,
+      "p99Ms": null,
+      "worstCaseMs": null,
+      "percentOfRetrieval": 1.1,
+      "rank": 5,
+      "evidenceType": "measured",
+      "source": "pipeline-timing.test.ts",
+      "environment": "mock"
+    },
+    {
+      "id": "LAT-008",
+      "stage": "reranking",
+      "avgMs": 0.25,
+      "p95Ms": null,
+      "p99Ms": null,
+      "worstCaseMs": null,
+      "percentOfRetrieval": 0.9,
+      "rank": 6,
+      "evidenceType": "measured",
+      "source": "pipeline-timing.test.ts",
+      "environment": "mock"
+    },
+    {
+      "id": "LAT-009",
+      "stage": "openai_embedding_production",
+      "avgMs": null,
+      "p95Ms": null,
+      "p99Ms": null,
+      "worstCaseMs": null,
+      "percentOfRetrieval": null,
+      "rank": 1,
+      "evidenceType": "hypothesis",
+      "source": "inferred from mock dominance + external API RTT",
+      "environment": "production",
+      "note": "Estimated 50-500ms; not measured"
+    },
+    {
+      "id": "LAT-010",
+      "operation": "workflow_analysis",
+      "avgMs": 900,
+      "p95Ms": null,
+      "p99Ms": null,
+      "worstCaseMs": null,
+      "evidenceType": "measured",
+      "source": "llm/collector.test.ts",
+      "environment": "unit-test-fixture"
+    },
+    {
+      "id": "LAT-011",
+      "operation": "compression_abstraction",
+      "avgMs": 310,
+      "p95Ms": null,
+      "p99Ms": null,
+      "worstCaseMs": null,
+      "evidenceType": "measured",
+      "source": "llm/collector.test.ts",
+      "environment": "unit-test-fixture"
+    }
+  ],
+  "databaseFindings": [
+    {
+      "id": "DB-001",
+      "title": "No Prisma query instrumentation",
+      "type": "measured",
+      "severity": "critical",
+      "queryCount": null,
+      "totalDbTimeMs": null,
+      "impact": "Cannot rank DB bottlenecks or detect slow/duplicate/N+1 queries in production",
+      "evidence": ["DATABASE_QUERY_OBSERVABILITY.md", "apps/api/src/lib/database.ts"],
+      "confidence": "high"
+    },
+    {
+      "id": "DB-002",
+      "title": "N+1 on GET /diagnostics/operational",
+      "type": "confirmed",
+      "severity": "high",
+      "queryCount": "up to 100 per request (limit parameter)",
+      "totalDbTimeMs": null,
+      "impact": "Dashboard home load triggers per-trace retrievalOperation.findFirst calls",
+      "location": "apps/api/src/routes/historian.ts",
+      "evidence": ["DASHBOARD_LOAD_AUDIT.md", "apps/api/src/routes/historian.ts"],
+      "confidence": "high"
+    },
+    {
+      "id": "DB-003",
+      "title": "Heavy relationship graph build",
+      "type": "inferred",
+      "severity": "high",
+      "queryCount": null,
+      "totalDbTimeMs": null,
+      "impact": "Loads up to 200 memories, all relationships, heatmap, timelines, embedded retrieval traces",
+      "location": "apps/api/src/lib/relationship-graph-store.ts",
+      "evidence": ["DASHBOARD_LOAD_AUDIT.md"],
+      "confidence": "medium"
+    },
+    {
+      "id": "DB-004",
+      "title": "Illustrative retrieval DB scope (plan example only)",
+      "type": "hypothesis",
+      "severity": "info",
+      "queryCount": 47,
+      "totalDbTimeMs": 312.4,
+      "impact": "Design target for dbObservability — not a captured measurement",
+      "evidence": ["DATABASE_QUERY_OBSERVABILITY.md"],
+      "confidence": "low",
+      "note": "Example payload in implementation plan; do not treat as measured"
+    },
+    {
+      "id": "DB-005",
+      "title": "Duplicate queries across dashboard parallel fetches",
+      "type": "inferred",
+      "severity": "medium",
+      "queryCount": null,
+      "totalDbTimeMs": null,
+      "impact": "Multiple endpoints independently load workspace, health, retrieval lists",
+      "evidence": ["DASHBOARD_LOAD_AUDIT.md"],
+      "confidence": "high"
+    }
+  ],
+  "retrievalFindings": [
+    {
+      "id": "RET-001",
+      "component": "vector_search",
+      "purpose": "Embed query and search pgvector for candidates",
+      "timeConsumedMs": 22.32,
+      "percentOfRetrieval": 81.1,
+      "resourceConsumption": "OpenAI API + Postgres pgvector",
+      "bottleneck": true,
+      "inefficiency": null,
+      "evidenceType": "measured",
+      "confidence": "high"
+    },
+    {
+      "id": "RET-002",
+      "component": "reranking",
+      "purpose": "Hybrid deterministic score computation",
+      "timeConsumedMs": 0.25,
+      "percentOfRetrieval": 0.9,
+      "resourceConsumption": "CPU",
+      "bottleneck": false,
+      "inefficiency": null,
+      "evidenceType": "measured",
+      "confidence": "high"
+    },
+    {
+      "id": "RET-003",
+      "component": "relationship_expansion",
+      "purpose": "Load relationships and augment candidates",
+      "timeConsumedMs": null,
+      "percentOfRetrieval": null,
+      "resourceConsumption": "DB reads",
+      "bottleneck": true,
+      "inefficiency": "Previously folded into reranking latency; now instrumented separately",
+      "evidenceType": "inferred",
+      "confidence": "medium",
+      "note": "Skipped in mock baseline test"
+    },
+    {
+      "id": "RET-004",
+      "component": "keyword_search",
+      "purpose": "Post-assembly metadata keyword expansion",
+      "timeConsumedMs": 0.69,
+      "percentOfRetrieval": 2.5,
+      "resourceConsumption": "Metadata lookups",
+      "bottleneck": false,
+      "inefficiency": "Not parallel BM25 channel in V1",
+      "evidenceType": "measured",
+      "confidence": "high"
+    },
+    {
+      "id": "RET-005",
+      "component": "domain_resolution",
+      "purpose": "Load facts, instructions, retrieval rules",
+      "timeConsumedMs": null,
+      "percentOfRetrieval": null,
+      "resourceConsumption": "DB reads",
+      "bottleneck": null,
+      "inefficiency": null,
+      "evidenceType": "inferred",
+      "confidence": "low",
+      "note": "Only measured when domainKey provided on POST /retrieve"
+    },
+    {
+      "id": "RET-006",
+      "component": "compression",
+      "purpose": "Token budget optimization via separate POST /compress",
+      "timeConsumedMs": null,
+      "percentOfRetrieval": null,
+      "resourceConsumption": "CPU + conditional LLM",
+      "bottleneck": true,
+      "inefficiency": "LLM abstraction only when chunk > 1.5x target",
+      "evidenceType": "inferred",
+      "confidence": "medium"
+    }
+  ],
+  "frontendFindings": [
+    {
+      "id": "FE-001",
+      "title": "14-16 API requests on home load",
+      "severity": "high",
+      "requestsOnHomeLoad": {
+        "min": 14,
+        "max": 16,
+        "strictModeDev": 30
+      },
+      "evidenceType": "inferred",
+      "source": "DASHBOARD_LOAD_AUDIT.md",
+      "confidence": "high"
+    },
+    {
+      "id": "FE-002",
+      "title": "Estimated JSON payload 300KB-8MB on home load",
+      "severity": "high",
+      "payloadEstimateKb": {
+        "empty": "5-30",
+        "moderate": "300-1500",
+        "heavy": "2000-5000",
+        "worstCase": "5000-8000+"
+      },
+      "evidenceType": "inferred",
+      "source": "DASHBOARD_LOAD_AUDIT.md",
+      "confidence": "medium",
+      "note": "Not validated with live HAR capture"
+    },
+    {
+      "id": "FE-003",
+      "title": "Full telemetry re-poll every 15 seconds",
+      "severity": "medium",
+      "pollIntervalSeconds": 15,
+      "location": "apps/dashboard/src/components/homepage/useOperationalHomeData.ts",
+      "evidenceType": "inferred",
+      "confidence": "high"
+    },
+    {
+      "id": "FE-004",
+      "title": "Analytics load synchronously on first render",
+      "severity": "medium",
+      "evidenceType": "inferred",
+      "source": "DASHBOARD_LOAD_AUDIT.md",
+      "confidence": "high"
+    },
+    {
+      "id": "FE-005",
+      "title": "Unnecessary React re-renders from polling and animation",
+      "severity": "medium",
+      "sources": [
+        "telemetry poll setTelemetry every 15s",
+        "canvas phase label state",
+        "Framer Motion layout on event cards",
+        "duplicate mobile/desktop panel mounts",
+        "TopBar clock every 1s on non-home routes"
+      ],
+      "evidenceType": "inferred",
+      "confidence": "medium",
+      "note": "Not validated with React Profiler"
+    },
+    {
+      "id": "FE-006",
+      "title": "Retrieval trace summaries auto-load on home; full bodies do not",
+      "severity": "low",
+      "evidenceType": "inferred",
+      "source": "DASHBOARD_LOAD_AUDIT.md",
+      "confidence": "high"
+    }
+  ],
+  "confirmedBugs": [
+    {
+      "id": "BUG-001",
+      "title": "N+1 queries on /diagnostics/operational",
+      "location": "apps/api/src/routes/historian.ts",
+      "evidence": "Promise.all over traces with individual retrievalOperation.findFirst per trace",
+      "severity": "high",
+      "impact": "Scales DB load and latency with trace count on every dashboard home load",
+      "recommendedFix": "Batch-fetch retrieval operations by traceId IN clause or denormalize summary fields"
+    },
+    {
+      "id": "BUG-002",
+      "title": "Dashboard downloads full relationship graph but displays capped subset",
+      "location": "apps/api/src/lib/relationship-graph-store.ts + ContextualIntelligenceMap.tsx",
+      "evidence": "DASHBOARD_LOAD_AUDIT.md — client caps to 24 nodes / 40 edges",
+      "severity": "medium",
+      "impact": "50-80% wasted payload and server work estimated",
+      "recommendedFix": "Add GET /relationships/graph?lite=true with nodes and edges only"
+    },
+    {
+      "id": "BUG-003",
+      "title": "Duplicate API calls on dashboard home load",
+      "location": "workspaceTelemetry.ts, ContextualIntelligenceMap.tsx, OperationalSystemBar.tsx",
+      "evidence": "Duplicate GET /workspaces/default and GET /health documented in request table",
+      "severity": "medium",
+      "impact": "2-3 extra requests and redundant DB hits per home load",
+      "recommendedFix": "Hoist workspace ID to AuthContext; consolidate health polling"
+    }
+  ],
+  "probableBugs": [
+    {
+      "id": "PBUG-001",
+      "title": "Retrieval context package race for older runs",
+      "suspectedIssue": "Completed retrieval may lack persisted contextPackage",
+      "supportingEvidence": "compression-store.ts error message references known race condition",
+      "confidence": "medium",
+      "impact": "Compression fails; requires retrieval re-run"
+    },
+    {
+      "id": "PBUG-002",
+      "title": "LLM calls not recorded without active ALS collector",
+      "suspectedIssue": "recordLlmCall no-ops outside runWithLlmCallAsync scope",
+      "supportingEvidence": "LLM_CALL_AUDIT.md finding #6",
+      "confidence": "high",
+      "impact": "Incomplete llmCallAudit on historian/diagnostics/observation routes"
+    },
+    {
+      "id": "PBUG-003",
+      "title": "Compression vs retrieval trace ID confusion",
+      "suspectedIssue": "Users may pass compression trace ID to compress endpoint",
+      "supportingEvidence": "compression-store.ts explicit error branching",
+      "confidence": "high",
+      "impact": "UX friction and support burden"
+    }
+  ],
+  "architecturalRisks": [
+    {
+      "id": "AR-001",
+      "title": "Monolithic fetchWorkspaceTelemetry coupling",
+      "description": "Single function loads all operational data for home, observability, and sidebar",
+      "likelihood": "high",
+      "impact": "Scaling pain as features add more endpoints to bundle"
+    },
+    {
+      "id": "AR-002",
+      "title": "JSON blob growth on retrievalOperation.result",
+      "description": "Full context packages and stages stored in JSON columns",
+      "likelihood": "high",
+      "impact": "DB size, IO, and diagnostic payload inflation"
+    },
+    {
+      "id": "AR-003",
+      "title": "Keyword search not true hybrid retrieval",
+      "description": "Post-assembly metadata expansion rather than parallel lexical index",
+      "likelihood": "certain",
+      "impact": "Tuning confusion; recall/latency tradeoffs differ from BM25 systems"
+    },
+    {
+      "id": "AR-004",
+      "title": "No distributed tracing across API and worker",
+      "description": "Single-process V1 with ALS; worker creates separate collector",
+      "likelihood": "medium",
+      "impact": "End-to-end ingestion-to-retrieval correlation gaps"
+    },
+    {
+      "id": "AR-005",
+      "title": "In-memory DB leaderboard planned without persistence",
+      "description": "Ring buffer lost on serverless cold start",
+      "likelihood": "medium",
+      "impact": "Historical DB performance trends unavailable without EventLog query"
+    }
+  ],
+  "topOpportunities": [
+    {
+      "rank": 1,
+      "title": "In-flight apiGet deduplication",
+      "estimatedImpact": "high",
+      "implementationDifficulty": "low",
+      "engineeringEffort": "hours",
+      "expectedRoi": "very_high",
+      "confidence": "high"
+    },
+    {
+      "rank": 2,
+      "title": "Hoist workspace ID to AuthContext",
+      "estimatedImpact": "high",
+      "implementationDifficulty": "low",
+      "engineeringEffort": "hours",
+      "expectedRoi": "very_high",
+      "confidence": "high"
+    },
+    {
+      "rank": 3,
+      "title": "Fix /diagnostics/operational N+1",
+      "estimatedImpact": "high",
+      "implementationDifficulty": "low",
+      "engineeringEffort": "hours",
+      "expectedRoi": "very_high",
+      "confidence": "high"
+    },
+    {
+      "rank": 4,
+      "title": "Lite relationship graph endpoint",
+      "estimatedImpact": "high",
+      "implementationDifficulty": "low-medium",
+      "engineeringEffort": "1-3 days",
+      "expectedRoi": "very_high",
+      "confidence": "high"
+    },
+    {
+      "rank": 5,
+      "title": "Compression metadata-only endpoint",
+      "estimatedImpact": "high",
+      "implementationDifficulty": "low-medium",
+      "engineeringEffort": "1-3 days",
+      "expectedRoi": "high",
+      "confidence": "high"
+    },
+    {
+      "rank": 6,
+      "title": "Remove ranking follow-up from home telemetry",
+      "estimatedImpact": "medium",
+      "implementationDifficulty": "low",
+      "engineeringEffort": "hours",
+      "expectedRoi": "high",
+      "confidence": "high"
+    },
+    {
+      "rank": 7,
+      "title": "Implement database query observability Phases 1-3",
+      "estimatedImpact": "high",
+      "implementationDifficulty": "medium",
+      "engineeringEffort": "1 week",
+      "expectedRoi": "high",
+      "confidence": "high"
+    },
+    {
+      "rank": 8,
+      "title": "Split telemetry into summary and analytics tiers",
+      "estimatedImpact": "high",
+      "implementationDifficulty": "medium",
+      "engineeringEffort": "3-5 days",
+      "expectedRoi": "high",
+      "confidence": "high"
+    },
+    {
+      "rank": 9,
+      "title": "React.memo on home panels",
+      "estimatedImpact": "medium",
+      "implementationDifficulty": "low",
+      "engineeringEffort": "hours",
+      "expectedRoi": "high",
+      "confidence": "medium"
+    },
+    {
+      "rank": 10,
+      "title": "Remove Framer Motion layout on event cards",
+      "estimatedImpact": "medium",
+      "implementationDifficulty": "low",
+      "engineeringEffort": "hours",
+      "expectedRoi": "high",
+      "confidence": "medium"
+    },
+    {
+      "rank": 11,
+      "title": "Dashboard bootstrap endpoint",
+      "estimatedImpact": "high",
+      "implementationDifficulty": "medium",
+      "engineeringEffort": "1 week",
+      "expectedRoi": "high",
+      "confidence": "medium"
+    },
+    {
+      "rank": 12,
+      "title": "Shared WorkspaceTelemetryProvider",
+      "estimatedImpact": "medium",
+      "implementationDifficulty": "medium",
+      "engineeringEffort": "3-5 days",
+      "expectedRoi": "medium",
+      "confidence": "high"
+    },
+    {
+      "rank": 13,
+      "title": "React Query with structural sharing",
+      "estimatedImpact": "medium",
+      "implementationDifficulty": "medium",
+      "engineeringEffort": "1 week",
+      "expectedRoi": "medium",
+      "confidence": "medium"
+    },
+    {
+      "rank": 14,
+      "title": "Lazy-load relationship graph",
+      "estimatedImpact": "medium",
+      "implementationDifficulty": "low",
+      "engineeringEffort": "hours",
+      "expectedRoi": "medium",
+      "confidence": "high"
+    },
+    {
+      "rank": 15,
+      "title": "runWithLlmCallAsync on all LLM-bearing routes",
+      "estimatedImpact": "medium",
+      "implementationDifficulty": "low",
+      "engineeringEffort": "hours",
+      "expectedRoi": "medium",
+      "confidence": "high"
+    },
+    {
+      "rank": 16,
+      "title": "pgvector index and query review",
+      "estimatedImpact": "high",
+      "implementationDifficulty": "medium",
+      "engineeringEffort": "1 week",
+      "expectedRoi": "medium",
+      "confidence": "low"
+    },
+    {
+      "rank": 17,
+      "title": "Embedding cache by query hash",
+      "estimatedImpact": "high",
+      "implementationDifficulty": "medium",
+      "engineeringEffort": "1 week",
+      "expectedRoi": "medium",
+      "confidence": "medium"
+    },
+    {
+      "rank": 18,
+      "title": "Ref-based canvas phase label and AppShell clock",
+      "estimatedImpact": "low-medium",
+      "implementationDifficulty": "low",
+      "engineeringEffort": "hours",
+      "expectedRoi": "medium",
+      "confidence": "medium"
+    },
+    {
+      "rank": 19,
+      "title": "Single mobile/desktop panel instance",
+      "estimatedImpact": "medium",
+      "implementationDifficulty": "low",
+      "engineeringEffort": "hours",
+      "expectedRoi": "medium",
+      "confidence": "high"
+    },
+    {
+      "rank": 20,
+      "title": "Verify gzip/brotli on API responses",
+      "estimatedImpact": "medium",
+      "implementationDifficulty": "low",
+      "engineeringEffort": "hours",
+      "expectedRoi": "medium",
+      "confidence": "medium"
+    },
+    {
+      "rank": 21,
+      "title": "Field projection on list endpoints",
+      "estimatedImpact": "medium",
+      "implementationDifficulty": "medium",
+      "engineeringEffort": "3-5 days",
+      "expectedRoi": "medium",
+      "confidence": "medium"
+    },
+    {
+      "rank": 22,
+      "title": "Ingestion pipeline timing wrappers",
+      "estimatedImpact": "low",
+      "implementationDifficulty": "medium",
+      "engineeringEffort": "3-5 days",
+      "expectedRoi": "low",
+      "confidence": "high"
+    },
+    {
+      "rank": 23,
+      "title": "Dashboard timingAudit display in RetrievalTimeline",
+      "estimatedImpact": "low",
+      "implementationDifficulty": "medium",
+      "engineeringEffort": "3-5 days",
+      "expectedRoi": "low",
+      "confidence": "high"
+    },
+    {
+      "rank": 24,
+      "title": "WebSocket push for operational stream events",
+      "estimatedImpact": "medium",
+      "implementationDifficulty": "high",
+      "engineeringEffort": "2-4 weeks",
+      "expectedRoi": "low",
+      "confidence": "medium"
+    },
+    {
+      "rank": 25,
+      "title": "EXPLAIN ANALYZE automation for slow queries",
+      "estimatedImpact": "medium",
+      "implementationDifficulty": "high",
+      "engineeringEffort": "2-4 weeks",
+      "expectedRoi": "low",
+      "confidence": "medium"
+    }
+  ],
+  "recommendedRoadmap": [
+    {
+      "phase": "immediate",
+      "timeframe": "<1 day",
+      "items": [
+        {
+          "title": "In-flight apiGet deduplication",
+          "priority": "P0",
+          "impact": "high",
+          "risk": "low"
+        },
+        {
+          "title": "Hoist workspace ID from AuthContext",
+          "priority": "P0",
+          "impact": "high",
+          "risk": "low"
+        },
+        {
+          "title": "Batch DB fetch in /diagnostics/operational",
+          "priority": "P0",
+          "impact": "high",
+          "risk": "low"
+        },
+        {
+          "title": "React.memo on home panels",
+          "priority": "P1",
+          "impact": "medium",
+          "risk": "low"
+        }
+      ]
+    },
+    {
+      "phase": "short_term",
+      "timeframe": "1-7 days",
+      "items": [
+        {
+          "title": "Lite relationship graph endpoint",
+          "priority": "P0",
+          "impact": "high",
+          "risk": "low"
+        },
+        {
+          "title": "Compression metadata-only route",
+          "priority": "P0",
+          "impact": "high",
+          "risk": "low"
+        },
+        {
+          "title": "Remove home ranking follow-up from telemetry",
+          "priority": "P1",
+          "impact": "medium",
+          "risk": "low"
+        },
+        {
+          "title": "Implement DB observability Phases 1-3",
+          "priority": "P0",
+          "impact": "high",
+          "risk": "medium"
+        },
+        {
+          "title": "Wrap remaining LLM routes in runWithLlmCallAsync",
+          "priority": "P1",
+          "impact": "medium",
+          "risk": "low"
+        }
+      ]
+    },
+    {
+      "phase": "medium_term",
+      "timeframe": "1-4 weeks",
+      "items": [
+        {
+          "title": "Split telemetry tiers with React Query",
+          "priority": "P1",
+          "impact": "high",
+          "risk": "medium"
+        },
+        {
+          "title": "Dashboard bootstrap endpoint",
+          "priority": "P1",
+          "impact": "high",
+          "risk": "medium"
+        },
+        {
+          "title": "Embedding result cache",
+          "priority": "P2",
+          "impact": "high",
+          "risk": "medium"
+        },
+        {
+          "title": "pgvector EXPLAIN-driven tuning",
+          "priority": "P2",
+          "impact": "high",
+          "risk": "medium"
+        },
+        {
+          "title": "Slim operational diagnostics response",
+          "priority": "P1",
+          "impact": "high",
+          "risk": "low"
+        }
+      ]
+    },
+    {
+      "phase": "long_term",
+      "timeframe": "1+ months",
+      "items": [
+        {
+          "title": "Unified observability dashboard correlating timing + LLM + DB",
+          "priority": "P2",
+          "impact": "high",
+          "risk": "medium"
+        },
+        {
+          "title": "Real-time event push replacing 15s poll",
+          "priority": "P3",
+          "impact": "medium",
+          "risk": "high"
+        },
+        {
+          "title": "Dedicated metrics aggregation store",
+          "priority": "P3",
+          "impact": "high",
+          "risk": "medium"
+        },
+        {
+          "title": "Parallel BM25 keyword channel (V2)",
+          "priority": "P3",
+          "impact": "high",
+          "risk": "high"
+        }
+      ]
+    }
+  ],
+  "topFiveFixes": [
+    {
+      "rank": 1,
+      "title": "Stop dashboard API hammering on page load",
+      "audience": "founder",
+      "actions": [
+        "Add in-flight request deduplication",
+        "Share workspace ID from auth context",
+        "Remove duplicate health checks"
+      ],
+      "expectedImpact": "high",
+      "confidence": 0.95,
+      "engineeringEffort": 1,
+      "score": 8.55,
+      "scoreFormula": "(impact * confidence) / effort",
+      "timeframe": "<1 day"
+    },
+    {
+      "rank": 2,
+      "title": "Fix database N+1 on operational diagnostics",
+      "audience": "founder",
+      "actions": [
+        "Batch-fetch retrievalOperation rows by traceId"
+      ],
+      "expectedImpact": "high",
+      "confidence": 0.95,
+      "engineeringEffort": 1,
+      "score": 7.6,
+      "scoreFormula": "(impact * confidence) / effort",
+      "timeframe": "<1 day"
+    },
+    {
+      "rank": 3,
+      "title": "Ship lite relationship graph for home map",
+      "audience": "founder",
+      "actions": [
+        "Add GET /relationships/graph?lite=true returning nodes and edges only"
+      ],
+      "expectedImpact": "high",
+      "confidence": 0.9,
+      "engineeringEffort": 2,
+      "score": 3.6,
+      "scoreFormula": "(impact * confidence) / effort",
+      "timeframe": "1-3 days"
+    },
+    {
+      "rank": 4,
+      "title": "Implement database query observability",
+      "audience": "founder",
+      "actions": [
+        "Ship existing DATABASE_QUERY_OBSERVABILITY plan Phases 1-3",
+        "Attach dbObservability to POST /retrieve responses"
+      ],
+      "expectedImpact": "high",
+      "confidence": 0.9,
+      "engineeringEffort": 5,
+      "score": 1.62,
+      "scoreFormula": "(impact * confidence) / effort",
+      "timeframe": "~1 week"
+    },
+    {
+      "rank": 5,
+      "title": "Slim home page payloads",
+      "audience": "founder",
+      "actions": [
+        "Compression metadata-only endpoint",
+        "Operational diagnostics counts instead of full trace bodies"
+      ],
+      "expectedImpact": "high",
+      "confidence": 0.85,
+      "engineeringEffort": 4,
+      "score": 1.7,
+      "scoreFormula": "(impact * confidence) / effort",
+      "timeframe": "3-5 days"
+    }
+  ],
+  "instrumentationStatus": {
+    "executionTimingAudit": {
+      "implemented": true,
+      "implementedDate": "2026-06-08",
+      "endpoints": ["POST /retrieve", "POST /retrieval/plan"],
+      "baselineSource": "packages/retrieval/src/pipeline-timing.test.ts"
+    },
+    "llmCallAudit": {
+      "implemented": true,
+      "implementedDate": "2026-06-08",
+      "endpoints": ["POST /retrieve", "POST /retrieval/plan", "POST /compress", "POST /workflows/:id/execute"],
+      "baselineSource": "packages/observability/src/llm/collector.test.ts"
+    },
+    "databaseQueryObservability": {
+      "implemented": false,
+      "status": "plan_only",
+      "planDocument": "DATABASE_QUERY_OBSERVABILITY.md"
+    },
+    "dashboardLoadAudit": {
+      "implemented": false,
+      "status": "static_analysis_only",
+      "liveMeasurementsCaptured": false
+    }
+  },
+  "missingEvidence": [
+    "Production POST /retrieve p50/p95/p99 latency",
+    "Live dashboard HAR capture (request count and bytes)",
+    "React Profiler re-render counts",
+    "Production timing.audit.completed log samples",
+    "pgvector EXPLAIN ANALYZE output",
+    "Real dbObservability measurements",
+    "API endpoint failure rates and timeout telemetry",
+    "Worker ingestion job timing baselines"
+  ],
+  "filesAnalyzed": [
+    "docs/PERFORMANCE-AUDITS/README.md",
+    "docs/PERFORMANCE-AUDITS/EXECUTION_TIMING_AUDIT_SYSTEM.md",
+    "docs/PERFORMANCE-AUDITS/LLM_CALL_AUDIT.md",
+    "docs/PERFORMANCE-AUDITS/DATABASE_QUERY_OBSERVABILITY.md",
+    "docs/PERFORMANCE-AUDITS/DASHBOARD_LOAD_AUDIT.md"
+  ]
+}

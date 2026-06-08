@@ -1,6 +1,15 @@
 import "./load-env.js";
 import { z } from "zod";
 
+/** Vercel may inject empty strings for unset env vars — treat those as missing. */
+function sanitizedEnv(): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { ...process.env };
+  for (const [key, value] of Object.entries(env)) {
+    if (value === "") delete env[key];
+  }
+  return env;
+}
+
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   LOG_LEVEL: z.enum(["debug", "info", "warn", "error"]).default("info"),
@@ -34,7 +43,7 @@ const envSchema = z.object({
 export type AppEnv = z.infer<typeof envSchema>;
 
 export function loadEnv(): AppEnv {
-  const parsed = envSchema.safeParse(process.env);
+  const parsed = envSchema.safeParse(sanitizedEnv());
 
   if (!parsed.success) {
     const details = parsed.error.flatten().fieldErrors;

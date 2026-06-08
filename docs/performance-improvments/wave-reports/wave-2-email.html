@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+  <title>Wave 2 Report — semantic-core</title>
+  <style>
+    @media only screen and (max-width: 620px) {
+      .wrapper { width: 100% !important; }
+      .content-pad { padding: 16px !important; }
+      .stat-cell { display: block !important; width: 100% !important; }
+      .mobile-hide { display: none !important; }
+      .mobile-show { display: block !important; }
+      .sprint-table { font-size: 13px !important; }
+      h1.hero-title { font-size: 22px !important; }
+    }
+    @media (prefers-color-scheme: dark) {
+      /* Most clients ignore this; light scheme is primary */
+    }
+  </style>
+</head>
+<body style="margin:0;padding:0;background:#f0eeea;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;color:#1a1917;-webkit-text-size-adjust:100%;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f0eeea;">
+    <tr><td align="center" style="padding:24px 12px;">
+      <table role="presentation" class="wrapper" width="640" cellpadding="0" cellspacing="0" style="max-width:640px;width:100%;">
+
+        <!-- Header -->
+        <tr><td style="background:#1a1917;border-radius:8px 8px 0 0;padding:28px 28px 24px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td>
+                <div style="font-size:11px;font-weight:600;color:#8a8780;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:10px;">semantic-core · performance sprints</div>
+                <h1 class="hero-title" style="margin:0 0 8px;font-size:26px;font-weight:700;color:#ffffff;line-height:1.2;">Wave 2 report</h1>
+                <div style="font-size:15px;color:#b8b4ac;margin-bottom:14px;">Payload slimming</div>
+                <div style="font-size:12px;color:#8a8780;">Monday, June 8, 2026 at 1:08 PM EDT</div>
+              </td>
+              <td align="right" valign="top">
+                <span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;background:#faf3e0;color:#9a6700;">In progress</span>
+              </td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- Body -->
+        <tr><td class="content-pad" style="background:#ffffff;padding:28px;border-left:1px solid #ddd8cf;border-right:1px solid #ddd8cf;">
+
+          <!-- Stats grid -->
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px;">
+            <tr>
+              
+    <td class="stat-cell" width="50%" style="padding:6px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#e6f4f1;border:1px solid #ddd8cf;border-radius:6px;">
+        <tr><td style="padding:16px 18px;">
+          <div style="font-size:11px;font-weight:600;color:#6f6b64;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Verified</div>
+          <div style="font-size:28px;font-weight:700;color:#0d6e5c;line-height:1.1;">2/4</div>
+          <div style="font-size:12px;color:#6f6b64;margin-top:6px;line-height:1.4;">50% of wave</div>
+        </td></tr>
+      </table>
+    </td>
+              
+    <td class="stat-cell" width="50%" style="padding:6px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #ddd8cf;border-radius:6px;">
+        <tr><td style="padding:16px 18px;">
+          <div style="font-size:11px;font-weight:600;color:#6f6b64;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Avg score</div>
+          <div style="font-size:28px;font-weight:700;color:#1a1917;line-height:1.1;">97</div>
+          <div style="font-size:12px;color:#6f6b64;margin-top:6px;line-height:1.4;">out of 100</div>
+        </td></tr>
+      </table>
+    </td>
+            </tr>
+            <tr>
+              
+    <td class="stat-cell" width="50%" style="padding:6px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #ddd8cf;border-radius:6px;">
+        <tr><td style="padding:16px 18px;">
+          <div style="font-size:11px;font-weight:600;color:#6f6b64;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Implemented</div>
+          <div style="font-size:28px;font-weight:700;color:#1a1917;line-height:1.1;">2/4</div>
+          <div style="font-size:12px;color:#6f6b64;margin-top:6px;line-height:1.4;">implementation complete</div>
+        </td></tr>
+      </table>
+    </td>
+              
+    <td class="stat-cell" width="50%" style="padding:6px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #ddd8cf;border-radius:6px;">
+        <tr><td style="padding:16px 18px;">
+          <div style="font-size:11px;font-weight:600;color:#6f6b64;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Program</div>
+          <div style="font-size:28px;font-weight:700;color:#1a1917;line-height:1.1;">Wave 2/7</div>
+          <div style="font-size:12px;color:#6f6b64;margin-top:6px;line-height:1.4;">29% through program</div>
+        </td></tr>
+      </table>
+    </td>
+            </tr>
+          </table>
+
+          
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 14px;">
+      <tr>
+        <td style="font-size:12px;color:#6f6b64;padding-bottom:4px;">Wave completion</td>
+        <td align="right" style="font-size:12px;font-weight:600;color:#1a1917;padding-bottom:4px;">50</td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#e8e4dd;border-radius:3px;height:8px;">
+            <tr><td width="50%" style="background:#0d6e5c;border-radius:3px;height:8px;font-size:0;line-height:0;">&nbsp;</td><td style="font-size:0;line-height:0;">&nbsp;</td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+          <!-- Program progress -->
+          <div style="font-size:11px;font-weight:600;color:#6f6b64;text-transform:uppercase;letter-spacing:0.06em;margin:24px 0 12px;text-align:center;">Program progress</div>
+          <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;"><tr>
+      <td align="center" style="padding:2px;">
+        <table role="presentation" cellpadding="0" cellspacing="0">
+          <tr>
+            <td width="36" height="36" align="center" style="background:#0d6e5c;border-radius:4px;font-size:13px;font-weight:700;color:#ffffff;">1</td>
+          </tr>
+          <tr><td align="center" style="font-size:9px;color:#9c9890;padding-top:4px;">done</td></tr>
+        </table>
+      </td>
+      <td align="center" style="padding:2px;">
+        <table role="presentation" cellpadding="0" cellspacing="0">
+          <tr>
+            <td width="36" height="36" align="center" style="background:#1a1917;border-radius:4px;font-size:13px;font-weight:700;color:#ffffff;">2</td>
+          </tr>
+          <tr><td align="center" style="font-size:9px;color:#9c9890;padding-top:4px;">now</td></tr>
+        </table>
+      </td>
+      <td align="center" style="padding:2px;">
+        <table role="presentation" cellpadding="0" cellspacing="0">
+          <tr>
+            <td width="36" height="36" align="center" style="background:#e8e4dd;border-radius:4px;font-size:13px;font-weight:700;color:#6f6b64;">3</td>
+          </tr>
+          <tr><td align="center" style="font-size:9px;color:#9c9890;padding-top:4px;"></td></tr>
+        </table>
+      </td>
+      <td align="center" style="padding:2px;">
+        <table role="presentation" cellpadding="0" cellspacing="0">
+          <tr>
+            <td width="36" height="36" align="center" style="background:#e8e4dd;border-radius:4px;font-size:13px;font-weight:700;color:#6f6b64;">4</td>
+          </tr>
+          <tr><td align="center" style="font-size:9px;color:#9c9890;padding-top:4px;"></td></tr>
+        </table>
+      </td>
+      <td align="center" style="padding:2px;">
+        <table role="presentation" cellpadding="0" cellspacing="0">
+          <tr>
+            <td width="36" height="36" align="center" style="background:#e8e4dd;border-radius:4px;font-size:13px;font-weight:700;color:#6f6b64;">5</td>
+          </tr>
+          <tr><td align="center" style="font-size:9px;color:#9c9890;padding-top:4px;"></td></tr>
+        </table>
+      </td>
+      <td align="center" style="padding:2px;">
+        <table role="presentation" cellpadding="0" cellspacing="0">
+          <tr>
+            <td width="36" height="36" align="center" style="background:#e8e4dd;border-radius:4px;font-size:13px;font-weight:700;color:#6f6b64;">6</td>
+          </tr>
+          <tr><td align="center" style="font-size:9px;color:#9c9890;padding-top:4px;"></td></tr>
+        </table>
+      </td>
+      <td align="center" style="padding:2px;">
+        <table role="presentation" cellpadding="0" cellspacing="0">
+          <tr>
+            <td width="36" height="36" align="center" style="background:#e8e4dd;border-radius:4px;font-size:13px;font-weight:700;color:#6f6b64;">7</td>
+          </tr>
+          <tr><td align="center" style="font-size:9px;color:#9c9890;padding-top:4px;"></td></tr>
+        </table>
+      </td></tr></table>
+
+          <!-- Insights -->
+          <div style="font-size:11px;font-weight:600;color:#6f6b64;text-transform:uppercase;letter-spacing:0.06em;margin:28px 0 12px;">Insights</div>
+          
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:10px;border-left:3px solid #9a6700;background:#ffffff;border-radius:0 6px 6px 0;">
+      <tr><td style="padding:12px 16px;">
+        <div style="font-size:13px;font-weight:600;color:#1a1917;margin-bottom:4px;">2 sprints awaiting verification</div>
+        <div style="font-size:13px;color:#6f6b64;line-height:1.5;">#27 Slim Operational Diagnostics API, #16 Lazy-Load Relationship Graph</div>
+      </td></tr>
+    </table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:10px;border-left:3px solid #1a6b4a;background:#ffffff;border-radius:0 6px 6px 0;">
+      <tr><td style="padding:12px 16px;">
+        <div style="font-size:13px;font-weight:600;color:#1a1917;margin-bottom:4px;">Average verification score: 97/100 (excellent)</div>
+        <div style="font-size:13px;color:#6f6b64;line-height:1.5;">Range 97–97 across 2 scored sprints.</div>
+      </td></tr>
+    </table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:10px;border-left:3px solid #1a6b4a;background:#ffffff;border-radius:0 6px 6px 0;">
+      <tr><td style="padding:12px 16px;">
+        <div style="font-size:13px;font-weight:600;color:#1a1917;margin-bottom:4px;">Documented performance deltas</div>
+        <div style="font-size:13px;color:#6f6b64;line-height:1.5;">#04 payload (representative fixture): 2120 B full graph JSON → 1037 B lite JSON (51.1% reduction). #04 DB queries (lite path): 5 parallel queries (relationships, memories+chunks, heatmap, 50 retrievals, 30 compressions) → 2 parallel queries (relationships, memories select-only) + workspace lookup. #05 Latest compression detail payload (fixture: 80 memories × 4 × 2KB chunks): ~1,327 KB (<code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">GET /compression/:id</code>) → ~0.44 KB (<code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">GET /compression/:id?summary=true</code>)</div>
+      </td></tr>
+    </table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:10px;border-left:3px solid #ddd8cf;background:#ffffff;border-radius:0 6px 6px 0;">
+      <tr><td style="padding:12px 16px;">
+        <div style="font-size:13px;font-weight:600;color:#1a1917;margin-bottom:4px;">Follow-up items noted in outcomes</div>
+        <div style="font-size:13px;color:#6f6b64;line-height:1.5;">#04: Add <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">test</code> script to <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">apps/api/package.json</code> — sprint tests exist but are not wired into workspace <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">npm test</code>; CI may miss them without explicit invocation. #05: Route-level integration test — Add a Fastify inject test for <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">GET /compression/:traceId?summary=true</code> to assert HTTP 200, response schema, and absence of <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">optimizedContextPackage</code> without relying on store-only mocks.</div>
+      </td></tr>
+    </table>
+
+          <!-- Score chart -->
+          <div style="font-size:11px;font-weight:600;color:#6f6b64;text-transform:uppercase;letter-spacing:0.06em;margin:28px 0 12px;">Verification scores</div>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f0eeea;border:1px solid #ddd8cf;border-radius:6px;margin-bottom:8px;">
+            <tr><td style="padding:16px 18px;">
+              
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 14px;">
+      <tr>
+        <td style="font-size:12px;color:#6f6b64;padding-bottom:4px;">#04 Lite Relationship Graph Endp…</td>
+        <td align="right" style="font-size:12px;font-weight:600;color:#1a1917;padding-bottom:4px;">97</td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#e8e4dd;border-radius:3px;height:8px;">
+            <tr><td width="97%" style="background:#1a6b4a;border-radius:3px;height:8px;font-size:0;line-height:0;">&nbsp;</td><td style="font-size:0;line-height:0;">&nbsp;</td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 14px;">
+      <tr>
+        <td style="font-size:12px;color:#6f6b64;padding-bottom:4px;">#05 Compression Metadata-Only En…</td>
+        <td align="right" style="font-size:12px;font-weight:600;color:#1a1917;padding-bottom:4px;">97</td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#e8e4dd;border-radius:3px;height:8px;">
+            <tr><td width="97%" style="background:#1a6b4a;border-radius:3px;height:8px;font-size:0;line-height:0;">&nbsp;</td><td style="font-size:0;line-height:0;">&nbsp;</td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+            </td></tr>
+          </table>
+
+          <!-- Summary table -->
+          <div style="font-size:11px;font-weight:600;color:#6f6b64;text-transform:uppercase;letter-spacing:0.06em;margin:28px 0 12px;">Sprint overview</div>
+          <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">
+            <table role="presentation" class="sprint-table" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #ddd8cf;border-radius:6px;font-size:13px;">
+              <tr style="background:#f0eeea;">
+                <th align="left" class="mobile-hide" style="padding:10px;font-size:11px;color:#6f6b64;font-weight:600;">#</th>
+                <th align="left" style="padding:10px;font-size:11px;color:#6f6b64;font-weight:600;">Sprint</th>
+                <th align="left" class="mobile-hide" style="padding:10px;font-size:11px;color:#6f6b64;font-weight:600;">Impl</th>
+                <th align="left" class="mobile-hide" style="padding:10px;font-size:11px;color:#6f6b64;font-weight:600;">Verify</th>
+                <th align="center" style="padding:10px;font-size:11px;color:#6f6b64;font-weight:600;">Score</th>
+                <th align="left" class="mobile-hide" style="padding:10px;font-size:11px;color:#6f6b64;font-weight:600;">Objectives</th>
+              </tr>
+              
+    <tr class="sprint-row">
+      <td class="mobile-hide" style="padding:12px 10px;border-bottom:1px solid #ddd8cf;font-weight:600;color:#1a1917;white-space:nowrap;">#04</td>
+      <td style="padding:12px 10px;border-bottom:1px solid #ddd8cf;">
+        <div style="font-weight:600;color:#1a1917;font-size:14px;">Lite Relationship Graph Endpoint</div>
+        <div class="mobile-show" style="display:none;font-size:11px;color:#9c9890;margin-top:2px;">Sprint #04</div>
+        <div style="font-size:11px;color:#9c9890;margin-top:2px;">sprint-04-lite-relationship-graph</div>
+      </td>
+      <td class="mobile-hide" style="padding:12px 10px;border-bottom:1px solid #ddd8cf;"><span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;background:#e8f5ef;color:#1a6b4a;">complete</span></td>
+      <td class="mobile-hide" style="padding:12px 10px;border-bottom:1px solid #ddd8cf;"><span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;background:#e8f5ef;color:#1a6b4a;">complete</span></td>
+      <td style="padding:12px 10px;border-bottom:1px solid #ddd8cf;text-align:center;"><span style="font-weight:700;color:#1a6b4a;">97</span> <span style="font-size:10px;color:#9a6700;">low</span> <span style="font-size:10px;color:#1a6b4a;">top</span></td>
+      <td class="mobile-hide" style="padding:12px 10px;border-bottom:1px solid #ddd8cf;font-size:12px;color:#6f6b64;">3 / 3</td>
+    </tr>
+    <tr class="sprint-row">
+      <td class="mobile-hide" style="padding:12px 10px;border-bottom:1px solid #ddd8cf;font-weight:600;color:#1a1917;white-space:nowrap;">#05</td>
+      <td style="padding:12px 10px;border-bottom:1px solid #ddd8cf;">
+        <div style="font-weight:600;color:#1a1917;font-size:14px;">Compression Metadata-Only Endpoint</div>
+        <div class="mobile-show" style="display:none;font-size:11px;color:#9c9890;margin-top:2px;">Sprint #05</div>
+        <div style="font-size:11px;color:#9c9890;margin-top:2px;">sprint-05-compression-metadata-endpoint</div>
+      </td>
+      <td class="mobile-hide" style="padding:12px 10px;border-bottom:1px solid #ddd8cf;"><span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;background:#e8f5ef;color:#1a6b4a;">complete</span></td>
+      <td class="mobile-hide" style="padding:12px 10px;border-bottom:1px solid #ddd8cf;"><span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;background:#e8f5ef;color:#1a6b4a;">complete</span></td>
+      <td style="padding:12px 10px;border-bottom:1px solid #ddd8cf;text-align:center;"><span style="font-weight:700;color:#1a6b4a;">97</span></td>
+      <td class="mobile-hide" style="padding:12px 10px;border-bottom:1px solid #ddd8cf;font-size:12px;color:#6f6b64;">3 / 3</td>
+    </tr>
+    <tr class="sprint-row">
+      <td class="mobile-hide" style="padding:12px 10px;border-bottom:1px solid #ddd8cf;font-weight:600;color:#1a1917;white-space:nowrap;">#27</td>
+      <td style="padding:12px 10px;border-bottom:1px solid #ddd8cf;">
+        <div style="font-weight:600;color:#1a1917;font-size:14px;">Slim Operational Diagnostics API</div>
+        <div class="mobile-show" style="display:none;font-size:11px;color:#9c9890;margin-top:2px;">Sprint #27</div>
+        <div style="font-size:11px;color:#9c9890;margin-top:2px;">sprint-27-slim-operational-diagnostics-api</div>
+      </td>
+      <td class="mobile-hide" style="padding:12px 10px;border-bottom:1px solid #ddd8cf;"><span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;background:#fceeee;color:#a83232;">not started</span></td>
+      <td class="mobile-hide" style="padding:12px 10px;border-bottom:1px solid #ddd8cf;"><span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;background:#fceeee;color:#a83232;">not started</span></td>
+      <td style="padding:12px 10px;border-bottom:1px solid #ddd8cf;text-align:center;"><span style="color:#9c9890;">—</span></td>
+      <td class="mobile-hide" style="padding:12px 10px;border-bottom:1px solid #ddd8cf;font-size:12px;color:#6f6b64;">— / 3</td>
+    </tr>
+    <tr class="sprint-row">
+      <td class="mobile-hide" style="padding:12px 10px;border-bottom:1px solid #ddd8cf;font-weight:600;color:#1a1917;white-space:nowrap;">#16</td>
+      <td style="padding:12px 10px;border-bottom:1px solid #ddd8cf;">
+        <div style="font-weight:600;color:#1a1917;font-size:14px;">Lazy-Load Relationship Graph</div>
+        <div class="mobile-show" style="display:none;font-size:11px;color:#9c9890;margin-top:2px;">Sprint #16</div>
+        <div style="font-size:11px;color:#9c9890;margin-top:2px;">sprint-16-lazy-load-graph</div>
+      </td>
+      <td class="mobile-hide" style="padding:12px 10px;border-bottom:1px solid #ddd8cf;"><span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;background:#fceeee;color:#a83232;">not started</span></td>
+      <td class="mobile-hide" style="padding:12px 10px;border-bottom:1px solid #ddd8cf;"><span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;background:#fceeee;color:#a83232;">not started</span></td>
+      <td style="padding:12px 10px;border-bottom:1px solid #ddd8cf;text-align:center;"><span style="color:#9c9890;">—</span></td>
+      <td class="mobile-hide" style="padding:12px 10px;border-bottom:1px solid #ddd8cf;font-size:12px;color:#6f6b64;">— / 3</td>
+    </tr>
+            </table>
+          </div>
+
+          <!-- Detail cards -->
+          <div style="font-size:11px;font-weight:600;color:#6f6b64;text-transform:uppercase;letter-spacing:0.06em;margin:32px 0 16px;">Sprint details</div>
+          
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;border:1px solid #ddd8cf;border-radius:8px;background:#ffffff;">
+      <tr><td style="padding:20px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td>
+              <div style="font-size:11px;color:#9c9890;margin-bottom:4px;">Sprint #04 · P0 · 1-3 days</div>
+              <div style="font-size:17px;font-weight:700;color:#1a1917;line-height:1.3;">Lite Relationship Graph Endpoint</div>
+            </td>
+            <td align="right" valign="top">
+              <div style="font-size:32px;font-weight:700;color:#1a6b4a;line-height:1;">97</div><div style="font-size:10px;color:#9c9890;text-align:right;">/ 100</div>
+            </td>
+          </tr>
+        </table>
+        <table role="presentation" cellpadding="0" cellspacing="0" style="margin:12px 0 16px;">
+          <tr><td style="padding-right:8px;"><span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;background:#e8f5ef;color:#1a6b4a;">complete</span></td><td style="padding-right:8px;"><span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;background:#e8f5ef;color:#1a6b4a;">complete</span></td><td style="padding-right:8px;"><span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;background:#e8f5ef;color:#1a6b4a;">Objectives 3 / 3</span></td></tr>
+        </table>
+        <div style="border-top:1px solid #ddd8cf;padding-top:14px;"><p style="margin:0 0 10px;font-size:13px;color:#6f6b64;line-height:1.65;">Added a <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">lite=true</code> query parameter to <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">GET /relationships/graph</code> that returns a slim graph payload for the home contextual map.</p>
+<div style="font-size:13px;font-weight:600;color:#1a1917;margin:16px 0 6px;">Changes</div>
+<ol style="margin:8px 0 12px;padding-left:20px;color:#6f6b64;font-size:13px;line-height:1.6;">
+<li style="margin-bottom:6px;"><strong style="font-weight:600;color:#1a1917;"><code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">apps/api/src/lib/relationship-graph-store.ts</code></strong></li>
+</ol>
+<ul style="margin:8px 0 12px;padding-left:20px;color:#6f6b64;font-size:13px;line-height:1.6;">
+<li style="margin-bottom:6px;">Added <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">RelationshipGraphLiteView</code> (<code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">workspaceId</code>, <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">nodes</code>, <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">edges</code> only).</li>
+<li style="margin-bottom:6px;">Added <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">buildLiteRelationshipGraph()</code> early-return path when <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">options.lite</code> is set.</li>
+<li style="margin-bottom:6px;">Lite path skips <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">buildRetrievalHeatmap</code>, retrieval/compression operation fetches, chunk metadata includes, and omits <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">domains</code>, <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">timelineEvents</code>, <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">retrievalTraces</code>, and <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">stats</code>.</li>
+<li style="margin-bottom:6px;">Extracted shared <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">buildGraphEdges()</code> so edge derivation stays identical between lite and full modes.</li>
+<li style="margin-bottom:6px;">Node/edge <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">id</code> fields and edge schema unchanged.</li>
+</ul>
+<ol style="margin:8px 0 12px;padding-left:20px;color:#6f6b64;font-size:13px;line-height:1.6;">
+<li style="margin-bottom:6px;"><strong style="font-weight:600;color:#1a1917;"><code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">apps/api/src/routes/compression.ts</code></strong></li>
+</ol>
+<ul style="margin:8px 0 12px;padding-left:20px;color:#6f6b64;font-size:13px;line-height:1.6;">
+<li style="margin-bottom:6px;">Route accepts <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">lite=true</code> and passes</li>
+</ul></div>
+        
+      <div style="font-size:11px;font-weight:600;color:#6f6b64;text-transform:uppercase;letter-spacing:0.05em;margin:16px 0 8px;">Measurements</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #ddd8cf;border-radius:4px;">
+        <tr style="background:#f0eeea;">
+          <th align="left" style="padding:8px 10px;font-size:11px;color:#6f6b64;font-weight:600;">Metric</th>
+          <th align="left" style="padding:8px 10px;font-size:11px;color:#6f6b64;font-weight:600;">Before</th>
+          <th align="left" style="padding:8px 10px;font-size:11px;color:#6f6b64;font-weight:600;">After</th>
+        </tr>
+        
+        <tr>
+          <td style="padding:8px 10px;border-bottom:1px solid #ddd8cf;font-size:12px;color:#1a1917;">payload (representative fixture)</td>
+          <td style="padding:8px 10px;border-bottom:1px solid #ddd8cf;font-size:12px;color:#6f6b64;">2120 B full graph JSON</td>
+          <td style="padding:8px 10px;border-bottom:1px solid #ddd8cf;font-size:12px;font-weight:600;color:#0d6e5c;">1037 B lite JSON (51.1% reduction)</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 10px;border-bottom:1px solid #ddd8cf;font-size:12px;color:#1a1917;">DB queries (lite path)</td>
+          <td style="padding:8px 10px;border-bottom:1px solid #ddd8cf;font-size:12px;color:#6f6b64;">5 parallel queries (relationships, memories+chunks, heatmap, 50 retrievals, 30 compressions)</td>
+          <td style="padding:8px 10px;border-bottom:1px solid #ddd8cf;font-size:12px;font-weight:600;color:#0d6e5c;">2 parallel queries (relationships, memories select-only) + workspace lookup</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 10px;border-bottom:1px solid #ddd8cf;font-size:12px;color:#1a1917;">home fetch URL</td>
+          <td style="padding:8px 10px;border-bottom:1px solid #ddd8cf;font-size:12px;color:#6f6b64;"><code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">/relationships/graph?workspaceId=…</code></td>
+          <td style="padding:8px 10px;border-bottom:1px solid #ddd8cf;font-size:12px;font-weight:600;color:#0d6e5c;"><code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">/relationships/graph?workspaceId=…&amp;lite=true</code></td>
+        </tr>
+        <tr>
+          <td style="padding:8px 10px;border-bottom:1px solid #ddd8cf;font-size:12px;color:#1a1917;">unit tests</td>
+          <td style="padding:8px 10px;border-bottom:1px solid #ddd8cf;font-size:12px;color:#6f6b64;">3 (implementation)</td>
+          <td style="padding:8px 10px;border-bottom:1px solid #ddd8cf;font-size:12px;font-weight:600;color:#0d6e5c;">5 passing</td>
+        </tr>
+      </table>
+        <div style="font-size:11px;font-weight:600;color:#6f6b64;text-transform:uppercase;letter-spacing:0.05em;margin:16px 0 4px;">Score breakdown</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 14px;">
+      <tr>
+        <td style="font-size:12px;color:#6f6b64;padding-bottom:4px;">Objectives met (40%)</td>
+        <td align="right" style="font-size:12px;font-weight:600;color:#1a1917;padding-bottom:4px;">40/40</td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#e8e4dd;border-radius:3px;height:8px;">
+            <tr><td width="100%" style="background:#0d6e5c;border-radius:3px;height:8px;font-size:0;line-height:0;">&nbsp;</td><td style="font-size:0;line-height:0;">&nbsp;</td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 14px;">
+      <tr>
+        <td style="font-size:12px;color:#6f6b64;padding-bottom:4px;">Anti-objectives clean (25%)</td>
+        <td align="right" style="font-size:12px;font-weight:600;color:#1a1917;padding-bottom:4px;">25/25</td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#e8e4dd;border-radius:3px;height:8px;">
+            <tr><td width="100%" style="background:#0d6e5c;border-radius:3px;height:8px;font-size:0;line-height:0;">&nbsp;</td><td style="font-size:0;line-height:0;">&nbsp;</td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 14px;">
+      <tr>
+        <td style="font-size:12px;color:#6f6b64;padding-bottom:4px;">Test coverage (20%)</td>
+        <td align="right" style="font-size:12px;font-weight:600;color:#1a1917;padding-bottom:4px;">17/20</td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#e8e4dd;border-radius:3px;height:8px;">
+            <tr><td width="85%" style="background:#0d6e5c;border-radius:3px;height:8px;font-size:0;line-height:0;">&nbsp;</td><td style="font-size:0;line-height:0;">&nbsp;</td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 14px;">
+      <tr>
+        <td style="font-size:12px;color:#6f6b64;padding-bottom:4px;">Regression safety (15%)</td>
+        <td align="right" style="font-size:12px;font-weight:600;color:#1a1917;padding-bottom:4px;">15/15</td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#e8e4dd;border-radius:3px;height:8px;">
+            <tr><td width="100%" style="background:#0d6e5c;border-radius:3px;height:8px;font-size:0;line-height:0;">&nbsp;</td><td style="font-size:0;line-height:0;">&nbsp;</td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+        
+      <div style="font-size:11px;font-weight:600;color:#6f6b64;text-transform:uppercase;letter-spacing:0.05em;margin:16px 0 8px;">Follow-ups</div>
+      <ul style="margin:0;padding-left:18px;color:#6f6b64;font-size:13px;line-height:1.6;">
+        <li style="margin-bottom:4px;">Add <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">test</code> script to <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">apps/api/package.json</code> — sprint tests exist but are not wired into workspace <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">npm test</code>; CI may miss them without explicit invocation.</li><li style="margin-bottom:4px;">Optional HTTP integration test — hit <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">GET /relationships/graph?lite=true</code> vs full on seeded DB and assert response keys + measured byte delta.</li><li style="margin-bottom:4px;">Production payload baseline — fixture achieves 51.1% reduction (lower bound of 50–80% target); capture a real workspace HAR or server log to confirm home-page savings at scale.</li>
+      </ul>
+      </td></tr>
+    </table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;border:1px solid #ddd8cf;border-radius:8px;background:#ffffff;">
+      <tr><td style="padding:20px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td>
+              <div style="font-size:11px;color:#9c9890;margin-bottom:4px;">Sprint #05 · P0 · 1-3 days</div>
+              <div style="font-size:17px;font-weight:700;color:#1a1917;line-height:1.3;">Compression Metadata-Only Endpoint</div>
+            </td>
+            <td align="right" valign="top">
+              <div style="font-size:32px;font-weight:700;color:#1a6b4a;line-height:1;">97</div><div style="font-size:10px;color:#9c9890;text-align:right;">/ 100</div>
+            </td>
+          </tr>
+        </table>
+        <table role="presentation" cellpadding="0" cellspacing="0" style="margin:12px 0 16px;">
+          <tr><td style="padding-right:8px;"><span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;background:#e8f5ef;color:#1a6b4a;">complete</span></td><td style="padding-right:8px;"><span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;background:#e8f5ef;color:#1a6b4a;">complete</span></td><td style="padding-right:8px;"><span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;background:#e8f5ef;color:#1a6b4a;">Objectives 3 / 3</span></td></tr>
+        </table>
+        <div style="border-top:1px solid #ddd8cf;padding-top:14px;"><p style="margin:0 0 10px;font-size:13px;color:#6f6b64;line-height:1.65;">Added a metadata-only projection for compression traces so home telemetry no longer downloads multi-MB context packages.</p>
+<div style="font-size:13px;font-weight:600;color:#1a1917;margin:16px 0 6px;">API (<code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">apps/api</code>)</div>
+<ol style="margin:8px 0 12px;padding-left:20px;color:#6f6b64;font-size:13px;line-height:1.6;">
+<li style="margin-bottom:6px;"><strong style="font-weight:600;color:#1a1917;"><code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">CompressionTraceSummaryView</code></strong> — new shared type in <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">packages/shared-types/src/compression-contracts.ts</code> describing token counts, fidelity score, merge/trim counts, and trace identity fields only (no context packages, stages, or decision bodies).</li>
+</ol>
+<ol style="margin:8px 0 12px;padding-left:20px;color:#6f6b64;font-size:13px;line-height:1.6;">
+<li style="margin-bottom:6px;"><strong style="font-weight:600;color:#1a1917;"><code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">getCompressionTraceSummary()</code></strong> — new store function in <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">apps/api/src/lib/compression-store.ts</code> that reads the same <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">compressionOperation</code> row as <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">getCompressionTrace()</code> but projects only summary fields from <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">result</code>.</li>
+</ol>
+<ol style="margin:8px 0 12px;padding-left:20px;color:#6f6b64;font-size:13px;line-height:1.6;">
+<li style="margin-bottom:6px;">*</li>
+</ol></div>
+        
+      <div style="font-size:11px;font-weight:600;color:#6f6b64;text-transform:uppercase;letter-spacing:0.05em;margin:16px 0 8px;">Measurements</div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #ddd8cf;border-radius:4px;">
+        <tr style="background:#f0eeea;">
+          <th align="left" style="padding:8px 10px;font-size:11px;color:#6f6b64;font-weight:600;">Metric</th>
+          <th align="left" style="padding:8px 10px;font-size:11px;color:#6f6b64;font-weight:600;">Before</th>
+          <th align="left" style="padding:8px 10px;font-size:11px;color:#6f6b64;font-weight:600;">After</th>
+        </tr>
+        
+        <tr>
+          <td style="padding:8px 10px;border-bottom:1px solid #ddd8cf;font-size:12px;color:#1a1917;">Latest compression detail payload (fixture: 80 memories × 4 × 2KB chunks)</td>
+          <td style="padding:8px 10px;border-bottom:1px solid #ddd8cf;font-size:12px;color:#6f6b64;">~1,327 KB (<code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">GET /compression/:id</code>)</td>
+          <td style="padding:8px 10px;border-bottom:1px solid #ddd8cf;font-size:12px;font-weight:600;color:#0d6e5c;">~0.44 KB (<code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">GET /compression/:id?summary=true</code>)</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 10px;border-bottom:1px solid #ddd8cf;font-size:12px;color:#1a1917;">Home telemetry compression fetch</td>
+          <td style="padding:8px 10px;border-bottom:1px solid #ddd8cf;font-size:12px;color:#6f6b64;">Full trace with context packages</td>
+          <td style="padding:8px 10px;border-bottom:1px solid #ddd8cf;font-size:12px;font-weight:600;color:#0d6e5c;">Summary metadata only</td>
+        </tr>
+      </table>
+        <div style="font-size:11px;font-weight:600;color:#6f6b64;text-transform:uppercase;letter-spacing:0.05em;margin:16px 0 4px;">Score breakdown</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 14px;">
+      <tr>
+        <td style="font-size:12px;color:#6f6b64;padding-bottom:4px;">Objectives (40)</td>
+        <td align="right" style="font-size:12px;font-weight:600;color:#1a1917;padding-bottom:4px;">40/40</td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#e8e4dd;border-radius:3px;height:8px;">
+            <tr><td width="100%" style="background:#0d6e5c;border-radius:3px;height:8px;font-size:0;line-height:0;">&nbsp;</td><td style="font-size:0;line-height:0;">&nbsp;</td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 14px;">
+      <tr>
+        <td style="font-size:12px;color:#6f6b64;padding-bottom:4px;">Anti-objectives (25)</td>
+        <td align="right" style="font-size:12px;font-weight:600;color:#1a1917;padding-bottom:4px;">25/25</td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#e8e4dd;border-radius:3px;height:8px;">
+            <tr><td width="100%" style="background:#0d6e5c;border-radius:3px;height:8px;font-size:0;line-height:0;">&nbsp;</td><td style="font-size:0;line-height:0;">&nbsp;</td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 14px;">
+      <tr>
+        <td style="font-size:12px;color:#6f6b64;padding-bottom:4px;">Test coverage (20)</td>
+        <td align="right" style="font-size:12px;font-weight:600;color:#1a1917;padding-bottom:4px;">18/20</td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#e8e4dd;border-radius:3px;height:8px;">
+            <tr><td width="90%" style="background:#0d6e5c;border-radius:3px;height:8px;font-size:0;line-height:0;">&nbsp;</td><td style="font-size:0;line-height:0;">&nbsp;</td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:6px 0 14px;">
+      <tr>
+        <td style="font-size:12px;color:#6f6b64;padding-bottom:4px;">Regression safety (15)</td>
+        <td align="right" style="font-size:12px;font-weight:600;color:#1a1917;padding-bottom:4px;">14/15</td>
+      </tr>
+      <tr>
+        <td colspan="2">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#e8e4dd;border-radius:3px;height:8px;">
+            <tr><td width="93%" style="background:#0d6e5c;border-radius:3px;height:8px;font-size:0;line-height:0;">&nbsp;</td><td style="font-size:0;line-height:0;">&nbsp;</td></tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+        
+      <div style="font-size:11px;font-weight:600;color:#6f6b64;text-transform:uppercase;letter-spacing:0.05em;margin:16px 0 8px;">Follow-ups</div>
+      <ul style="margin:0;padding-left:18px;color:#6f6b64;font-size:13px;line-height:1.6;">
+        <li style="margin-bottom:4px;">Route-level integration test — Add a Fastify inject test for <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">GET /compression/:traceId?summary=true</code> to assert HTTP 200, response schema, and absence of <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">optimizedContextPackage</code> without relying on store-only mocks.</li><li style="margin-bottom:4px;">Live payload capture — Optional HAR or <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">perf:sprint</code> measurement against a seeded workspace to confirm multi-MB savings on real home telemetry fetch (unit fixture already proves order-of-magnitude reduction).</li><li style="margin-bottom:4px;">Wire API test into CI — <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">compression-store-summary.test.ts</code> uses <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">node:test</code> but is not wired to an <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">npm test</code> script in <code style="background:#f0eeea;padding:1px 5px;border-radius:3px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:#1a1917;">@memory-middleware/api</code>; dashboard sprint test is in Vitest CI path.</li>
+      </ul>
+      </td></tr>
+    </table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;border:1px solid #ddd8cf;border-radius:8px;background:#ffffff;">
+      <tr><td style="padding:20px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td>
+              <div style="font-size:11px;color:#9c9890;margin-bottom:4px;">Sprint #27 · P1 · 3-5 days</div>
+              <div style="font-size:17px;font-weight:700;color:#1a1917;line-height:1.3;">Slim Operational Diagnostics API</div>
+            </td>
+            <td align="right" valign="top">
+              
+            </td>
+          </tr>
+        </table>
+        <table role="presentation" cellpadding="0" cellspacing="0" style="margin:12px 0 16px;">
+          <tr><td style="padding-right:8px;"><span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;background:#fceeee;color:#a83232;">not started</span></td><td style="padding-right:8px;"><span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;background:#fceeee;color:#a83232;">not started</span></td><td style="padding-right:8px;"><span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;background:#f0eeea;color:#6f6b64;">Pending</span></td></tr>
+        </table>
+        <div style="border-top:1px solid #ddd8cf;padding-top:14px;"><div style="padding:14px 16px;background:#f0eeea;border-radius:6px;font-size:13px;color:#6f6b64;line-height:1.6;">Not started yet — outcomes will appear here after implement and verify phases complete.</div></div>
+        
+        
+        
+      </td></tr>
+    </table>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:16px;border:1px solid #ddd8cf;border-radius:8px;background:#ffffff;">
+      <tr><td style="padding:20px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td>
+              <div style="font-size:11px;color:#9c9890;margin-bottom:4px;">Sprint #16 · P2 · &lt;1 day</div>
+              <div style="font-size:17px;font-weight:700;color:#1a1917;line-height:1.3;">Lazy-Load Relationship Graph</div>
+            </td>
+            <td align="right" valign="top">
+              
+            </td>
+          </tr>
+        </table>
+        <table role="presentation" cellpadding="0" cellspacing="0" style="margin:12px 0 16px;">
+          <tr><td style="padding-right:8px;"><span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;background:#fceeee;color:#a83232;">not started</span></td><td style="padding-right:8px;"><span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;background:#fceeee;color:#a83232;">not started</span></td><td style="padding-right:8px;"><span style="display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;background:#f0eeea;color:#6f6b64;">Pending</span></td></tr>
+        </table>
+        <div style="border-top:1px solid #ddd8cf;padding-top:14px;"><div style="padding:14px 16px;background:#f0eeea;border-radius:6px;font-size:13px;color:#6f6b64;line-height:1.6;">Not started yet — outcomes will appear here after implement and verify phases complete.</div></div>
+        
+        
+        
+      </td></tr>
+    </table>
+
+          <!-- CTA -->
+          <div style="margin-top:32px;">
+            
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#ffffff;border:1px solid #ddd8cf;border-radius:8px;">
+        <tr><td style="padding:24px;text-align:center;">
+          <div style="font-size:15px;font-weight:600;color:#1a1917;margin-bottom:4px;">Ready for Wave 3</div>
+          <div style="font-size:13px;color:#6f6b64;margin-bottom:18px;">Observability &amp; baselines</div>
+          <a href="https://stagnant-crisped-angling.ngrok-free.dev/perf/trigger?wave=3&amp;token=b6ae56c21c239d8a433aee1c34a5184b" style="display:inline-block;padding:14px 28px;background:#0d6e5c;color:#ffffff;text-decoration:none;border-radius:6px;font-size:15px;font-weight:600;min-height:44px;line-height:16px;">Start Wave 3</a>
+          <div style="font-size:12px;color:#9c9890;margin-top:16px;line-height:1.5;">Or locally: <code style="background:#f0eeea;padding:2px 6px;border-radius:3px;font-size:11px;">npm run perf:wave -- --wave 3</code></div>
+          <div style="font-size:11px;color:#9c9890;margin-top:8px;">Reply <code style="background:#f0eeea;padding:2px 6px;border-radius:3px;">START WAVE 3</code> if inbound webhook is configured.</div>
+        </td></tr>
+      </table>
+          </div>
+
+        </td></tr>
+
+        <!-- Footer -->
+        <tr><td style="background:#f0eeea;border:1px solid #ddd8cf;border-top:none;border-radius:0 0 8px 8px;padding:20px 28px;text-align:center;">
+          <div style="font-size:12px;color:#9c9890;line-height:1.6;">
+            Auto-generated from <code style="font-size:11px;background:#ffffff;padding:1px 5px;border-radius:3px;">docs/performance-improvments/</code> outcomes.<br/>
+            Full markdown report saved alongside this email in <code style="font-size:11px;background:#ffffff;padding:1px 5px;border-radius:3px;">wave-reports/</code>.
+          </div>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

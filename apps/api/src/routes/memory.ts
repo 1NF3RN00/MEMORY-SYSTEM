@@ -10,15 +10,32 @@ import {
 } from "../lib/memory-evolution.js";
 
 import { archiveMemory, deleteMemory } from "../lib/memory-lifecycle.js";
-
-
+import {
+  parseListFieldsQuery,
+  projectListRows,
+} from "../lib/list-field-projection.js";
 
 export async function registerMemoryRoutes(app: FastifyInstance): Promise<void> {
-  app.get<{ Querystring: { workspaceId?: string; limit?: string; includeArchived?: string } }>(
+  app.get<{
+    Querystring: {
+      workspaceId?: string;
+      limit?: string;
+      includeArchived?: string;
+      fields?: string;
+    };
+  }>(
     "/memory",
     async (request, reply) => {
       if (!request.query.workspaceId) {
         return reply.status(400).send({ error: "workspaceId query parameter required" });
+      }
+
+      const fieldProjection = parseListFieldsQuery("memory", request.query.fields);
+      if (!fieldProjection.ok) {
+        return reply.status(400).send({
+          error: fieldProjection.error,
+          invalidFields: fieldProjection.invalidFields,
+        });
       }
 
       const limit = Math.min(Number(request.query.limit ?? 50), 100);
@@ -36,21 +53,23 @@ export async function registerMemoryRoutes(app: FastifyInstance): Promise<void> 
         },
       });
 
+      const rows = memories.map((m) => ({
+        id: m.id,
+        title: m.title,
+        memoryType: m.memoryType,
+        sourceType: m.sourceType,
+        persistenceMode: m.persistenceMode,
+        archived: m.archived,
+        retrievalEligible: m.retrievalEligible,
+        ingestionStatus: m.ingestionStatus,
+        chunkCount: m._count.chunks,
+        createdAt: m.createdAt.toISOString(),
+        ...(m.archivedAt ? { archivedAt: m.archivedAt.toISOString() } : {}),
+      }));
+
       return {
         workspaceId: request.query.workspaceId,
-        memories: memories.map((m) => ({
-          id: m.id,
-          title: m.title,
-          memoryType: m.memoryType,
-          sourceType: m.sourceType,
-          persistenceMode: m.persistenceMode,
-          archived: m.archived,
-          retrievalEligible: m.retrievalEligible,
-          ingestionStatus: m.ingestionStatus,
-          chunkCount: m._count.chunks,
-          createdAt: m.createdAt.toISOString(),
-          ...(m.archivedAt ? { archivedAt: m.archivedAt.toISOString() } : {}),
-        })),
+        memories: projectListRows(rows, fieldProjection.fields),
       };
     },
   );
